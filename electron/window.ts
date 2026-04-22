@@ -27,6 +27,8 @@ export function createPopupWindow(): BrowserWindow {
     win.loadFile(path.join(__dirname, '../dist/index.html'))
   }
 
+  win.setSkipTaskbar(true)
+
   win.on('blur', () => {
     if (!win.webContents.isDevToolsOpened()) win.hide()
   })
