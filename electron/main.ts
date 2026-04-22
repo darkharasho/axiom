@@ -1,5 +1,7 @@
 import { app, Tray, nativeImage } from 'electron'
 import path from 'path'
+import { autoUpdater } from 'electron-updater'
+import log from 'electron-log'
 
 // Wayland doesn't honour X11 window-type hints (skipTaskbar, type:'toolbar').
 // Running under XWayland restores that behaviour for tray popup windows.
@@ -44,6 +46,11 @@ app.whenReady().then(() => {
   win.webContents.once('did-finish-load', () => {
     win?.webContents.send('axiom:request-check-updates')
   })
+
+  if (app.isPackaged) {
+    autoUpdater.logger = log
+    autoUpdater.checkForUpdatesAndNotify()
+  }
 })
 
 app.on('before-quit', () => {

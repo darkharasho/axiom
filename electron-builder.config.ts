@@ -5,6 +5,11 @@ const config: Configuration = {
   productName: 'AxiOM',
   directories: { output: 'dist_out' },
   files: ['dist/**', 'dist-electron/**', 'public/**'],
+  publish: {
+    provider: 'github',
+    owner: 'darkharasho',
+    repo: 'axiom',
+  },
   linux: {
     target: 'AppImage',
     icon: 'public/AxiOM-White.png',
