@@ -54,3 +54,47 @@ jobs:
           files: dist_out/*.exe
           draft: false
           prerelease: false
+
+  notify:
+    needs: [build-linux, build-windows]
+    runs-on: ubuntu-latest
+    if: ${{ vars.DISCORD_WEBHOOK_URL != '' }}
+    steps:
+      - name: Post to Discord
+        env:
+          DISCORD_WEBHOOK_URL: ${{ vars.DISCORD_WEBHOOK_URL }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          release_url="https://github.com/darkharasho/axiom/releases/tag/${tag}"
+          notes=$(gh release view "$tag" --repo darkharasho/axiom --json body --jq '.body' 2>/dev/null || echo "")
+
+          export TAG="$tag"
+          export RELEASE_URL="$release_url"
+          export NOTES="$notes"
+
+          payload=$(python3 -c "
+          import json, os
+
+          tag = os.environ['TAG']
+          release_url = os.environ['RELEASE_URL']
+          notes = os.environ.get('NOTES', '')
+
+          if len(notes) > 3800:
+              notes = notes[:3800] + '\n\n*... see full notes on GitHub*'
+
+          embed = {
+              'title': f'AxiOM {tag}',
+              'url': release_url,
+              'description': notes or 'A new version of AxiOM is available!',
+              'color': 0xC89850,
+              'thumbnail': {'url': 'https://raw.githubusercontent.com/darkharasho/axiom/master/public/AxiOM-White.png'},
+              'footer': {'text': 'AxiOM Release'},
+          }
+
+          print(json.dumps({
+              'embeds': [embed],
+          }))
+          ")
+
+          curl -s -H "Content-Type: application/json" -d "$payload" "$DISCORD_WEBHOOK_URL"
