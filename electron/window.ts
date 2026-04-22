@@ -39,15 +39,8 @@ export function showWindowNearTray(win: BrowserWindow, cursor: { x: number; y: n
   const display = screen.getDisplayNearestPoint(cursor)
   const workArea = display.workArea
 
-  // Center the window horizontally on the cursor, position above or below based on taskbar location
-  let x = Math.round(cursor.x - winBounds.width / 2)
-  const inBottomHalf = cursor.y > workArea.y + workArea.height / 2
-  const y = inBottomHalf
-    ? Math.round(cursor.y - winBounds.height - 8)
-    : Math.round(cursor.y + 8)
-
-  // Clamp to work area so window never goes offscreen
-  x = Math.max(workArea.x, Math.min(x, workArea.x + workArea.width - winBounds.width))
+  const x = workArea.x + workArea.width - winBounds.width - 8
+  const y = workArea.y + workArea.height - winBounds.height - 8
 
   win.setPosition(x, y, false)
   win.show()
