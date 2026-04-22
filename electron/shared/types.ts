@@ -25,6 +25,7 @@ export interface AppState {
   errorMessage?: string
   downloadProgress?: DownloadProgress
   gearLeverMissing?: boolean
+  isRunning?: boolean
 }
 
 export interface ConfigApp {

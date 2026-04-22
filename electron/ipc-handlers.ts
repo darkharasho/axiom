@@ -16,6 +16,22 @@ import { setAutoStart, getAutoStart } from './autostart'
 let appStates: Record<AppId, AppState> = buildInitialStates()
 let lastCheckTime = 0
 
+async function isProcessRunning(appName: string): Promise<boolean> {
+  const { exec } = await import('child_process')
+  return new Promise(resolve => {
+    const cmd = process.platform === 'win32'
+      ? `tasklist /FI "IMAGENAME eq ${appName}.exe" /NH`
+      : `pgrep -fi "${appName}"`
+    exec(cmd, (err, stdout) => {
+      if (process.platform === 'win32') {
+        resolve(stdout.toLowerCase().includes(appName.toLowerCase() + '.exe'))
+      } else {
+        resolve(!err)
+      }
+    })
+  })
+}
+
 export function getLastCheckTime(): number { return lastCheckTime }
 
 export async function runCheckUpdates(win: BrowserWindow): Promise<void> {
@@ -245,9 +261,56 @@ export function registerIpcHandlers(win: BrowserWindow): void {
     shell.openExternal('https://flathub.org/apps/it.mijorus.gearlever')
   })
 
+  ipcMain.handle('axiom:browse-files', async (_e, appId: InstallableAppId) => {
+    const meta = APP_META[appId]
+    if (!isInstallable(meta)) return
+    if (process.platform === 'linux') {
+      const fs = await import('fs')
+      const os = await import('os')
+      const pathMod = await import('path')
+      const searchDirs = [
+        pathMod.join(os.homedir(), 'AppImages'),
+        pathMod.join(os.homedir(), 'Applications'),
+        pathMod.join(os.homedir(), 'Downloads'),
+        pathMod.join(os.homedir(), '.local', 'bin'),
+        os.homedir(),
+      ]
+      for (const dir of searchDirs) {
+        try {
+          const files = fs.readdirSync(dir)
+          const appImage = files.find(f => f.toLowerCase().endsWith('.appimage') && f.toLowerCase().includes(meta.name.toLowerCase()))
+          if (appImage) { shell.showItemInFolder(pathMod.join(dir, appImage)); return }
+        } catch { /* ignore */ }
+      }
+    } else {
+      const { execSync } = await import('child_process')
+      try {
+        const ps = `(Get-ItemProperty 'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*' -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like '*${meta.name}*' } | Select-Object -First 1).InstallLocation`
+        const loc = execSync(`powershell -Command "${ps}"`, { encoding: 'utf8', timeout: 5000 }).trim()
+        if (loc) shell.openPath(loc)
+      } catch { /* ignore */ }
+    }
+  })
+
   ipcMain.handle('axiom:get-version', () => app.getVersion())
 
   ipcMain.on('axiom:quit', () => {
     app.quit()
   })
+
+  async function pollRunningStates() {
+    for (const [id, meta] of Object.entries(APP_META)) {
+      const appId = id as AppId
+      if (!isInstallable(meta)) continue
+      if (!appStates[appId].installedVersion) continue
+      const running = await isProcessRunning(meta.name)
+      if (running !== appStates[appId].isRunning) {
+        setState(win, appId, { isRunning: running })
+      }
+    }
+  }
+
+  pollRunningStates()
+  const runningPoll = setInterval(pollRunningStates, 8000)
+  win.on('closed', () => clearInterval(runningPoll))
 }

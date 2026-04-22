@@ -36,6 +36,9 @@ export function AppList({ states, checking, onOpenSettings, onCheckUpdates, onOp
       case 'open-gear-lever-flathub':
         window.axiom.openGearLeverFlathub()
         break
+      case 'browse-files':
+        window.axiom.browseFiles(appId as Parameters<typeof window.axiom.browseFiles>[0])
+        break
     }
   }
 
@@ -102,6 +105,7 @@ export function AppList({ states, checking, onOpenSettings, onCheckUpdates, onOp
         <button
           onClick={onCheckUpdates}
           disabled={checking}
+          className="btn-ghost"
           style={{
             background: 'none',
             color: checking ? 'var(--text-faint)' : 'var(--text-dim)',
@@ -110,22 +114,28 @@ export function AppList({ states, checking, onOpenSettings, onCheckUpdates, onOp
             display: 'flex',
             alignItems: 'center',
             gap: 4,
+            transition: 'color 0.1s',
           }}
+          onMouseEnter={e => { if (!checking) e.currentTarget.style.color = 'var(--text-light)' }}
+          onMouseLeave={e => { if (!checking) e.currentTarget.style.color = 'var(--text-dim)' }}
         >
           <RefreshCw size={10} className={checking ? 'spin' : ''} />
           {checking ? 'Checking...' : 'Check for updates'}
         </button>
         <button
           onClick={() => window.axiom.quit()}
+          className="btn-ghost"
           style={{
             background: 'none',
-            color: 'var(--text-faint)',
+            color: 'var(--text-dim)',
             fontSize: 11,
             padding: '4px 0',
             display: 'flex',
             alignItems: 'center',
             gap: 4,
           }}
+          onMouseEnter={e => (e.currentTarget.style.color = '#e05252')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-dim)')}
         >
           <LogOut size={10} />
           Quit

@@ -12,6 +12,7 @@ declare global {
       install: (appId: InstallableAppId) => Promise<void>
       launch: (appId: AppId) => Promise<void>
       uninstall: (appId: InstallableAppId) => Promise<void>
+      browseFiles: (appId: InstallableAppId) => Promise<void>
       installGearLever: (appId: InstallableAppId) => Promise<void>
       openGearLeverFlathub: () => Promise<void>
       getVersion: () => Promise<string>

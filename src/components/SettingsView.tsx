@@ -45,7 +45,7 @@ export function SettingsView({ onBack }: Props) {
           style={{
             background: 'none',
             color: 'var(--text-dim)',
-            padding: '2px 4px 2px 0',
+            padding: '4px 8px 4px 2px',
             marginRight: 2,
             display: 'flex',
             alignItems: 'center',

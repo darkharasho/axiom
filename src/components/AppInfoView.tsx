@@ -1,4 +1,4 @@
-import { ChevronLeft, Download, ExternalLink } from 'lucide-react'
+import { ChevronLeft, Download, ExternalLink, Play } from 'lucide-react'
 import type { AppId } from '@shared/types'
 import { APP_ICONS, APP_NAMES, APP_BLURBS } from '../lib/appMeta'
 
@@ -7,10 +7,11 @@ interface Props {
   onBack: () => void
   downloadUrl?: string
   onInstall?: () => void
+  onLaunch?: () => void
   onInvite?: () => void
 }
 
-export function AppInfoView({ appId, onBack, downloadUrl, onInstall, onInvite }: Props) {
+export function AppInfoView({ appId, onBack, downloadUrl, onInstall, onLaunch, onInvite }: Props) {
   return (
     <div className="view-enter" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: 14 }}>
       <div style={{
@@ -28,7 +29,7 @@ export function AppInfoView({ appId, onBack, downloadUrl, onInstall, onInvite }:
           style={{
             background: 'none',
             color: 'var(--text-dim)',
-            padding: '2px 4px 2px 0',
+            padding: '4px 8px 4px 2px',
             marginRight: 2,
             display: 'flex',
             alignItems: 'center',
@@ -74,9 +75,34 @@ export function AppInfoView({ appId, onBack, downloadUrl, onInstall, onInvite }:
           {APP_BLURBS[appId]}
         </p>
       </div>
-      {(downloadUrl && onInstall || onInvite) && (
+      {(onLaunch || (downloadUrl && onInstall) || onInvite) && (
         <div style={{ paddingTop: 10, borderTop: '1px solid var(--border)' }}>
-          {downloadUrl && onInstall && (
+          {onLaunch && (
+            <button
+              className="btn-gold"
+              onClick={onLaunch}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                background: 'var(--gold)',
+                border: 'none',
+                borderRadius: 4,
+                color: 'var(--bg)',
+                fontSize: 11,
+                fontWeight: 700,
+                padding: '7px 0',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-ui)',
+              }}
+            >
+              <Play size={12} fill="currentColor" />
+              Launch
+            </button>
+          )}
+          {!onLaunch && downloadUrl && onInstall && (
             <button
               className="btn-gold"
               onClick={onInstall}

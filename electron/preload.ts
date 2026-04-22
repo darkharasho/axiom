@@ -29,6 +29,9 @@ contextBridge.exposeInMainWorld('axiom', {
   uninstall: (appId: InstallableAppId): Promise<void> =>
     ipcRenderer.invoke('axiom:uninstall', appId),
 
+  browseFiles: (appId: InstallableAppId): Promise<void> =>
+    ipcRenderer.invoke('axiom:browse-files', appId),
+
   installGearLever: (appId: InstallableAppId): Promise<void> =>
     ipcRenderer.invoke('axiom:install-gear-lever', appId),
 
