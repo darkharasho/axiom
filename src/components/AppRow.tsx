@@ -91,14 +91,14 @@ export function AppRow({ state, onAction, onInfo, onRetry }: Props) {
             style={{
               background: 'none',
               border: 'none',
-              color: 'var(--text-faint)',
+              color: 'var(--text-dim)',
               cursor: 'pointer',
               padding: 2,
               display: 'flex',
               alignItems: 'center',
             }}
           >
-            <HelpCircle size={14} />
+            <HelpCircle size={15} />
           </button>
           <button onClick={() => onAction('invite', id)} style={btnStyle('invite')}>
             <ExternalLink size={11} />
@@ -124,14 +124,14 @@ export function AppRow({ state, onAction, onInfo, onRetry }: Props) {
             style={{
               background: 'none',
               border: 'none',
-              color: 'var(--text-faint)',
+              color: 'var(--text-dim)',
               cursor: 'pointer',
               padding: 2,
               display: 'flex',
               alignItems: 'center',
             }}
           >
-            <HelpCircle size={14} />
+            <HelpCircle size={15} />
           </button>
           {downloadUrl && (
             <button onClick={() => onAction('install', id)} style={btnStyle('install')}>
