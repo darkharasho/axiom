@@ -34,6 +34,7 @@ export default function App() {
           onBack={() => setView('list')}
           downloadUrl={infoState?.downloadUrl ?? undefined}
           onInstall={infoState?.downloadUrl ? () => window.axiom.install(infoAppId as InstallableAppId) : undefined}
+          onInvite={infoAppId === 'axitools' ? () => window.axiom.launch('axitools') : undefined}
         />
       )}
     </div>
