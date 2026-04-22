@@ -42,7 +42,7 @@ Parses your arcdps logs locally with Elite Insights and shows your personal comb
 
 Secure account launcher. Stores encrypted GW2 credentials, manages multiple accounts, and launches them through Steam with custom arguments.
 
-<h2><img src="https://raw.githubusercontent.com/darkharasho/axitools/main/media/AxiTools-White.png" width="22" valign="middle" /> <a href="https://github.com/darkharasho/axitools">AxiTools</a></h2>
+<h2><img src="https://raw.githubusercontent.com/darkharasho/axitools/main/media/AxiTools-White.png" width="22" valign="middle" /> <a href="https://github.com/darkharasho/axitools">AxiTools</a><a href="https://github.com/darkharasho/axitools"><img src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/darkharasho/cfef38dcbbbce38895e4a8bf3abdfa7e/raw/axitools-guild-count.json" align="right" /></a></h2>
 
 Discord bot for GW2 communities — build sharing, RSS feeds, patch note alerts, and scheduled squad signups with per-guild isolated storage.
 
