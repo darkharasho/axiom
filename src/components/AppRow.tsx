@@ -1,24 +1,9 @@
 import React from 'react'
 import { Play, Download, ArrowUp, ExternalLink, Loader2, HelpCircle } from 'lucide-react'
 import type { AppState, AppId, InstallableAppId } from '@shared/types'
+import { APP_ICONS, APP_NAMES } from '../lib/appMeta'
 import { ProgressBar } from './ProgressBar'
 import { GearLeverPrompt } from './GearLeverPrompt'
-
-const APP_ICONS: Record<AppId, string> = {
-  axibridge: './svg/AxiBridge-white.svg',
-  axiforge:  './svg/axiforge.svg',
-  axipulse:  './svg/axipulse-white.svg',
-  axiam:     './svg/axiam.svg',
-  axitools:  './svg/axitools-white.svg',
-}
-
-const APP_NAMES: Record<AppId, string> = {
-  axibridge: 'AxiBridge',
-  axiforge:  'AxiForge',
-  axipulse:  'AxiPulse',
-  axiam:     'AxiAM',
-  axitools:  'AxiTools',
-}
 
 type ActionType = 'launch' | 'install' | 'update' | 'uninstall' | 'invite' | 'install-gear-lever' | 'open-gear-lever-flathub'
 
