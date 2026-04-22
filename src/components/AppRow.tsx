@@ -213,7 +213,7 @@ function btnStyle(variant: 'launch' | 'update' | 'install' | 'invite'): React.CS
   switch (variant) {
     case 'launch':  return { ...base, background: 'var(--gold)',        color: 'var(--bg)' }
     case 'update':  return { ...base, background: 'var(--gold-bright)', color: 'var(--bg)' }
-    case 'install': return { ...base, background: 'transparent', color: 'var(--text-dim)', border: '1px solid var(--border)', fontWeight: 400 }
+    case 'install': return { ...base, background: 'rgba(255, 255, 255, 0.05)', color: 'var(--text-light)', border: '1px solid #2e2f36', fontWeight: 400 }
     case 'invite':  return { ...base, background: 'transparent', color: 'var(--gold)', border: '1px solid var(--gold-border)' }
   }
 }
