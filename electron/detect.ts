@@ -62,10 +62,10 @@ function detectLinux(appName: string): string | null {
     try {
       const files = fs.readdirSync(dir)
       for (const file of files) {
-        if (!file.endsWith('.AppImage')) continue
+        if (!file.toLowerCase().endsWith('.appimage')) continue
         if (!file.toLowerCase().includes(appName.toLowerCase())) continue
         const match = file.match(/(\d+\.\d+\.\d+(?:\.\d+)?)/)
-        if (match) return match[1]
+        return match ? match[1] : 'installed'
       }
     } catch { /* ignore */ }
   }

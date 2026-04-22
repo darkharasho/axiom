@@ -128,7 +128,7 @@ export function registerIpcHandlers(win: BrowserWindow): void {
       for (const dir of searchDirs) {
         try {
           const files = fs.readdirSync(dir)
-          const appImage = files.find(f => f.endsWith('.AppImage') && f.toLowerCase().includes(meta.name.toLowerCase()))
+          const appImage = files.find(f => f.toLowerCase().endsWith('.appimage') && f.toLowerCase().includes(meta.name.toLowerCase()))
           if (appImage) { await shell.openPath(pathMod.join(dir, appImage)); break }
         } catch { /* ignore */ }
       }
@@ -167,7 +167,7 @@ export function registerIpcHandlers(win: BrowserWindow): void {
         for (const dir of searchDirs) {
           try {
             const files = fs.readdirSync(dir)
-            const appImage = files.find(f => f.endsWith('.AppImage') && f.toLowerCase().includes(meta.name.toLowerCase()))
+            const appImage = files.find(f => f.toLowerCase().endsWith('.appimage') && f.toLowerCase().includes(meta.name.toLowerCase()))
             if (appImage) { uninstallLinux(pathMod.join(dir, appImage)); break }
           } catch { /* ignore */ }
         }
