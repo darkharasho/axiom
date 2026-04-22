@@ -1,0 +1,87 @@
+<p align="center">
+  <img src="public/AxiOM-White.png" alt="AxiOM Logo" width="180" />
+</p>
+
+<h1 align="center">AxiOM</h1>
+
+<p align="center">
+  <strong>One launcher for every Axi app.</strong>
+</p>
+
+<p align="center">
+  <a href="https://github.com/darkharasho/axiom/releases/latest"><img src="https://img.shields.io/github/v/release/darkharasho/axiom?style=flat-square&color=c89850" alt="Latest Release" /></a>
+  <a href="https://github.com/darkharasho/axiom/blob/main/LICENSE"><img src="https://img.shields.io/github/license/darkharasho/axiom?style=flat-square" alt="License" /></a>
+  <a href="https://github.com/darkharasho/axiom/releases"><img src="https://img.shields.io/github/downloads/darkharasho/axiom/total?style=flat-square&color=c89850" alt="Downloads" /></a>
+</p>
+
+---
+
+## All your Axi apps, one click away.
+
+AxiOM lives in your system tray. Click the icon, see every app in the Axi suite — installed or not — with their current version and whether an update is waiting. Launch what you need, update what's behind, install what you're missing. No browser, no release pages, no manual downloads.
+
+Open AxiOM. Click Launch. Done.
+
+---
+
+## Features
+
+### Unified app management
+AxiBridge, AxiForge, AxiPulse, and AxiTools in one place. Each app shows its installed version, the latest available release, and a single action button that does the right thing — Launch, Update, Install, or Invite.
+
+### Automatic update detection
+On startup, AxiOM checks GitHub releases for each app and compares against what's installed. A gold badge appears on the tray icon whenever updates are waiting. Click "Check for updates" anytime to refresh.
+
+### Native install and update flows
+On Windows, AxiOM downloads the NSIS installer and launches it — UAC, install path, and shortcuts handled exactly as you'd expect. On Linux, AppImages are downloaded to `~/Applications/` and handed off to Gear Lever for full desktop integration.
+
+### Gear Lever integration (Linux)
+AxiOM detects whether Gear Lever is installed. If it isn't, it offers to install it via Flatpak or open the Flathub page — right inside the popup, no terminal required.
+
+### Tray-first, always there
+Close the window, AxiOM keeps running. The tray icon is always one click from your app launcher. Set it to start on login and forget it's there until you need it.
+
+### Consistent Axi design
+Dark background, gold accents, Cinzel titles. AxiOM matches the look and feel of the apps it manages.
+
+---
+
+## Installation
+
+### Linux
+
+Download the latest `.AppImage` from [Releases](https://github.com/darkharasho/axiom/releases/latest), make it executable, and run it:
+
+```bash
+chmod +x AxiOM-*.AppImage
+./AxiOM-*.AppImage
+```
+
+Or use Gear Lever to integrate it into your desktop.
+
+### Windows
+
+Download the latest `.exe` installer from [Releases](https://github.com/darkharasho/axiom/releases/latest) and run it.
+
+---
+
+## Development
+
+```bash
+git clone https://github.com/darkharasho/axiom
+cd axiom
+npm install
+npm run dev
+```
+
+```bash
+npm test          # Run unit tests
+npm run typecheck # TypeScript check
+npm run build     # Production build + package
+```
+
+---
+
+## License
+
+MIT
