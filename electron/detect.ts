@@ -52,6 +52,7 @@ function detectLinux(appName: string): string | null {
 
   // Scan common AppImage locations
   const searchDirs = [
+    path.join(os.homedir(), 'AppImages'),
     path.join(os.homedir(), 'Applications'),
     path.join(os.homedir(), 'Downloads'),
     path.join(os.homedir(), '.local', 'bin'),

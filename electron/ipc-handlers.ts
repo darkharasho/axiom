@@ -119,6 +119,7 @@ export function registerIpcHandlers(win: BrowserWindow): void {
       const os = await import('os')
       const pathMod = await import('path')
       const searchDirs = [
+        pathMod.join(os.homedir(), 'AppImages'),
         pathMod.join(os.homedir(), 'Applications'),
         pathMod.join(os.homedir(), 'Downloads'),
         pathMod.join(os.homedir(), '.local', 'bin'),
@@ -157,6 +158,7 @@ export function registerIpcHandlers(win: BrowserWindow): void {
         const os = await import('os')
         const pathMod = await import('path')
         const searchDirs = [
+          pathMod.join(os.homedir(), 'AppImages'),
           pathMod.join(os.homedir(), 'Applications'),
           pathMod.join(os.homedir(), 'Downloads'),
           pathMod.join(os.homedir(), '.local', 'bin'),
