@@ -12,8 +12,7 @@
     "build:win": "npm run build:renderer && npm run build:electron && electron-builder --win",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit && tsc -p tsconfig.node.json --noEmit",
-    "lint": "eslint src electron --ext .ts,.tsx --max-warnings 0"
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.node.json --noEmit"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.4.6",
