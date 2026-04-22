@@ -92,6 +92,7 @@ export function registerIpcHandlers(win: BrowserWindow): void {
     try {
       if (process.platform === 'win32') {
         await installWindows(downloadUrl, (p) => setState(win, appId, { downloadProgress: p }))
+        setState(win, appId, { status: 'idle', downloadProgress: undefined })
       } else {
         setState(win, appId, { status: 'installing' })
         const appImagePath = await installLinux(downloadUrl, (p) => setState(win, appId, { downloadProgress: p }))
