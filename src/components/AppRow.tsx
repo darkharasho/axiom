@@ -74,10 +74,27 @@ export function AppRow({ state, onAction, onInfo }: Props) {
     }
     if (id === 'axitools') {
       return (
-        <button onClick={() => onAction('invite', id)} style={btnStyle('invite')}>
-          <ExternalLink size={11} />
-          Invite
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button
+            onClick={() => onInfo(id)}
+            title="Learn more"
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-faint)',
+              cursor: 'pointer',
+              padding: 2,
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <HelpCircle size={14} />
+          </button>
+          <button onClick={() => onAction('invite', id)} style={btnStyle('invite')}>
+            <ExternalLink size={11} />
+            Invite
+          </button>
+        </div>
       )
     }
     if (hasUpdate) {
