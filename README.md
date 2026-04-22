@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/darkharasho/axiom/releases/latest"><img src="https://img.shields.io/github/v/release/darkharasho/axiom?style=flat-square&color=c89850" alt="Latest Release" /></a>
-  <a href="https://github.com/darkharasho/axiom/blob/main/LICENSE"><img src="https://img.shields.io/github/license/darkharasho/axiom?style=flat-square" alt="License" /></a>
+  <a href="https://github.com/darkharasho/axiom/blob/master/LICENSE"><img src="https://img.shields.io/github/license/darkharasho/axiom?style=flat-square" alt="License" /></a>
   <a href="https://github.com/darkharasho/axiom/releases"><img src="https://img.shields.io/github/downloads/darkharasho/axiom/total?style=flat-square&color=c89850" alt="Downloads" /></a>
 </p>
 
@@ -108,4 +108,4 @@ npm run build     # Production build + package
 
 ## License
 
-MIT
+GPL-3.0
