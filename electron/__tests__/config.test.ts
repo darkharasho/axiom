@@ -26,7 +26,7 @@ describe('config', () => {
 
   it('writes and reads back a config', async () => {
     const { readConfig, writeConfig } = await import('../config')
-    writeConfig({ autoStart: true, axitoolsInviteUrl: 'https://discord.gg/test', apps: readConfig().apps })
+    writeConfig({ autoStart: true, axitoolsInviteUrl: 'https://discord.gg/test', notifyOnUpdates: false, apps: readConfig().apps })
     const cfg = readConfig()
     expect(cfg.autoStart).toBe(true)
     expect(cfg.axitoolsInviteUrl).toBe('https://discord.gg/test')

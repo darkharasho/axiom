@@ -1,4 +1,4 @@
-import { ipcMain, shell, app } from 'electron'
+import { ipcMain, shell, app, Notification } from 'electron'
 import type { BrowserWindow } from 'electron'
 import type { AppId, InstallableAppId, AppState } from './shared/types'
 import { APP_META, isInstallable } from './apps'
@@ -14,6 +14,51 @@ import { installWindows, installLinux, updateLinux, uninstallWindows, uninstallL
 import { setAutoStart, getAutoStart } from './autostart'
 
 let appStates: Record<AppId, AppState> = buildInitialStates()
+let lastCheckTime = 0
+
+export function getLastCheckTime(): number { return lastCheckTime }
+
+export async function runCheckUpdates(win: BrowserWindow): Promise<void> {
+  const before = { ...appStates }
+  for (const [id, meta] of Object.entries(APP_META)) {
+    const appId = id as AppId
+    if (!isInstallable(meta)) continue
+    setState(win, appId, { status: 'checking' })
+    const platform = process.platform === 'win32' ? 'win' : 'linux'
+    const pattern = meta.assetPattern[platform]
+    const release = await fetchLatestRelease(meta.repo, pattern)
+    const detected = await detectInstalledVersion(meta.name, meta.configDir)
+    const cfg = readConfig()
+    const stored = cfg.apps[appId as InstallableAppId]?.installedVersion ?? null
+    const installedVersion = detected === 'installed' ? stored : detected
+    if (detected !== 'installed') setInstalledVersion(appId as InstallableAppId, installedVersion)
+    setState(win, appId, {
+      status: 'idle',
+      installedVersion,
+      latestVersion: release?.version ?? null,
+      downloadUrl: release?.downloadUrl ?? null,
+    })
+  }
+  lastCheckTime = Date.now()
+
+  // Send notifications for newly discovered updates
+  const cfg = readConfig()
+  if (cfg.notifyOnUpdates && Notification.isSupported()) {
+    for (const [id] of Object.entries(APP_META)) {
+      const appId = id as AppId
+      const prev = before[appId]
+      const curr = appStates[appId]
+      const hadUpdate = prev?.installedVersion && prev?.latestVersion && prev.installedVersion !== prev.latestVersion
+      const hasUpdate = curr?.installedVersion && curr?.latestVersion && curr.installedVersion !== curr.latestVersion
+      if (!hadUpdate && hasUpdate) {
+        new Notification({
+          title: 'AxiOM — Update Available',
+          body: `${curr.id} ${curr.latestVersion} is available`,
+        }).show()
+      }
+    }
+  }
+}
 
 function buildInitialStates(): Record<AppId, AppState> {
   const cfg = readConfig()
@@ -58,28 +103,7 @@ export function registerIpcHandlers(win: BrowserWindow): void {
     patchConfig({ autoStart: enabled })
   })
 
-  ipcMain.handle('axiom:check-updates', async () => {
-    for (const [id, meta] of Object.entries(APP_META)) {
-      const appId = id as AppId
-      if (!isInstallable(meta)) continue
-      setState(win, appId, { status: 'checking' })
-      const platform = process.platform === 'win32' ? 'win' : 'linux'
-      const pattern = meta.assetPattern[platform]
-      const release = await fetchLatestRelease(meta.repo, pattern)
-      const detected = await detectInstalledVersion(meta.name, meta.configDir)
-      // 'installed' means file found but no version in filename — keep stored version
-      const cfg = readConfig()
-      const stored = cfg.apps[appId as InstallableAppId]?.installedVersion ?? null
-      const installedVersion = detected === 'installed' ? stored : detected
-      if (detected !== 'installed') setInstalledVersion(appId as InstallableAppId, installedVersion)
-      setState(win, appId, {
-        status: 'idle',
-        installedVersion,
-        latestVersion: release?.version ?? null,
-        downloadUrl: release?.downloadUrl ?? null,
-      })
-    }
-  })
+  ipcMain.handle('axiom:check-updates', () => runCheckUpdates(win))
 
   ipcMain.handle('axiom:install', async (_e, appId: InstallableAppId) => {
     const meta = APP_META[appId]

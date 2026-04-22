@@ -9,9 +9,12 @@ if (process.platform === 'linux') {
   app.commandLine.appendSwitch('ozone-platform', 'x11')
 }
 import { createPopupWindow, showWindowNearTray } from './window'
-import { registerIpcHandlers } from './ipc-handlers'
+import { registerIpcHandlers, runCheckUpdates, getLastCheckTime } from './ipc-handlers'
 import { readConfig } from './config'
 import { setAutoStart } from './autostart'
+
+const CHECK_INTERVAL_MS = 30 * 60 * 1000  // 30 minutes
+const TRAY_RECHECK_MS   =  5 * 60 * 1000  //  5 minutes
 import type { BrowserWindow } from 'electron'
 
 let tray: Tray | null = null
@@ -37,6 +40,9 @@ app.whenReady().then(() => {
       win.hide()
     } else {
       showWindowNearTray(win, position)
+      if (Date.now() - getLastCheckTime() > TRAY_RECHECK_MS) {
+        runCheckUpdates(win)
+      }
     }
   })
 
@@ -44,8 +50,10 @@ app.whenReady().then(() => {
   setAutoStart(cfg.autoStart)
 
   win.webContents.once('did-finish-load', () => {
-    win?.webContents.send('axiom:request-check-updates')
+    runCheckUpdates(win!)
   })
+
+  setInterval(() => { if (win) runCheckUpdates(win) }, CHECK_INTERVAL_MS)
 
   if (app.isPackaged) {
     autoUpdater.logger = log

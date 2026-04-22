@@ -79,6 +79,18 @@ export function SettingsView({ onBack }: Props) {
         />
       </div>
 
+      {/* Update notifications */}
+      <div style={row}>
+        <label style={label} htmlFor="notify-updates">Notify on updates</label>
+        <input
+          id="notify-updates"
+          type="checkbox"
+          checked={config.notifyOnUpdates ?? false}
+          onChange={e => updateConfig({ notifyOnUpdates: e.target.checked })}
+          style={{ accentColor: 'var(--gold)', width: 15, height: 15, cursor: 'pointer' }}
+        />
+      </div>
+
       {/* AxiTools invite URL */}
       <div style={{ ...row, flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
         <span style={label}>AxiTools Discord Invite URL</span>

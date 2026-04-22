@@ -4,6 +4,7 @@ import type { Config } from '@shared/types'
 const EMPTY_CONFIG: Config = {
   autoStart: false,
   axitoolsInviteUrl: '',
+  notifyOnUpdates: false,
   apps: {
     axibridge: { installedVersion: null, lastChecked: null },
     axiforge:  { installedVersion: null, lastChecked: null },

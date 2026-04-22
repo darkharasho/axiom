@@ -8,8 +8,7 @@ export function useAppStates() {
   useEffect(() => {
     window.axiom.getStates().then(setStates)
     const unsub = window.axiom.onStatesUpdated(setStates)
-    const unsubCheck = window.axiom.onRequestCheckUpdates(() => checkUpdates())
-    return () => { unsub(); unsubCheck() }
+    return () => { unsub() }
   }, [])
 
   const checkUpdates = useCallback(async () => {
