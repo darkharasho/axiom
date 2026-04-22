@@ -20,8 +20,10 @@ export function AppList({ states, checking, onOpenSettings, onCheckUpdates }: Pr
         window.axiom.launch(appId)
         break
       case 'install':
-      case 'update':
         window.axiom.install(appId as InstallableAppId)
+        break
+      case 'update':
+        window.axiom.launch(appId)
         break
       case 'uninstall':
         window.axiom.uninstall(appId as InstallableAppId)
