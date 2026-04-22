@@ -23,12 +23,12 @@ app.whenReady().then(() => {
   win = createPopupWindow()
   registerIpcHandlers(win)
 
-  tray.on('click', () => {
+  tray.on('click', (_event, _bounds, position) => {
     if (!win) return
     if (win.isVisible()) {
       win.hide()
     } else {
-      showWindowNearTray(win, tray!)
+      showWindowNearTray(win, position)
     }
   })
 
