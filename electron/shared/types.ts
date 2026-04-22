@@ -34,7 +34,6 @@ export interface ConfigApp {
 
 export interface Config {
   autoStart: boolean
-  axitoolsInviteUrl: string
   notifyOnUpdates: boolean
   apps: Record<InstallableAppId, ConfigApp>
 }
@@ -46,7 +45,6 @@ export interface ReleaseInfo {
 
 export const DEFAULT_CONFIG: Config = {
   autoStart: false,
-  axitoolsInviteUrl: '',
   notifyOnUpdates: false,
   apps: {
     axibridge: { installedVersion: null, lastChecked: null },

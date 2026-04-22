@@ -6,7 +6,7 @@ vi.stubGlobal('axiom', {
   getStates: vi.fn().mockResolvedValue([]),
   getConfig: vi.fn().mockResolvedValue({
     autoStart: false,
-    axitoolsInviteUrl: '',
+    notifyOnUpdates: false,
     apps: {
       axibridge: { installedVersion: null, lastChecked: null },
       axiforge: { installedVersion: null, lastChecked: null },

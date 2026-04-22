@@ -22,10 +22,6 @@ export function SettingsView({ onBack }: Props) {
     await window.axiom.setAutoStart(enabled)
   }
 
-  const handleInviteUrl = (e: React.ChangeEvent<HTMLInputElement>) => {
-    updateConfig({ axitoolsInviteUrl: e.target.value })
-  }
-
   const row: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
@@ -88,27 +84,6 @@ export function SettingsView({ onBack }: Props) {
           checked={config.notifyOnUpdates ?? false}
           onChange={e => updateConfig({ notifyOnUpdates: e.target.checked })}
           style={{ accentColor: 'var(--gold)', width: 15, height: 15, cursor: 'pointer' }}
-        />
-      </div>
-
-      {/* AxiTools invite URL */}
-      <div style={{ ...row, flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
-        <span style={label}>AxiTools Discord Invite URL</span>
-        <input
-          type="text"
-          value={config.axitoolsInviteUrl}
-          onChange={handleInviteUrl}
-          placeholder="https://discord.gg/..."
-          style={{
-            width: '100%',
-            background: '#0a0b0e',
-            border: '1px solid var(--border)',
-            borderRadius: 4,
-            padding: '6px 8px',
-            color: 'var(--text)',
-            fontSize: 11,
-            outline: 'none',
-          }}
         />
       </div>
 

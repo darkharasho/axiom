@@ -140,10 +140,11 @@ export function registerIpcHandlers(win: BrowserWindow): void {
     }
   })
 
+  const AXITOOLS_INVITE_URL = 'https://discord.com/oauth2/authorize?client_id=1433732142629912626&permissions=8&integration_type=0&scope=bot'
+
   ipcMain.handle('axiom:launch', async (_e, appId: AppId) => {
     if (appId === 'axitools') {
-      const cfg = readConfig()
-      if (cfg.axitoolsInviteUrl) shell.openExternal(cfg.axitoolsInviteUrl)
+      shell.openExternal(AXITOOLS_INVITE_URL)
       return
     }
     const meta = APP_META[appId]
