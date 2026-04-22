@@ -109,7 +109,7 @@ export function AppRow({ state, onAction, onInfo, onRetry }: Props) {
     }
     if (hasUpdate) {
       return (
-        <button onClick={() => onAction('update', id)} style={btnStyle('update')}>
+        <button className="btn-gold" onClick={() => onAction('update', id)} style={btnStyle('update')}>
           <ArrowUp size={11} />
           Update
         </button>
@@ -144,7 +144,7 @@ export function AppRow({ state, onAction, onInfo, onRetry }: Props) {
     }
     if (installedVersion) {
       return (
-        <button onClick={() => onAction('launch', id)} style={btnStyle('launch')}>
+        <button className="btn-gold" onClick={() => onAction('launch', id)} style={btnStyle('launch')}>
           <Play size={11} fill="currentColor" />
           Launch
         </button>

@@ -76,6 +76,7 @@ export function AppInfoView({ appId, onBack, downloadUrl, onInstall }: Props) {
       {downloadUrl && onInstall && (
         <div style={{ paddingTop: 10, borderTop: '1px solid var(--border)' }}>
           <button
+            className="btn-gold"
             onClick={onInstall}
             style={{
               width: '100%',
