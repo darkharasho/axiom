@@ -41,6 +41,20 @@ contextBridge.exposeInMainWorld('axiom', {
   getVersion: (): Promise<string> =>
     ipcRenderer.invoke('axiom:get-version'),
 
+  openExternal: (url: string): Promise<void> =>
+    ipcRenderer.invoke('axiom:open-external', url),
+
+  checkSelfUpdate: (): Promise<void> =>
+    ipcRenderer.invoke('axiom:check-self-update'),
+
+  installSelfUpdate: (): Promise<void> =>
+    ipcRenderer.invoke('axiom:install-self-update'),
+
+  onSelfUpdateStatus: (cb: (data: { status: string; version?: string; error?: string }) => void) => {
+    ipcRenderer.on('axiom:self-update-status', (_e, data) => cb(data))
+    return () => ipcRenderer.removeAllListeners('axiom:self-update-status')
+  },
+
   quit: (): void => ipcRenderer.send('axiom:quit'),
 
   onStatesUpdated: (cb: (states: AppState[]) => void) => {

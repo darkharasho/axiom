@@ -1,4 +1,5 @@
 import { ipcMain, shell, app, Notification } from 'electron'
+import { autoUpdater } from 'electron-updater'
 import type { BrowserWindow } from 'electron'
 import type { AppId, InstallableAppId, AppState } from './shared/types'
 import { APP_META, isInstallable } from './apps'
@@ -259,6 +260,33 @@ export function registerIpcHandlers(win: BrowserWindow): void {
 
   ipcMain.handle('axiom:open-gear-lever-flathub', () => {
     shell.openExternal('https://flathub.org/apps/it.mijorus.gearlever')
+  })
+
+  ipcMain.handle('axiom:open-external', (_e, url: string) => {
+    shell.openExternal(url)
+  })
+
+  type SelfUpdateStatus = 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'ready' | 'error'
+  const pushSelfUpdate = (status: SelfUpdateStatus, extra?: { version?: string; error?: string }) =>
+    win.webContents.send('axiom:self-update-status', { status, ...extra })
+
+  autoUpdater.on('checking-for-update',  ()     => pushSelfUpdate('checking'))
+  autoUpdater.on('update-available',     (info) => pushSelfUpdate('available',     { version: info.version }))
+  autoUpdater.on('update-not-available', ()     => pushSelfUpdate('not-available'))
+  autoUpdater.on('download-progress',    ()     => pushSelfUpdate('downloading'))
+  autoUpdater.on('update-downloaded',    (info) => pushSelfUpdate('ready',         { version: info.version }))
+  autoUpdater.on('error',                (err)  => pushSelfUpdate('error',         { error: err.message }))
+
+  ipcMain.handle('axiom:check-self-update', () => {
+    if (app.isPackaged) {
+      autoUpdater.checkForUpdates()
+    } else {
+      pushSelfUpdate('not-available')
+    }
+  })
+
+  ipcMain.handle('axiom:install-self-update', () => {
+    autoUpdater.quitAndInstall()
   })
 
   ipcMain.handle('axiom:browse-files', async (_e, appId: InstallableAppId) => {

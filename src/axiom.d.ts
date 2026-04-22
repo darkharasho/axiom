@@ -16,6 +16,10 @@ declare global {
       installGearLever: (appId: InstallableAppId) => Promise<void>
       openGearLeverFlathub: () => Promise<void>
       getVersion: () => Promise<string>
+      openExternal: (url: string) => Promise<void>
+      checkSelfUpdate: () => Promise<void>
+      installSelfUpdate: () => Promise<void>
+      onSelfUpdateStatus: (cb: (data: { status: string; version?: string; error?: string }) => void) => () => void
       quit: () => void
       onStatesUpdated: (cb: (states: AppState[]) => void) => () => void
       onRequestCheckUpdates: (cb: () => void) => () => void
