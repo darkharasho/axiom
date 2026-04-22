@@ -4,6 +4,7 @@ import path from 'path'
 import os from 'os'
 
 export async function detectInstalledVersion(appName: string, configDir?: string): Promise<string | null> {
+  if (process.env.AXIOM_FAKE_NO_INSTALLS) return null
   if (process.platform === 'win32') return detectWindows(appName)
   if (process.platform === 'linux') return detectLinux(appName, configDir)
   return null
