@@ -135,7 +135,13 @@ export function registerIpcHandlers(win: BrowserWindow): void {
       const desktopFile = pathMod.join(os.homedir(), '.local', 'share', 'applications', `${appId}.desktop`)
       const fs = await import('fs')
       if (fs.existsSync(desktopFile)) {
-        spawn('gtk-launch', [appId], { detached: true, stdio: 'ignore' }).unref()
+        // Strip X11-forcing env vars so Wayland apps aren't broken by AxiOM's XWayland context
+        const env = { ...process.env }
+        delete env['GDK_BACKEND']
+        delete env['QT_QPA_PLATFORM']
+        delete env['ELECTRON_OZONE_PLATFORM_HINT']
+        delete env['OZONE_PLATFORM']
+        spawn('gtk-launch', [appId], { detached: true, stdio: 'ignore', env }).unref()
         return
       }
       // Fallback: spawn AppImage directly
