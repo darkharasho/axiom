@@ -49,7 +49,7 @@ export function AppList({ states, checking, onOpenSettings, onCheckUpdates, onOp
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: 14 }}>
+    <div className="view-enter" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: 14 }}>
       {/* Header */}
       <div style={{
         display: 'flex',
@@ -66,6 +66,7 @@ export function AppList({ states, checking, onOpenSettings, onCheckUpdates, onOp
         </span>
         <button
           onClick={onOpenSettings}
+          className="icon-btn"
           style={{
             marginLeft: 'auto',
             background: 'none',

@@ -11,7 +11,7 @@ interface Props {
 
 export function AppInfoView({ appId, onBack, downloadUrl, onInstall }: Props) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: 14 }}>
+    <div className="view-enter" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: 14 }}>
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -23,6 +23,7 @@ export function AppInfoView({ appId, onBack, downloadUrl, onInstall }: Props) {
         <button
           onClick={onBack}
           aria-label="Back"
+          className="icon-btn"
           style={{
             background: 'none',
             color: 'var(--text-dim)',

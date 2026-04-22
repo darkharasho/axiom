@@ -28,7 +28,7 @@ export function SettingsView({ onBack }: Props) {
   const label: React.CSSProperties = { color: 'var(--text-light)', fontSize: 12 }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: 14 }}>
+    <div className="view-enter" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: 14 }}>
       {/* Header */}
       <div style={{
         display: 'flex',
@@ -41,6 +41,7 @@ export function SettingsView({ onBack }: Props) {
         <button
           onClick={onBack}
           aria-label="Back"
+          className="icon-btn"
           style={{
             background: 'none',
             color: 'var(--text-dim)',
