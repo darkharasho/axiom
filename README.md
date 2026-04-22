@@ -26,23 +26,23 @@ Open AxiOM. Click Launch. Done.
 
 ## Supported Apps
 
-## <img src="https://raw.githubusercontent.com/darkharasho/axibridge/main/public/img/AxiBridge-white.png" width="22" valign="middle" /> [AxiBridge](https://github.com/darkharasho/axibridge) [![Downloads](https://img.shields.io/github/downloads/darkharasho/axibridge/total?style=flat-square&color=c89850&label=downloads)](https://github.com/darkharasho/axibridge/releases)
+<h2><img src="https://raw.githubusercontent.com/darkharasho/axibridge/main/public/img/AxiBridge-white.png" width="22" valign="middle" /> <a href="https://github.com/darkharasho/axibridge">AxiBridge</a><a href="https://github.com/darkharasho/axibridge/releases"><img src="https://img.shields.io/github/downloads/darkharasho/axibridge/total?style=flat-square&color=c89850&label=downloads" align="right" /></a></h2>
 
 Watches your arcdps log folder and posts per-fight Discord embeds as fights happen, plus an aggregated stats view across all fights.
 
-## <img src="https://raw.githubusercontent.com/darkharasho/axiforge/main/public/img/AxiForge-White.png" width="22" valign="middle" /> [AxiForge](https://github.com/darkharasho/axiforge) [![Downloads](https://img.shields.io/github/downloads/darkharasho/axiforge/total?style=flat-square&color=c89850&label=downloads)](https://github.com/darkharasho/axiforge/releases)
+<h2><img src="https://raw.githubusercontent.com/darkharasho/axiforge/main/public/img/AxiForge-White.png" width="22" valign="middle" /> <a href="https://github.com/darkharasho/axiforge">AxiForge</a><a href="https://github.com/darkharasho/axiforge/releases"><img src="https://img.shields.io/github/downloads/darkharasho/axiforge/total?style=flat-square&color=c89850&label=downloads" align="right" /></a></h2>
 
 Build and comp manager for GW2 squads. Create, edit, and publish builds and compositions to a GitHub Pages site you own and control.
 
-## <img src="https://raw.githubusercontent.com/darkharasho/axipulse/main/public/img/axipulse-white.png" width="22" valign="middle" /> [AxiPulse](https://github.com/darkharasho/axipulse) [![Downloads](https://img.shields.io/github/downloads/darkharasho/axipulse/total?style=flat-square&color=c89850&label=downloads)](https://github.com/darkharasho/axipulse/releases)
+<h2><img src="https://raw.githubusercontent.com/darkharasho/axipulse/main/public/img/axipulse-white.png" width="22" valign="middle" /> <a href="https://github.com/darkharasho/axipulse">AxiPulse</a><a href="https://github.com/darkharasho/axipulse/releases"><img src="https://img.shields.io/github/downloads/darkharasho/axipulse/total?style=flat-square&color=c89850&label=downloads" align="right" /></a></h2>
 
 Parses your arcdps logs locally with Elite Insights and shows your personal combat breakdown — damage, timelines, and performance history.
 
-## <img src="https://raw.githubusercontent.com/darkharasho/axiam/main/public/img/AxiAM.png" width="22" valign="middle" /> [AxiAM](https://github.com/darkharasho/axiam) [![Downloads](https://img.shields.io/github/downloads/darkharasho/axiam/total?style=flat-square&color=c89850&label=downloads)](https://github.com/darkharasho/axiam/releases)
+<h2><img src="https://raw.githubusercontent.com/darkharasho/axiam/main/public/img/AxiAM.png" width="22" valign="middle" /> <a href="https://github.com/darkharasho/axiam">AxiAM</a><a href="https://github.com/darkharasho/axiam/releases"><img src="https://img.shields.io/github/downloads/darkharasho/axiam/total?style=flat-square&color=c89850&label=downloads" align="right" /></a></h2>
 
 Secure account launcher. Stores encrypted GW2 credentials, manages multiple accounts, and launches them through Steam with custom arguments.
 
-## <img src="https://raw.githubusercontent.com/darkharasho/axitools/main/media/AxiTools-White.png" width="22" valign="middle" /> [AxiTools](https://github.com/darkharasho/axitools)
+<h2><img src="https://raw.githubusercontent.com/darkharasho/axitools/main/media/AxiTools-White.png" width="22" valign="middle" /> <a href="https://github.com/darkharasho/axitools">AxiTools</a></h2>
 
 Discord bot for GW2 communities — build sharing, RSS feeds, patch note alerts, and scheduled squad signups with per-guild isolated storage.
 
