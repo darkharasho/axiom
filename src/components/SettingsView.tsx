@@ -7,14 +7,14 @@ interface Props {
   onBack: () => void
 }
 
+let _cachedVersion = ''
+
 export function SettingsView({ onBack }: Props) {
   const { config, updateConfig } = useConfig()
-  const [autoStart, setAutoStartLocal] = useState(false)
-  const [version, setVersion] = useState('')
+  const [version, setVersion] = useState(_cachedVersion)
 
   useEffect(() => {
-    window.axiom.getAutoStart().then(setAutoStartLocal)
-    window.axiom.getVersion().then(setVersion)
+    window.axiom.getVersion().then(v => { _cachedVersion = v; setVersion(v) })
   }, [])
 
   const row: React.CSSProperties = {
@@ -62,8 +62,11 @@ export function SettingsView({ onBack }: Props) {
         <span style={label}>Auto-start on login</span>
         <Toggle
           id="auto-start"
-          checked={autoStart}
-          onChange={enabled => { setAutoStartLocal(enabled); window.axiom.setAutoStart(enabled) }}
+          checked={config.autoStart}
+          onChange={enabled => {
+            updateConfig({ autoStart: enabled })
+            window.axiom.setAutoStart(enabled)
+          }}
         />
       </div>
 
