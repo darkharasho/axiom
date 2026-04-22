@@ -1,5 +1,6 @@
-import { app, Tray, nativeImage } from 'electron'
+import { app, Tray, nativeImage, nativeTheme } from 'electron'
 import path from 'path'
+import { execSync } from 'child_process'
 import { autoUpdater } from 'electron-updater'
 import log from 'electron-log'
 
@@ -20,14 +21,50 @@ import type { BrowserWindow } from 'electron'
 let tray: Tray | null = null
 let win: BrowserWindow | null = null
 
+function isWindowsTaskbarDark(): boolean {
+  try {
+    const out = execSync(
+      'reg query "HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize" /v SystemUsesLightTheme',
+      { encoding: 'utf8', windowsHide: true, timeout: 2000 },
+    )
+    const match = out.match(/SystemUsesLightTheme\s+REG_DWORD\s+0x([0-9a-fA-F]+)/)
+    return match ? parseInt(match[1], 16) === 0 : nativeTheme.shouldUseDarkColors
+  } catch {
+    return nativeTheme.shouldUseDarkColors
+  }
+}
+
+function getIconPath(): string {
+  let variant: string
+  if (process.platform === 'linux') {
+    variant = 'white'
+  } else if (process.platform === 'win32') {
+    variant = isWindowsTaskbarDark() ? 'white' : 'black'
+  } else {
+    variant = nativeTheme.shouldUseDarkColors ? 'white' : 'black'
+  }
+  return path.join(__dirname, `../public/AxiOM-${variant === 'white' ? 'White' : 'Black'}.png`)
+}
+
+function getAppIcon() {
+  const raw = nativeImage.createFromPath(getIconPath())
+  if (process.platform === 'win32') {
+    const sizes = [16, 32, 48, 64, 128, 256]
+    const multi = nativeImage.createEmpty()
+    for (const s of sizes) {
+      multi.addRepresentation({ width: s, height: s, buffer: raw.resize({ width: s, height: s }).toPNG(), scaleFactor: 1.0 })
+    }
+    return multi
+  }
+  return raw
+}
+
 app.on('window-all-closed', () => {
   // Intentionally do nothing — keep the app running as a tray app
 })
 
 app.whenReady().then(() => {
-  const iconPath = path.join(__dirname, '../public/AxiOM-White.png')
-  const icon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 })
-  tray = new Tray(icon)
+  tray = new Tray(getAppIcon().resize({ width: 16, height: 16 }))
   tray.setToolTip('AxiOM')
   tray.setContextMenu(null)
 
@@ -54,6 +91,10 @@ app.whenReady().then(() => {
   })
 
   setInterval(() => { if (win) runCheckUpdates(win) }, CHECK_INTERVAL_MS)
+
+  nativeTheme.on('updated', () => {
+    tray?.setImage(getAppIcon().resize({ width: 16, height: 16 }))
+  })
 
   if (app.isPackaged) {
     autoUpdater.logger = log
