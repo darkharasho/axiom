@@ -6,7 +6,7 @@ interface Props {
 
 export function ProgressBar({ progress }: Props) {
   const pct = Math.min(100, Math.round(progress.percent))
-  const mb = (b: number) => (b / 1024 / 1024).toFixed(1)
+  const mb = (b: number) => (b / 1000 / 1000).toFixed(1)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 90 }}>
