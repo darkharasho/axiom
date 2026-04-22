@@ -1,13 +1,15 @@
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, Download } from 'lucide-react'
 import type { AppId } from '@shared/types'
 import { APP_ICONS, APP_NAMES, APP_BLURBS } from '../lib/appMeta'
 
 interface Props {
   appId: AppId
   onBack: () => void
+  downloadUrl?: string
+  onInstall?: () => void
 }
 
-export function AppInfoView({ appId, onBack }: Props) {
+export function AppInfoView({ appId, onBack, downloadUrl, onInstall }: Props) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: 14 }}>
       <div style={{
@@ -70,6 +72,31 @@ export function AppInfoView({ appId, onBack }: Props) {
           {APP_BLURBS[appId]}
         </p>
       </div>
+      {downloadUrl && onInstall && (
+        <div style={{ paddingTop: 10, borderTop: '1px solid var(--border)' }}>
+          <button
+            onClick={onInstall}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid #2e2f36',
+              borderRadius: 4,
+              color: 'var(--text-light)',
+              fontSize: 11,
+              padding: '7px 0',
+              cursor: 'pointer',
+              fontFamily: 'var(--font-ui)',
+            }}
+          >
+            <Download size={12} />
+            Install
+          </button>
+        </div>
+      )}
     </div>
   )
 }

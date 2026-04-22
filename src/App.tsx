@@ -3,7 +3,7 @@ import { AppList } from './components/AppList'
 import { SettingsView } from './components/SettingsView'
 import { AppInfoView } from './components/AppInfoView'
 import { useAppStates } from './hooks/useAppStates'
-import type { AppId } from '@shared/types'
+import type { AppId, InstallableAppId } from '@shared/types'
 
 type View = 'list' | 'settings' | 'info'
 
@@ -27,7 +27,12 @@ export default function App() {
         <SettingsView onBack={() => setView('list')} />
       )}
       {view === 'info' && infoAppId && (
-        <AppInfoView appId={infoAppId} onBack={() => setView('list')} />
+        <AppInfoView
+          appId={infoAppId}
+          onBack={() => setView('list')}
+          downloadUrl={states.find(s => s.id === infoAppId)?.downloadUrl ?? undefined}
+          onInstall={states.find(s => s.id === infoAppId)?.downloadUrl ? () => window.axiom.install(infoAppId as InstallableAppId) : undefined}
+        />
       )}
     </div>
   )
