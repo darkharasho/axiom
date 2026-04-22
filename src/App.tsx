@@ -12,6 +12,8 @@ export default function App() {
   const [infoAppId, setInfoAppId] = useState<AppId | null>(null)
   const { states, checking, checkUpdates } = useAppStates()
 
+  const infoState = infoAppId ? states.find(s => s.id === infoAppId) : undefined
+
   return (
     <div style={{ width: '100%', height: '100%', background: 'var(--bg)' }}>
       {view === 'list' && (
@@ -30,8 +32,8 @@ export default function App() {
         <AppInfoView
           appId={infoAppId}
           onBack={() => setView('list')}
-          downloadUrl={states.find(s => s.id === infoAppId)?.downloadUrl ?? undefined}
-          onInstall={states.find(s => s.id === infoAppId)?.downloadUrl ? () => window.axiom.install(infoAppId as InstallableAppId) : undefined}
+          downloadUrl={infoState?.downloadUrl ?? undefined}
+          onInstall={infoState?.downloadUrl ? () => window.axiom.install(infoAppId as InstallableAppId) : undefined}
         />
       )}
     </div>
