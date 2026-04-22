@@ -50,17 +50,24 @@ function detectLinux(appName: string): string | null {
     } catch { /* ignore */ }
   }
 
-  // Fallback: scan ~/Applications/ for AppImage filename containing version
-  const appsDir = path.join(os.homedir(), 'Applications')
-  try {
-    const files = fs.readdirSync(appsDir)
-    for (const file of files) {
-      if (!file.toLowerCase().includes(appName.toLowerCase())) continue
-      // Match version pattern like 2.5.11 in filename
-      const match = file.match(/(\d+\.\d+\.\d+(?:\.\d+)?)/)
-      if (match) return match[1]
-    }
-  } catch { /* ignore */ }
+  // Scan common AppImage locations
+  const searchDirs = [
+    path.join(os.homedir(), 'Applications'),
+    path.join(os.homedir(), 'Downloads'),
+    path.join(os.homedir(), '.local', 'bin'),
+    os.homedir(),
+  ]
+  for (const dir of searchDirs) {
+    try {
+      const files = fs.readdirSync(dir)
+      for (const file of files) {
+        if (!file.endsWith('.AppImage')) continue
+        if (!file.toLowerCase().includes(appName.toLowerCase())) continue
+        const match = file.match(/(\d+\.\d+\.\d+(?:\.\d+)?)/)
+        if (match) return match[1]
+      }
+    } catch { /* ignore */ }
+  }
 
   return null
 }

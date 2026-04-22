@@ -118,12 +118,19 @@ export function registerIpcHandlers(win: BrowserWindow): void {
       const fs = await import('fs')
       const os = await import('os')
       const pathMod = await import('path')
-      try {
-        const appsDir = pathMod.join(os.homedir(), 'Applications')
-        const files = fs.readdirSync(appsDir)
-        const appImage = files.find(f => f.toLowerCase().includes(meta.name.toLowerCase()) && f.endsWith('.AppImage'))
-        if (appImage) await shell.openPath(pathMod.join(appsDir, appImage))
-      } catch { /* ignore */ }
+      const searchDirs = [
+        pathMod.join(os.homedir(), 'Applications'),
+        pathMod.join(os.homedir(), 'Downloads'),
+        pathMod.join(os.homedir(), '.local', 'bin'),
+        os.homedir(),
+      ]
+      for (const dir of searchDirs) {
+        try {
+          const files = fs.readdirSync(dir)
+          const appImage = files.find(f => f.endsWith('.AppImage') && f.toLowerCase().includes(meta.name.toLowerCase()))
+          if (appImage) { await shell.openPath(pathMod.join(dir, appImage)); break }
+        } catch { /* ignore */ }
+      }
     } else {
       const { execSync } = await import('child_process')
       try {
@@ -149,10 +156,19 @@ export function registerIpcHandlers(win: BrowserWindow): void {
         const fs = await import('fs')
         const os = await import('os')
         const pathMod = await import('path')
-        const appsDir = pathMod.join(os.homedir(), 'Applications')
-        const files = fs.readdirSync(appsDir)
-        const appImage = files.find(f => f.toLowerCase().includes(meta.name.toLowerCase()))
-        if (appImage) uninstallLinux(pathMod.join(appsDir, appImage))
+        const searchDirs = [
+          pathMod.join(os.homedir(), 'Applications'),
+          pathMod.join(os.homedir(), 'Downloads'),
+          pathMod.join(os.homedir(), '.local', 'bin'),
+          os.homedir(),
+        ]
+        for (const dir of searchDirs) {
+          try {
+            const files = fs.readdirSync(dir)
+            const appImage = files.find(f => f.endsWith('.AppImage') && f.toLowerCase().includes(meta.name.toLowerCase()))
+            if (appImage) { uninstallLinux(pathMod.join(dir, appImage)); break }
+          } catch { /* ignore */ }
+        }
       }
       setInstalledVersion(appId, null)
       setState(win, appId, { status: 'idle', installedVersion: null })
