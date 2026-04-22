@@ -4,3 +4,4 @@ dist-electron/
 dist_out/
 .superpowers/
 *.log
+.env
