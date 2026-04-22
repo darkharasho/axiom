@@ -13,6 +13,7 @@ export function createPopupWindow(): BrowserWindow {
     skipTaskbar: true,
     alwaysOnTop: true,
     transparent: false,
+    ...(process.platform === 'linux' && { type: 'toolbar' }),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
