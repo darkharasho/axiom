@@ -10,6 +10,7 @@ interface InstallableAppMeta {
   name: string
   repo: string
   assetPattern: AssetPattern
+  configDir: string  // directory name under ~/.config/ where axiom-version is written
 }
 
 interface AxiToolsMeta {
@@ -25,6 +26,7 @@ export const APP_META: Record<AppId, AppMeta> = {
     id: 'axibridge',
     name: 'AxiBridge',
     repo: 'darkharasho/axibridge',
+    configDir: 'AxiBridge',
     assetPattern: {
       win: /AxiBridge.*Setup.*\.exe$/i,
       linux: /AxiBridge.*\.AppImage$/i,
@@ -34,6 +36,7 @@ export const APP_META: Record<AppId, AppMeta> = {
     id: 'axiforge',
     name: 'AxiForge',
     repo: 'darkharasho/axiforge',
+    configDir: 'axiforge-desktop',
     assetPattern: {
       win: /AxiForge.*Setup.*\.exe$/i,
       linux: /AxiForge.*\.AppImage$/i,
@@ -43,6 +46,7 @@ export const APP_META: Record<AppId, AppMeta> = {
     id: 'axipulse',
     name: 'AxiPulse',
     repo: 'darkharasho/axipulse',
+    configDir: 'AxiPulse',
     assetPattern: {
       win: /AxiPulse.*Setup.*\.exe$/i,
       linux: /AxiPulse.*\.AppImage$/i,
@@ -52,6 +56,7 @@ export const APP_META: Record<AppId, AppMeta> = {
     id: 'axiam',
     name: 'AxiAM',
     repo: 'darkharasho/axiam',
+    configDir: 'AxiAM',
     assetPattern: {
       win: /AxiAM.*Setup.*\.exe$/i,
       linux: /AxiAM.*\.AppImage$/i,

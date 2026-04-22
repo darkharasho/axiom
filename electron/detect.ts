@@ -3,9 +3,9 @@ import * as fs from 'fs'
 import path from 'path'
 import os from 'os'
 
-export async function detectInstalledVersion(appName: string): Promise<string | null> {
+export async function detectInstalledVersion(appName: string, configDir?: string): Promise<string | null> {
   if (process.platform === 'win32') return detectWindows(appName)
-  if (process.platform === 'linux') return detectLinux(appName)
+  if (process.platform === 'linux') return detectLinux(appName, configDir)
   return null
 }
 
@@ -30,7 +30,16 @@ function detectWindows(appName: string): string | null {
   }
 }
 
-function detectLinux(appName: string): string | null {
+function detectLinux(appName: string, configDir?: string): string | null {
+  // Check axiom-version file written by the app on startup
+  if (configDir) {
+    const versionFile = path.join(os.homedir(), '.config', configDir, 'axiom-version')
+    try {
+      const version = fs.readFileSync(versionFile, 'utf-8').trim()
+      if (version) return version
+    } catch { /* not present yet */ }
+  }
+
   // Check Gear Lever metadata: ~/.local/share/gearlever/<uuid>/metadata.json
   const glDir = path.join(os.homedir(), '.local', 'share', 'gearlever')
   if (fs.existsSync(glDir)) {
