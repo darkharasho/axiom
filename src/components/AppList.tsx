@@ -8,7 +8,7 @@ interface Props {
   onCheckUpdates: () => void
 }
 
-const APP_ORDER: AppId[] = ['axibridge', 'axiforge', 'axipulse', 'axitools']
+const APP_ORDER: AppId[] = ['axibridge', 'axiforge', 'axipulse', 'axiam', 'axitools']
 
 export function AppList({ states, checking, onOpenSettings, onCheckUpdates }: Props) {
   const stateMap = Object.fromEntries(states.map(s => [s.id, s])) as Record<AppId, AppState>
