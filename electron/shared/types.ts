@@ -1,4 +1,4 @@
-export type AppId = 'axibridge' | 'axiforge' | 'axipulse' | 'axitools'
+export type AppId = 'axibridge' | 'axiforge' | 'axipulse' | 'axiam' | 'axitools'
 export type InstallableAppId = Exclude<AppId, 'axitools'>
 
 export interface DownloadProgress {
@@ -49,5 +49,6 @@ export const DEFAULT_CONFIG: Config = {
     axibridge: { installedVersion: null, lastChecked: null },
     axiforge:  { installedVersion: null, lastChecked: null },
     axipulse:  { installedVersion: null, lastChecked: null },
+    axiam:     { installedVersion: null, lastChecked: null },
   },
 }

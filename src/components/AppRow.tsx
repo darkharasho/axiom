@@ -7,6 +7,7 @@ const APP_ICONS: Record<AppId, string> = {
   axibridge: './svg/AxiBridge-white.svg',
   axiforge:  './svg/axiforge.svg',
   axipulse:  './svg/axipulse-white.svg',
+  axiam:     './svg/axiam.svg',
   axitools:  './svg/axitools-white.svg',
 }
 
@@ -14,6 +15,7 @@ const APP_NAMES: Record<AppId, string> = {
   axibridge: 'AxiBridge',
   axiforge:  'AxiForge',
   axipulse:  'AxiPulse',
+  axiam:     'AxiAM',
   axitools:  'AxiTools',
 }
 

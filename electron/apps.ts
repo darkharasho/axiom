@@ -48,6 +48,15 @@ export const APP_META: Record<AppId, AppMeta> = {
       linux: /AxiPulse.*\.AppImage$/i,
     },
   },
+  axiam: {
+    id: 'axiam',
+    name: 'AxiAM',
+    repo: 'darkharasho/axiam',
+    assetPattern: {
+      win: /AxiAM.*Setup.*\.exe$/i,
+      linux: /AxiAM.*\.AppImage$/i,
+    },
+  },
   axitools: {
     id: 'axitools',
     name: 'AxiTools',
