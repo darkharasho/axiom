@@ -37,14 +37,20 @@ export function createPopupWindow(): BrowserWindow {
 export function showWindowNearTray(win: BrowserWindow, tray: Tray): void {
   const trayBounds = tray.getBounds()
   const winBounds = win.getBounds()
-  const display = screen.getDisplayNearestPoint({ x: trayBounds.x, y: trayBounds.y })
+
+  // On Linux tray.getBounds() often returns {0,0,0,0} — fall back to cursor position
+  const anchor = (trayBounds.width === 0 && trayBounds.height === 0)
+    ? screen.getCursorScreenPoint()
+    : { x: trayBounds.x + trayBounds.width / 2, y: trayBounds.y + trayBounds.height / 2 }
+
+  const display = screen.getDisplayNearestPoint(anchor)
   const workArea = display.workArea
 
-  let x = Math.round(trayBounds.x + trayBounds.width / 2 - winBounds.width / 2)
-  // If tray is in the bottom half of screen, show window above it; otherwise below
-  const y = trayBounds.y > workArea.y + workArea.height / 2
-    ? trayBounds.y - winBounds.height
-    : trayBounds.y + trayBounds.height
+  let x = Math.round(anchor.x - winBounds.width / 2)
+  // If anchor is in the bottom half of screen, show window above it; otherwise below
+  const y = anchor.y > workArea.y + workArea.height / 2
+    ? Math.round(anchor.y - winBounds.height)
+    : Math.round(anchor.y)
 
   // Clamp to work area
   x = Math.max(workArea.x, Math.min(x, workArea.x + workArea.width - winBounds.width))
