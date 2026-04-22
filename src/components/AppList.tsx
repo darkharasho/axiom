@@ -104,8 +104,8 @@ export function AppList({ states, checking, onOpenSettings, onCheckUpdates, onOp
           style={{
             background: 'none',
             color: checking ? 'var(--text-faint)' : 'var(--text-dim)',
-            fontSize: 10,
-            padding: 0,
+            fontSize: 11,
+            padding: '4px 0',
             display: 'flex',
             alignItems: 'center',
             gap: 4,
@@ -119,8 +119,8 @@ export function AppList({ states, checking, onOpenSettings, onCheckUpdates, onOp
           style={{
             background: 'none',
             color: 'var(--text-faint)',
-            fontSize: 10,
-            padding: 0,
+            fontSize: 11,
+            padding: '4px 0',
             display: 'flex',
             alignItems: 'center',
             gap: 4,
