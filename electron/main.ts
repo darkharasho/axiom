@@ -1,5 +1,11 @@
 import { app, Tray, nativeImage } from 'electron'
 import path from 'path'
+
+// Wayland doesn't honour X11 window-type hints (skipTaskbar, type:'toolbar').
+// Running under XWayland restores that behaviour for tray popup windows.
+if (process.platform === 'linux') {
+  app.commandLine.appendSwitch('ozone-platform', 'x11')
+}
 import { createPopupWindow, showWindowNearTray } from './window'
 import { registerIpcHandlers } from './ipc-handlers'
 import { readConfig } from './config'
