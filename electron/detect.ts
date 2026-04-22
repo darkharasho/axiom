@@ -54,7 +54,6 @@ function detectLinux(appName: string): string | null {
   const searchDirs = [
     path.join(os.homedir(), 'AppImages'),
     path.join(os.homedir(), 'Applications'),
-    path.join(os.homedir(), 'Downloads'),
     path.join(os.homedir(), '.local', 'bin'),
     os.homedir(),
   ]
