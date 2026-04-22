@@ -23,11 +23,11 @@ const APP_NAMES: Record<AppId, string> = {
 }
 
 const APP_BLURBS: Record<AppId, string> = {
-  axibridge: 'Connect your Axiom workspace to Discord, Slack, and more. Keep your team in sync across every platform.',
-  axiforge:  'A powerful desktop toolkit for building and managing Axiom workflows. Forge your automation, your way.',
-  axipulse:  'Real-time monitoring and alerting for your Axiom environment. Stay on top of every event as it happens.',
-  axiam:     'Account and identity management for the Axiom ecosystem. Control access and permissions from one place.',
-  axitools:  'A Discord bot packed with Axiom utilities. Bring your community and your data together.',
+  axibridge: 'Watches your arcdps log folder, uploads fight logs, and posts polished combat summaries to Discord — so your WvW squad can review performance and MVPs without leaving the server.',
+  axiforge:  'Create, edit, and publish Guild Wars 2 builds with a native desktop editor, then automatically sync your build library to a GitHub Pages site your team can browse anytime.',
+  axipulse:  'Parses arcdps logs locally with Elite Insights and shows per-fight combat analysis — damage, timelines, squad positioning, and performance history — on your second monitor while still in squad.',
+  axiam:     'A secure account launcher that stores encrypted GW2 credentials, manages multiple accounts, and launches them through Steam with custom arguments, all behind a master password.',
+  axitools:  'A Discord bot for GW2 communities — build sharing, RSS feeds, patch note alerts, and scheduled squad signups, with per-guild isolated storage for complete privacy.',
 }
 
 export function AppInfoView({ appId, onBack }: Props) {
