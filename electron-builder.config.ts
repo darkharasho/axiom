@@ -11,7 +11,7 @@ const config: Configuration = {
     repo: 'axiom',
   },
   linux: {
-    target: 'AppImage',
+    target: ['AppImage'],
     icon: 'public/AxiOM-White.png',
   },
   win: {

@@ -25,17 +25,10 @@ jobs:
       - name: Install libfuse2
         run: sudo apt-get install -y libfuse2
 
-      - name: Build Linux AppImage
+      - name: Build and publish Linux AppImage
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run build:linux
-
-      - name: Upload AppImage to release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist_out/*.AppImage
-          draft: false
-          prerelease: false
 
   build-windows:
     runs-on: windows-latest
@@ -50,17 +43,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Windows installer
+      - name: Build and publish Windows installer
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run build:win
-
-      - name: Upload installer to release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist_out/*.exe
-          draft: false
-          prerelease: false
 
   notify:
     needs: [build-linux, build-windows]
