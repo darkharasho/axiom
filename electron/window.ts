@@ -1,4 +1,4 @@
-import { BrowserWindow, Tray, screen, app } from 'electron'
+import { BrowserWindow, Tray, screen } from 'electron'
 import path from 'path'
 
 const WINDOW_WIDTH = 320
