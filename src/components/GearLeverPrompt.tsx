@@ -1,4 +1,3 @@
-import React from 'react'
 import type { InstallableAppId } from '@shared/types'
 
 interface Props {

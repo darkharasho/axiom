@@ -1,4 +1,3 @@
-import React from 'react'
 import type { DownloadProgress } from '@shared/types'
 
 interface Props {
