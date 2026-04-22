@@ -28,11 +28,11 @@ Open AxiOM. Click Launch. Done.
 
 | | App | Description |
 |---|---|---|
-| <img src="https://raw.githubusercontent.com/darkharasho/axiom/master/public/svg/AxiBridge-white.svg" width="28" /> | **AxiBridge** | Watches your arcdps log folder and posts per-fight Discord embeds as fights happen, plus an aggregated stats view across all fights. |
-| <img src="https://raw.githubusercontent.com/darkharasho/axiom/master/public/svg/axiforge.svg" width="28" /> | **AxiForge** | Build and comp manager for GW2 squads. Create, edit, and publish builds and compositions to a GitHub Pages site you own and control. |
-| <img src="https://raw.githubusercontent.com/darkharasho/axiom/master/public/svg/axipulse-white.svg" width="28" /> | **AxiPulse** | Parses your arcdps logs locally with Elite Insights and shows your personal combat breakdown — damage, timelines, and performance history. |
-| <img src="https://raw.githubusercontent.com/darkharasho/axiom/master/public/svg/axiam.svg" width="28" /> | **AxiAM** | Secure account launcher. Stores encrypted GW2 credentials, manages multiple accounts, and launches them through Steam with custom arguments. |
-| <img src="https://raw.githubusercontent.com/darkharasho/axiom/master/public/svg/axitools-white.svg" width="28" /> | **AxiTools** | Discord bot for GW2 communities — build sharing, RSS feeds, patch note alerts, and scheduled squad signups with per-guild isolated storage. |
+| <img src="https://raw.githubusercontent.com/darkharasho/axibridge/main/public/img/AxiBridge-white.png" width="28" /> | **[AxiBridge](https://github.com/darkharasho/axibridge)** | Watches your arcdps log folder and posts per-fight Discord embeds as fights happen, plus an aggregated stats view across all fights. |
+| <img src="https://raw.githubusercontent.com/darkharasho/axiforge/main/public/img/AxiForge-White.png" width="28" /> | **[AxiForge](https://github.com/darkharasho/axiforge)** | Build and comp manager for GW2 squads. Create, edit, and publish builds and compositions to a GitHub Pages site you own and control. |
+| <img src="https://raw.githubusercontent.com/darkharasho/axipulse/main/public/img/axipulse-white.png" width="28" /> | **[AxiPulse](https://github.com/darkharasho/axipulse)** | Parses your arcdps logs locally with Elite Insights and shows your personal combat breakdown — damage, timelines, and performance history. |
+| <img src="https://raw.githubusercontent.com/darkharasho/axiam/main/public/img/AxiAM.png" width="28" /> | **[AxiAM](https://github.com/darkharasho/axiam)** | Secure account launcher. Stores encrypted GW2 credentials, manages multiple accounts, and launches them through Steam with custom arguments. |
+| <img src="https://raw.githubusercontent.com/darkharasho/axitools/main/media/AxiTools-White.png" width="28" /> | **[AxiTools](https://github.com/darkharasho/axitools)** | Discord bot for GW2 communities — build sharing, RSS feeds, patch note alerts, and scheduled squad signups with per-guild isolated storage. |
 
 ---
 
