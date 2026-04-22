@@ -138,7 +138,7 @@ export function registerIpcHandlers(win: BrowserWindow): void {
         // Use systemd-run to launch in a fresh user scope, escaping AxiOM's cgroup.
         // This matches how DE app launchers work and avoids GPU sandbox failures in
         // newer Electron versions (37+) when launched from a terminal cgroup.
-        spawn('systemd-run', ['--user', '--scope', 'gtk-launch', appId], { detached: true, stdio: 'ignore' }).unref()
+        spawn('systemd-run', ['--user', '--scope', '--unset-environment=VITE_DEV_SERVER_URL', 'gtk-launch', appId], { detached: true, stdio: 'ignore' }).unref()
         return
       }
       // Fallback: spawn AppImage directly
