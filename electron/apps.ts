@@ -26,7 +26,7 @@ export const APP_META: Record<AppId, AppMeta> = {
     id: 'axibridge',
     name: 'AxiBridge',
     repo: 'darkharasho/axibridge',
-    configDir: 'AxiBridge',
+    configDir: 'axibridge',
     assetPattern: {
       win: /AxiBridge.*Setup.*\.exe$/i,
       linux: /AxiBridge.*\.AppImage$/i,
@@ -46,7 +46,7 @@ export const APP_META: Record<AppId, AppMeta> = {
     id: 'axipulse',
     name: 'AxiPulse',
     repo: 'darkharasho/axipulse',
-    configDir: 'AxiPulse',
+    configDir: 'axipulse',
     assetPattern: {
       win: /AxiPulse.*Setup.*\.exe$/i,
       linux: /AxiPulse.*\.AppImage$/i,
@@ -56,7 +56,7 @@ export const APP_META: Record<AppId, AppMeta> = {
     id: 'axiam',
     name: 'AxiAM',
     repo: 'darkharasho/axiam',
-    configDir: 'AxiAM',
+    configDir: 'axiam',
     assetPattern: {
       win: /AxiAM.*Setup.*\.exe$/i,
       linux: /AxiAM.*\.AppImage$/i,
