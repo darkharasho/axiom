@@ -133,7 +133,12 @@ export function registerIpcHandlers(win: BrowserWindow): void {
         try {
           const files = fs.readdirSync(dir)
           const appImage = files.find(f => f.toLowerCase().endsWith('.appimage') && f.toLowerCase().includes(meta.name.toLowerCase()))
-          if (appImage) { await shell.openPath(pathMod.join(dir, appImage)); break }
+          if (appImage) {
+            const { spawn } = await import('child_process')
+            const fullPath = pathMod.join(dir, appImage)
+            spawn(fullPath, [], { detached: true, stdio: 'ignore' }).unref()
+            break
+          }
         } catch { /* ignore */ }
       }
     } else {
