@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { ChevronLeft } from 'lucide-react'
 import { useConfig } from '../hooks/useConfig'
+import { Toggle } from './Toggle'
 
 interface Props {
   onBack: () => void
@@ -15,12 +16,6 @@ export function SettingsView({ onBack }: Props) {
     window.axiom.getAutoStart().then(setAutoStartLocal)
     window.axiom.getVersion().then(setVersion)
   }, [])
-
-  const handleAutoStart = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const enabled = e.target.checked
-    setAutoStartLocal(enabled)
-    await window.axiom.setAutoStart(enabled)
-  }
 
   const row: React.CSSProperties = {
     display: 'flex',
@@ -64,26 +59,21 @@ export function SettingsView({ onBack }: Props) {
 
       {/* Auto-start */}
       <div style={row}>
-        <label style={label} htmlFor="auto-start">Auto-start on login</label>
-        <input
+        <span style={label}>Auto-start on login</span>
+        <Toggle
           id="auto-start"
-          type="checkbox"
           checked={autoStart}
-          onChange={handleAutoStart}
-          aria-label="Auto-start on login"
-          style={{ accentColor: 'var(--gold)', width: 15, height: 15, cursor: 'pointer' }}
+          onChange={enabled => { setAutoStartLocal(enabled); window.axiom.setAutoStart(enabled) }}
         />
       </div>
 
       {/* Update notifications */}
       <div style={row}>
-        <label style={label} htmlFor="notify-updates">Notify on updates</label>
-        <input
+        <span style={label}>Notify on updates</span>
+        <Toggle
           id="notify-updates"
-          type="checkbox"
           checked={config.notifyOnUpdates ?? false}
-          onChange={e => updateConfig({ notifyOnUpdates: e.target.checked })}
-          style={{ accentColor: 'var(--gold)', width: 15, height: 15, cursor: 'pointer' }}
+          onChange={checked => updateConfig({ notifyOnUpdates: checked })}
         />
       </div>
 
