@@ -24,11 +24,13 @@ export function removeFromGearLever(appImagePath: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = childProcess.spawn('flatpak', ['run', 'it.mijorus.gearlever', '--remove', appImagePath], {
       detached: false,
-      stdio: 'ignore',
+      stdio: ['ignore', 'ignore', 'pipe'],
     })
+    let stderr = ''
+    child.stderr?.on('data', (d: Buffer) => { stderr += d.toString() })
     child.on('close', (code) => {
       if (code === 0) resolve()
-      else reject(new Error(`Gear Lever remove exited with code ${code}`))
+      else reject(new Error(code === null ? 'Gear Lever remove was terminated by a signal' : `Gear Lever remove exited with code ${code}${stderr ? ': ' + stderr.trim() : ''}`))
     })
     child.on('error', reject)
   })
@@ -43,7 +45,7 @@ export function installGearLever(onData: (chunk: string) => void): Promise<void>
     child.stderr?.on('data', (d: Buffer) => onData(d.toString()))
     child.on('close', (code) => {
       if (code === 0) resolve()
-      else reject(new Error(`flatpak install exited with code ${code}`))
+      else reject(new Error(code === null ? 'flatpak install was terminated by a signal' : `flatpak install exited with code ${code}`))
     })
     child.on('error', reject)
   })
