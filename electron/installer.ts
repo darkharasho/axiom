@@ -72,6 +72,49 @@ export async function installLinux(
   return dest
 }
 
+export async function updateLinux(
+  appName: string,
+  appId: string,
+  downloadUrl: string,
+  onProgress: (p: DownloadProgress) => void,
+): Promise<void> {
+  const searchDirs = [
+    path.join(os.homedir(), 'AppImages'),
+    path.join(os.homedir(), 'Applications'),
+    path.join(os.homedir(), '.local', 'bin'),
+    os.homedir(),
+  ]
+
+  let existingPath: string | null = null
+  for (const dir of searchDirs) {
+    try {
+      const files = fs.readdirSync(dir)
+      const match = files.find(f => f.toLowerCase().endsWith('.appimage') && f.toLowerCase().includes(appName.toLowerCase()))
+      if (match) { existingPath = path.join(dir, match); break }
+    } catch { /* ignore */ }
+  }
+
+  const newFilename = path.basename(new URL(downloadUrl).pathname)
+  const installDir = existingPath ? path.dirname(existingPath) : path.join(os.homedir(), 'AppImages')
+  fs.mkdirSync(installDir, { recursive: true })
+  const newPath = path.join(installDir, newFilename)
+
+  await downloadFile(downloadUrl, newPath, onProgress)
+  fs.chmodSync(newPath, 0o755)
+
+  if (existingPath && existingPath !== newPath) {
+    fs.unlinkSync(existingPath)
+    // Update the GearLever .desktop file if the path changed
+    const desktopPath = path.join(os.homedir(), '.local', 'share', 'applications', `${appId}.desktop`)
+    if (fs.existsSync(desktopPath)) {
+      const content = fs.readFileSync(desktopPath, 'utf-8')
+      const updated = content
+        .replace(new RegExp(existingPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), newPath)
+      fs.writeFileSync(desktopPath, updated, 'utf-8')
+    }
+  }
+}
+
 export function uninstallWindows(appName: string): Promise<void> {
   return new Promise((resolve, reject) => {
     try {

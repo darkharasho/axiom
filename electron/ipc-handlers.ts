@@ -10,7 +10,7 @@ import {
   installGearLever,
   openInGearLever,
 } from './gearlever'
-import { installWindows, installLinux, uninstallWindows, uninstallLinux } from './installer'
+import { installWindows, installLinux, updateLinux, uninstallWindows, uninstallLinux } from './installer'
 import { setAutoStart, getAutoStart } from './autostart'
 
 let appStates: Record<AppId, AppState> = buildInitialStates()
@@ -87,7 +87,9 @@ export function registerIpcHandlers(win: BrowserWindow): void {
     const { downloadUrl } = appStates[appId]
     if (!downloadUrl) return
 
-    if (process.platform === 'linux' && !isGearLeverInstalled()) {
+    const isUpdate = !!appStates[appId].installedVersion
+
+    if (process.platform === 'linux' && !isUpdate && !isGearLeverInstalled()) {
       setState(win, appId, { gearLeverMissing: true })
       return
     }
@@ -99,8 +101,12 @@ export function registerIpcHandlers(win: BrowserWindow): void {
         setState(win, appId, { status: 'idle', downloadProgress: undefined })
       } else {
         setState(win, appId, { status: 'installing' })
-        const appImagePath = await installLinux(downloadUrl, (p) => setState(win, appId, { downloadProgress: p }))
-        openInGearLever(appImagePath)
+        if (isUpdate) {
+          await updateLinux(meta.name, appId, downloadUrl, (p) => setState(win, appId, { downloadProgress: p }))
+        } else {
+          const appImagePath = await installLinux(downloadUrl, (p) => setState(win, appId, { downloadProgress: p }))
+          openInGearLever(appImagePath)
+        }
         const newVersion = appStates[appId].latestVersion
         setInstalledVersion(appId, newVersion)
         setState(win, appId, { status: 'idle', installedVersion: newVersion, downloadProgress: undefined })
