@@ -66,8 +66,12 @@ export function registerIpcHandlers(win: BrowserWindow): void {
       const platform = process.platform === 'win32' ? 'win' : 'linux'
       const pattern = meta.assetPattern[platform]
       const release = await fetchLatestRelease(meta.repo, pattern)
-      const installedVersion = await detectInstalledVersion(meta.name)
-      setInstalledVersion(appId as InstallableAppId, installedVersion)
+      const detected = await detectInstalledVersion(meta.name)
+      // 'installed' means file found but no version in filename — keep stored version
+      const cfg = readConfig()
+      const stored = cfg.apps[appId as InstallableAppId]?.installedVersion ?? null
+      const installedVersion = detected === 'installed' ? stored : detected
+      if (detected !== 'installed') setInstalledVersion(appId as InstallableAppId, installedVersion)
       setState(win, appId, {
         status: 'idle',
         installedVersion,
