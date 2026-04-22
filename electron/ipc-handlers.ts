@@ -121,9 +121,18 @@ export function registerIpcHandlers(win: BrowserWindow): void {
     setState(win, appId, { status: 'launching' })
     setTimeout(() => setState(win, appId, { status: 'idle' }), 3000)
     if (process.platform === 'linux') {
-      const fs = await import('fs')
+      const { spawn } = await import('child_process')
       const os = await import('os')
       const pathMod = await import('path')
+      // Prefer gtk-launch with GearLever's .desktop file — it applies the correct
+      // Exec flags (DESKTOPINTEGRATION=1, --no-sandbox) that Electron AppImages need
+      const desktopFile = pathMod.join(os.homedir(), '.local', 'share', 'applications', `${appId}.desktop`)
+      const fs = await import('fs')
+      if (fs.existsSync(desktopFile)) {
+        spawn('gtk-launch', [appId], { detached: true, stdio: 'ignore' }).unref()
+        return
+      }
+      // Fallback: spawn AppImage directly
       const searchDirs = [
         pathMod.join(os.homedir(), 'AppImages'),
         pathMod.join(os.homedir(), 'Applications'),
@@ -136,9 +145,7 @@ export function registerIpcHandlers(win: BrowserWindow): void {
           const files = fs.readdirSync(dir)
           const appImage = files.find(f => f.toLowerCase().endsWith('.appimage') && f.toLowerCase().includes(meta.name.toLowerCase()))
           if (appImage) {
-            const { spawn } = await import('child_process')
-            const fullPath = pathMod.join(dir, appImage)
-            spawn(fullPath, [], { detached: true, stdio: 'ignore' }).unref()
+            spawn(pathMod.join(dir, appImage), [], { detached: true, stdio: 'ignore' }).unref()
             break
           }
         } catch { /* ignore */ }
