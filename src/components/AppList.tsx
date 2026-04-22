@@ -7,11 +7,12 @@ interface Props {
   checking: boolean
   onOpenSettings: () => void
   onCheckUpdates: () => void
+  onOpenInfo: (appId: AppId) => void
 }
 
 const APP_ORDER: AppId[] = ['axibridge', 'axiforge', 'axipulse', 'axiam', 'axitools']
 
-export function AppList({ states, checking, onOpenSettings, onCheckUpdates }: Props) {
+export function AppList({ states, checking, onOpenSettings, onCheckUpdates, onOpenInfo }: Props) {
   const stateMap = Object.fromEntries(states.map(s => [s.id, s])) as Record<AppId, AppState>
 
   const handleAction = (action: string, appId: AppId) => {
@@ -76,7 +77,7 @@ export function AppList({ states, checking, onOpenSettings, onCheckUpdates }: Pr
       {/* App rows */}
       <div style={{ flex: 1 }}>
         {APP_ORDER.map(id => stateMap[id] && (
-          <AppRow key={id} state={stateMap[id]} onAction={handleAction} />
+          <AppRow key={id} state={stateMap[id]} onAction={handleAction} onInfo={onOpenInfo} />
         ))}
       </div>
 

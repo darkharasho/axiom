@@ -3,18 +3,19 @@ import { describe, it, expect, vi } from 'vitest'
 import { SettingsView } from '../components/SettingsView'
 
 describe('SettingsView', () => {
-  it('renders auto-start toggle and invite URL field', () => {
+  it('renders auto-start and notify-on-updates toggles', () => {
     render(<SettingsView onBack={vi.fn()} />)
     expect(screen.getByText(/auto-start/i)).toBeInTheDocument()
-    expect(screen.getByPlaceholderText(/discord\.gg/i)).toBeInTheDocument()
+    expect(screen.getByText(/notify on updates/i)).toBeInTheDocument()
   })
 
-  it('calls setAutoStart when toggle is clicked', async () => {
+  it('calls setAutoStart and setConfig when auto-start toggle is clicked', async () => {
     render(<SettingsView onBack={vi.fn()} />)
-    const toggle = screen.getByRole('checkbox', { name: /auto-start/i })
+    const toggle = document.getElementById('auto-start')!
     fireEvent.click(toggle)
     await waitFor(() => {
       expect(window.axiom.setAutoStart).toHaveBeenCalledWith(true)
+      expect(window.axiom.setConfig).toHaveBeenCalledWith({ autoStart: true })
     })
   })
 

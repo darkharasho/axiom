@@ -1,5 +1,5 @@
 import React from 'react'
-import { Play, Download, ArrowUp, ExternalLink, Loader2 } from 'lucide-react'
+import { Play, Download, ArrowUp, ExternalLink, Loader2, HelpCircle } from 'lucide-react'
 import type { AppState, AppId, InstallableAppId } from '@shared/types'
 import { ProgressBar } from './ProgressBar'
 import { GearLeverPrompt } from './GearLeverPrompt'
@@ -25,9 +25,10 @@ type ActionType = 'launch' | 'install' | 'update' | 'uninstall' | 'invite' | 'in
 interface Props {
   state: AppState
   onAction: (action: ActionType, appId: AppId) => void
+  onInfo: (appId: AppId) => void
 }
 
-export function AppRow({ state, onAction }: Props) {
+export function AppRow({ state, onAction, onInfo }: Props) {
   const { id, installedVersion, latestVersion, downloadUrl, status, downloadProgress, gearLeverMissing } = state
   const isBusy = status === 'downloading' || status === 'installing' || status === 'deleting'
   const isLaunching = status === 'launching'
@@ -87,12 +88,31 @@ export function AppRow({ state, onAction }: Props) {
         </button>
       )
     }
-    if (notInstalled && downloadUrl) {
+    if (notInstalled) {
       return (
-        <button onClick={() => onAction('install', id)} style={btnStyle('install')}>
-          <Download size={11} />
-          Install
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button
+            onClick={() => onInfo(id)}
+            title="Learn more"
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-faint)',
+              cursor: 'pointer',
+              padding: 2,
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <HelpCircle size={14} />
+          </button>
+          {downloadUrl && (
+            <button onClick={() => onAction('install', id)} style={btnStyle('install')}>
+              <Download size={11} />
+              Install
+            </button>
+          )}
+        </div>
       )
     }
     if (installedVersion) {
