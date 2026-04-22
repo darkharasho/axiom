@@ -4,10 +4,10 @@ import { ProgressBar } from './ProgressBar'
 import { GearLeverPrompt } from './GearLeverPrompt'
 
 const APP_ICONS: Record<AppId, string> = {
-  axibridge: '/svg/AxiBridge-white.svg',
-  axiforge:  '/svg/axiforge.svg',
-  axipulse:  '/svg/axipulse-white.svg',
-  axitools:  '/svg/axitools-white.svg',
+  axibridge: './svg/AxiBridge-white.svg',
+  axiforge:  './svg/axiforge.svg',
+  axipulse:  './svg/axipulse-white.svg',
+  axitools:  './svg/axitools-white.svg',
 }
 
 const APP_NAMES: Record<AppId, string> = {

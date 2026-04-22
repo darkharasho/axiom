@@ -115,9 +115,14 @@ export function registerIpcHandlers(win: BrowserWindow): void {
     const meta = APP_META[appId]
     if (!isInstallable(meta)) return
     if (process.platform === 'linux') {
-      const { execSync } = await import('child_process')
+      const fs = await import('fs')
+      const os = await import('os')
+      const pathMod = await import('path')
       try {
-        execSync(`flatpak run it.mijorus.gearlever --launch "${meta.name}"`, { stdio: 'ignore' })
+        const appsDir = pathMod.join(os.homedir(), 'Applications')
+        const files = fs.readdirSync(appsDir)
+        const appImage = files.find(f => f.toLowerCase().includes(meta.name.toLowerCase()) && f.endsWith('.AppImage'))
+        if (appImage) await shell.openPath(pathMod.join(appsDir, appImage))
       } catch { /* ignore */ }
     } else {
       const { execSync } = await import('child_process')
@@ -141,18 +146,13 @@ export function registerIpcHandlers(win: BrowserWindow): void {
       if (process.platform === 'win32') {
         await uninstallWindows(meta.name)
       } else {
-        const { execSync } = await import('child_process')
-        try {
-          execSync(`flatpak run it.mijorus.gearlever --remove "${meta.name}"`, { stdio: 'ignore' })
-        } catch {
-          const fs = await import('fs')
-          const os = await import('os')
-          const pathMod = await import('path')
-          const appsDir = pathMod.join(os.homedir(), 'Applications')
-          const files = fs.readdirSync(appsDir)
-          const appImage = files.find(f => f.toLowerCase().includes(meta.name.toLowerCase()))
-          if (appImage) uninstallLinux(pathMod.join(appsDir, appImage))
-        }
+        const fs = await import('fs')
+        const os = await import('os')
+        const pathMod = await import('path')
+        const appsDir = pathMod.join(os.homedir(), 'Applications')
+        const files = fs.readdirSync(appsDir)
+        const appImage = files.find(f => f.toLowerCase().includes(meta.name.toLowerCase()))
+        if (appImage) uninstallLinux(pathMod.join(appsDir, appImage))
       }
       setInstalledVersion(appId, null)
       setState(win, appId, { status: 'idle', installedVersion: null })
@@ -162,7 +162,7 @@ export function registerIpcHandlers(win: BrowserWindow): void {
   })
 
   ipcMain.handle('axiom:install-gear-lever', async (_e, appId: InstallableAppId) => {
-    setState(win, appId, { status: 'installing' })
+    setState(win, appId, { status: 'installing', gearLeverMissing: false })
     try {
       await installGearLever((chunk) => win.webContents.send('axiom:gear-lever-progress', chunk))
       setState(win, appId, { status: 'idle', gearLeverMissing: false })
