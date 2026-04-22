@@ -1,4 +1,3 @@
-import React from 'react'
 import type { AppState, AppId, InstallableAppId } from '@shared/types'
 import { AppRow } from './AppRow'
 

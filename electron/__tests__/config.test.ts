@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import fs from 'fs'
-import path from 'path'
 
 vi.mock('electron', () => ({
   app: { getPath: vi.fn(() => '/tmp/axiom-test-config') },
