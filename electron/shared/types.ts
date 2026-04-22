@@ -13,6 +13,7 @@ export type AppStatus =
   | 'downloading'
   | 'installing'
   | 'deleting'
+  | 'launching'
   | 'error'
 
 export interface AppState {

@@ -1,3 +1,4 @@
+import { ExternalLink } from 'lucide-react'
 import type { InstallableAppId } from '@shared/types'
 
 interface Props {
@@ -44,7 +45,8 @@ export function GearLeverPrompt({ appId: _appId, onInstall, onOpenFlathub }: Pro
             fontSize: 10,
           }}
         >
-          Open Flathub ↗
+          <ExternalLink size={10} style={{ marginRight: 3 }} />
+          Open Flathub
         </button>
       </div>
     </div>

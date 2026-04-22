@@ -1,3 +1,4 @@
+import { Settings, RefreshCw, LogOut } from 'lucide-react'
 import type { AppState, AppId, InstallableAppId } from '@shared/types'
 import { AppRow } from './AppRow'
 
@@ -60,14 +61,15 @@ export function AppList({ states, checking, onOpenSettings, onCheckUpdates }: Pr
             background: 'none',
             border: 'none',
             color: 'var(--text-faint)',
-            fontSize: 14,
             cursor: 'pointer',
             padding: '2px 4px',
             borderRadius: 3,
+            display: 'flex',
+            alignItems: 'center',
           }}
           title="Settings"
         >
-          ⚙
+          <Settings size={14} />
         </button>
       </div>
 
@@ -94,14 +96,27 @@ export function AppList({ states, checking, onOpenSettings, onCheckUpdates }: Pr
             color: checking ? 'var(--text-faint)' : 'var(--text-dim)',
             fontSize: 10,
             padding: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
           }}
         >
+          <RefreshCw size={10} className={checking ? 'spin' : ''} />
           {checking ? 'Checking...' : 'Check for updates'}
         </button>
         <button
           onClick={() => window.axiom.quit()}
-          style={{ background: 'none', color: 'var(--text-faint)', fontSize: 10, padding: 0 }}
+          style={{
+            background: 'none',
+            color: 'var(--text-faint)',
+            fontSize: 10,
+            padding: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+          }}
         >
+          <LogOut size={10} />
           Quit
         </button>
       </div>

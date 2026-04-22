@@ -118,6 +118,8 @@ export function registerIpcHandlers(win: BrowserWindow): void {
     }
     const meta = APP_META[appId]
     if (!isInstallable(meta)) return
+    setState(win, appId, { status: 'launching' })
+    setTimeout(() => setState(win, appId, { status: 'idle' }), 3000)
     if (process.platform === 'linux') {
       const fs = await import('fs')
       const os = await import('os')

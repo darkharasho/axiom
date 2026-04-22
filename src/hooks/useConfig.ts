@@ -8,6 +8,7 @@ const EMPTY_CONFIG: Config = {
     axibridge: { installedVersion: null, lastChecked: null },
     axiforge:  { installedVersion: null, lastChecked: null },
     axipulse:  { installedVersion: null, lastChecked: null },
+    axiam:     { installedVersion: null, lastChecked: null },
   },
 }
 

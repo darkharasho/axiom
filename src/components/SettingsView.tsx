@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { ChevronLeft } from 'lucide-react'
 import { useConfig } from '../hooks/useConfig'
 
 interface Props {
@@ -52,12 +53,13 @@ export function SettingsView({ onBack }: Props) {
           style={{
             background: 'none',
             color: 'var(--text-dim)',
-            fontSize: 16,
-            padding: '2px 6px 2px 0',
+            padding: '2px 4px 2px 0',
             marginRight: 2,
+            display: 'flex',
+            alignItems: 'center',
           }}
         >
-          ←
+          <ChevronLeft size={16} />
         </button>
         <span style={{ fontFamily: 'var(--font-title)', fontSize: 13, fontWeight: 700 }}>
           <span style={{ color: 'var(--text)' }}>Settings</span>

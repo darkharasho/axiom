@@ -1,4 +1,5 @@
 import React from 'react'
+import { Play, Download, ArrowUp, ExternalLink, Loader2 } from 'lucide-react'
 import type { AppState, AppId, InstallableAppId } from '@shared/types'
 import { ProgressBar } from './ProgressBar'
 import { GearLeverPrompt } from './GearLeverPrompt'
@@ -28,7 +29,8 @@ interface Props {
 
 export function AppRow({ state, onAction }: Props) {
   const { id, installedVersion, latestVersion, downloadUrl, status, downloadProgress, gearLeverMissing } = state
-  const isDownloading = status === 'downloading' || status === 'installing' || status === 'deleting'
+  const isBusy = status === 'downloading' || status === 'installing' || status === 'deleting'
+  const isLaunching = status === 'launching'
   const hasUpdate = installedVersion && latestVersion && installedVersion !== latestVersion
   const notInstalled = !installedVersion
   const hasUpdateBorder = !!hasUpdate
@@ -38,10 +40,11 @@ export function AppRow({ state, onAction }: Props) {
     if (status === 'downloading') return 'Downloading...'
     if (status === 'installing') return 'Installing...'
     if (status === 'deleting') return 'Removing...'
+    if (status === 'launching') return 'Launching...'
     if (status === 'error') return 'Error'
     if (id === 'axitools') return 'Discord Bot'
     if (notInstalled) return 'Not installed'
-    if (hasUpdate) return `v${latestVersion} available ↑`
+    if (hasUpdate) return `v${latestVersion} available`
     return `v${installedVersion} · up to date`
   }
 
@@ -53,7 +56,7 @@ export function AppRow({ state, onAction }: Props) {
   }
 
   const renderAction = () => {
-    if (isDownloading && downloadProgress) {
+    if (isBusy && downloadProgress) {
       return <ProgressBar progress={downloadProgress} />
     }
     if (gearLeverMissing) {
@@ -65,16 +68,21 @@ export function AppRow({ state, onAction }: Props) {
         />
       )
     }
+    if (isLaunching) {
+      return <Loader2 size={16} className="spin" style={{ color: 'var(--gold)', flexShrink: 0 }} />
+    }
     if (id === 'axitools') {
       return (
         <button onClick={() => onAction('invite', id)} style={btnStyle('invite')}>
-          Invite ↗
+          <ExternalLink size={11} />
+          Invite
         </button>
       )
     }
     if (hasUpdate) {
       return (
         <button onClick={() => onAction('update', id)} style={btnStyle('update')}>
+          <ArrowUp size={11} />
           Update
         </button>
       )
@@ -82,6 +90,7 @@ export function AppRow({ state, onAction }: Props) {
     if (notInstalled && downloadUrl) {
       return (
         <button onClick={() => onAction('install', id)} style={btnStyle('install')}>
+          <Download size={11} />
           Install
         </button>
       )
@@ -89,6 +98,7 @@ export function AppRow({ state, onAction }: Props) {
     if (installedVersion) {
       return (
         <button onClick={() => onAction('launch', id)} style={btnStyle('launch')}>
+          <Play size={11} fill="currentColor" />
           Launch
         </button>
       )
@@ -130,7 +140,7 @@ export function AppRow({ state, onAction }: Props) {
           {statusText()}
         </div>
       </div>
-      <div style={{ flexShrink: 0 }}>
+      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
         {renderAction()}
       </div>
     </div>
@@ -139,8 +149,11 @@ export function AppRow({ state, onAction }: Props) {
 
 function btnStyle(variant: 'launch' | 'update' | 'install' | 'invite'): React.CSSProperties {
   const base: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
     borderRadius: 4,
-    padding: '4px 12px',
+    padding: '4px 10px',
     fontSize: 10,
     fontWeight: 700,
     whiteSpace: 'nowrap',
