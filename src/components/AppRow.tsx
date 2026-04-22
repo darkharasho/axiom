@@ -1,5 +1,5 @@
 import React from 'react'
-import { Play, Download, ArrowUp, ExternalLink, Loader2, HelpCircle } from 'lucide-react'
+import { Play, Download, ArrowUp, ExternalLink, Loader2, HelpCircle, RefreshCw } from 'lucide-react'
 import type { AppState, AppId, InstallableAppId } from '@shared/types'
 import { APP_ICONS, APP_NAMES } from '../lib/appMeta'
 import { ProgressBar } from './ProgressBar'
@@ -11,9 +11,10 @@ interface Props {
   state: AppState
   onAction: (action: ActionType, appId: AppId) => void
   onInfo: (appId: AppId) => void
+  onRetry: (appId: AppId) => void
 }
 
-export function AppRow({ state, onAction, onInfo }: Props) {
+export function AppRow({ state, onAction, onInfo, onRetry }: Props) {
   const { id, installedVersion, latestVersion, downloadUrl, status, downloadProgress, gearLeverMissing } = state
   const isBusy = status === 'downloading' || status === 'installing' || status === 'deleting'
   const isLaunching = status === 'launching'
@@ -52,6 +53,30 @@ export function AppRow({ state, onAction, onInfo }: Props) {
           onInstall={() => onAction('install-gear-lever', id)}
           onOpenFlathub={() => onAction('open-gear-lever-flathub', id)}
         />
+      )
+    }
+    if (status === 'error') {
+      return (
+        <button
+          onClick={() => onRetry(id)}
+          aria-label="Retry"
+          title="Retry"
+          style={{
+            background: 'none',
+            border: '1px solid rgba(224, 82, 82, 0.4)',
+            borderRadius: 4,
+            color: '#e05252',
+            cursor: 'pointer',
+            padding: '3px 8px',
+            fontSize: 10,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+          }}
+        >
+          <RefreshCw size={10} />
+          Retry
+        </button>
       )
     }
     if (isLaunching) {
@@ -137,7 +162,11 @@ export function AppRow({ state, onAction, onInfo }: Props) {
       borderRadius: 6,
       marginBottom: 3,
       background: 'var(--panel)',
-      border: `1px solid ${hasUpdateBorder ? 'var(--gold-border-bright)' : 'var(--border)'}`,
+      border: `1px solid ${
+        status === 'error'   ? 'rgba(224, 82, 82, 0.35)' :
+        hasUpdateBorder      ? 'var(--gold-border-bright)' :
+        'var(--border)'
+      }`,
     }}>
       <img
         src={APP_ICONS[id]}

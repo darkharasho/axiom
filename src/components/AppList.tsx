@@ -39,6 +39,15 @@ export function AppList({ states, checking, onOpenSettings, onCheckUpdates, onOp
     }
   }
 
+  const handleRetry = (appId: AppId) => {
+    const state = stateMap[appId]
+    if (state?.installedVersion) {
+      window.axiom.launch(appId)
+    } else {
+      window.axiom.install(appId as InstallableAppId)
+    }
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: 14 }}>
       {/* Header */}
@@ -77,7 +86,7 @@ export function AppList({ states, checking, onOpenSettings, onCheckUpdates, onOp
       {/* App rows */}
       <div style={{ flex: 1 }}>
         {APP_ORDER.map(id => stateMap[id] && (
-          <AppRow key={id} state={stateMap[id]} onAction={handleAction} onInfo={onOpenInfo} />
+          <AppRow key={id} state={stateMap[id]} onAction={handleAction} onInfo={onOpenInfo} onRetry={handleRetry} />
         ))}
       </div>
 
