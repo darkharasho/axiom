@@ -1,17 +1,11 @@
 # Release Notes
 
-Version v0.1.8 — April 23, 2026
+Version v0.1.9 — April 23, 2026
 
-## Windows Launch, Fixed
+## Auto-Start Actually Works on Linux
 
-Clicking Launch on Windows actually launches the app now. The old flow looked up apps in the registry, grabbed the first `.exe` it could find, and handed it to the OS to open — which quietly failed in a bunch of cases and left you staring at a button that did nothing.
+The "Start AxiOM at login" toggle never did anything on Linux — the underlying Electron API only supports macOS and Windows. AxiOM now writes a proper `~/.config/autostart/axiom.desktop` entry pointing at the current AppImage, and removes it when you turn the toggle off.
 
-The new flow:
-- Finds the real executable via `DisplayIcon` (with `InstallLocation` as fallback), including 32-bit installs under `WOW6432Node`.
-- Spawns the app directly as a detached process with a clean environment, so it doesn't inherit AxiOM's Electron/dev variables and open to a black screen.
-- If the app is already running, focuses its existing window instead of launching a second copy.
-- Logs each step to the terminal so launch failures aren't invisible anymore.
+The entry also self-repairs: every time AxiOM launches, it rewrites the file to point at the current AppImage path, so updating AxiOM won't leave autostart pointing at an old binary.
 
-## Fixes
-
-- AxiForge's Windows installer is now detected correctly — the asset matcher no longer required "Setup" in the filename.
+NOTE: If you had the toggle enabled before this release, flip it off and back on once to write the new entry.
