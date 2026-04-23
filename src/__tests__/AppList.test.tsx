@@ -66,6 +66,16 @@ describe('AppList — Update All button', () => {
     expect(screen.queryByRole('button', { name: /update all/i })).not.toBeInTheDocument()
   })
 
+  it('does not count deleting apps as eligible', () => {
+    const states = [
+      makeState('axibridge', { latestVersion: '2.0.0', status: 'deleting' }),
+      makeState('axiforge', { latestVersion: '2.0.0' }),
+      makeState('axipulse'),
+    ]
+    render(<AppList states={states} {...defaultProps} />)
+    expect(screen.queryByRole('button', { name: /update all/i })).not.toBeInTheDocument()
+  })
+
   it('calls window.axiom.install for each eligible app on click', () => {
     const states = [
       makeState('axibridge', { latestVersion: '2.0.0' }),
