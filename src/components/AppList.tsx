@@ -51,14 +51,15 @@ export function AppList({ states, checking, onOpenSettings, onCheckUpdates, onOp
     }
   }
 
-  const appsWithUpdates = states.filter(s => {
+  const appsWithUpdates = states.filter((s): s is AppState & { id: InstallableAppId } => {
+    if (s.id === 'axitools') return false
     const hasUpdate = s.installedVersion && s.latestVersion && s.installedVersion !== s.latestVersion
     const isBusy = s.status === 'downloading' || s.status === 'installing' || s.status === 'deleting'
-    return hasUpdate && !isBusy
+    return !!(hasUpdate && !isBusy)
   })
 
   const handleUpdateAll = () => {
-    appsWithUpdates.forEach(s => window.axiom.install(s.id as InstallableAppId))
+    appsWithUpdates.forEach(s => window.axiom.install(s.id))
   }
 
   return (
