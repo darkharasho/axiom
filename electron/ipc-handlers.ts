@@ -219,10 +219,28 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
         } catch { /* ignore */ }
       }
     } else {
-      const { execSync } = await import('child_process')
+      const { execSync, spawn } = await import('child_process')
       try {
+        if (await isProcessRunning(meta.name)) {
+          console.log(`[launch] ${meta.name}: already running, focusing window`)
+          const focusPs = `
+$sig = '[DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd); [DllImport("user32.dll")] public static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow); [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr hWnd);'
+$api = Add-Type -MemberDefinition $sig -Name WinApi -Namespace Native -PassThru
+$proc = Get-Process -Name '${meta.name}' -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
+if ($proc) {
+  $h = $proc.MainWindowHandle
+  if ($api::IsIconic($h)) { [void]$api::ShowWindowAsync($h, 9) }
+  [void]$api::SetForegroundWindow($h)
+}`.replace(/\r?\n/g, '; ')
+          try {
+            execSync(`powershell -NoProfile -NonInteractive -Command "${focusPs.replace(/"/g, '\\"')}"`, { timeout: 5000 })
+          } catch (err) {
+            console.error(`[launch] ${meta.name}: focus failed:`, err)
+          }
+          return
+        }
         console.log(`[launch] ${meta.name}: querying registry`)
-        const ps = `(Get-ItemProperty 'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', 'HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*' -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like '*${meta.name}*' } | Select-Object -First 1 | ConvertTo-Json)`
+        const ps = `(Get-ItemProperty 'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', 'HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*' -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like '*${meta.name}*' } | Select-Object -First 1 DisplayName, DisplayVersion, InstallLocation, DisplayIcon, UninstallString | ConvertTo-Json -Compress)`
         const raw = execSync(`powershell -NoProfile -NonInteractive -Command "${ps}"`, { encoding: 'utf8', timeout: 15000 }).trim()
         console.log(`[launch] ${meta.name}: registry result:`, raw || '(empty)')
         if (!raw) return
@@ -231,18 +249,26 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
         const icon = entry.DisplayIcon?.split(',')[0]?.trim()
         console.log(`[launch] ${meta.name}: InstallLocation=${loc} DisplayIcon=${icon}`)
         const { readdirSync, existsSync, statSync } = await import('fs')
+        const pathMod = await import('path')
         let target: string | undefined
         if (icon && existsSync(icon) && icon.toLowerCase().endsWith('.exe')) {
           target = icon
         } else if (loc && existsSync(loc) && statSync(loc).isDirectory()) {
           const exes = readdirSync(loc).filter(f => f.endsWith('.exe') && !/uninstall/i.test(f))
           const preferred = exes.find(f => f.toLowerCase() === `${meta.name.toLowerCase()}.exe`) ?? exes[0]
-          if (preferred) target = `${loc}\\${preferred}`
+          if (preferred) target = pathMod.join(loc, preferred)
         }
         console.log(`[launch] ${meta.name}: target=${target}`)
         if (!target) return
-        const err = await shell.openPath(target)
-        if (err) console.error(`[launch] ${meta.name}: openPath failed:`, err)
+        const cwd = pathMod.dirname(target)
+        const childEnv = { ...process.env }
+        delete childEnv.VITE_DEV_SERVER_URL
+        delete childEnv.ELECTRON_RUN_AS_NODE
+        delete childEnv.ELECTRON_NO_ATTACH_CONSOLE
+        delete childEnv.NODE_OPTIONS
+        const child = spawn(target, [], { detached: true, stdio: 'ignore', cwd, env: childEnv, windowsHide: false })
+        child.on('error', (err) => console.error(`[launch] ${meta.name}: spawn error:`, err))
+        child.unref()
       } catch (e) {
         console.error(`[launch] ${meta.name}: failed:`, e)
       }
