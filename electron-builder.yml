@@ -17,9 +17,9 @@ linux:
 win:
   target:
     - nsis
-  icon: public/AxiOM-White.png
+  icon: public/AxiOM.ico
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
-  installerIcon: public/AxiOM-White.png
-  uninstallerIcon: public/AxiOM-White.png
+  installerIcon: public/AxiOM.ico
+  uninstallerIcon: public/AxiOM.ico
