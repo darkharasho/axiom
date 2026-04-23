@@ -97,6 +97,7 @@ app.whenReady().then(() => {
   })
 
   if (app.isPackaged) {
+    log.transports.console.level = false
     autoUpdater.logger = log
     autoUpdater.checkForUpdatesAndNotify()
   }
