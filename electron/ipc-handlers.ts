@@ -327,6 +327,17 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
     app.quit()
   })
 
+  const POLL_NORMAL_MS = 3000
+  const POLL_HYPER_MS = 500
+  const HYPER_DURATION_MS = 10000
+
+  let hyperModeUntil = 0
+  let pollTimer: ReturnType<typeof setTimeout> | null = null
+
+  function activateHyperMode() {
+    hyperModeUntil = Date.now() + HYPER_DURATION_MS
+  }
+
   async function pollRunningStates() {
     const entries = Object.entries(APP_META).filter(([id, meta]) => {
       const appId = id as AppId
@@ -337,11 +348,20 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
       const running = await isProcessRunning(meta.name)
       if (running !== appStates[appId].isRunning) {
         setState(win, appId, { isRunning: running })
+        activateHyperMode()
       }
     }))
   }
 
+  function scheduleNextPoll() {
+    const delay = Date.now() < hyperModeUntil ? POLL_HYPER_MS : POLL_NORMAL_MS
+    pollTimer = setTimeout(async () => {
+      await pollRunningStates()
+      scheduleNextPoll()
+    }, delay)
+  }
+
   pollRunningStates()
-  const runningPoll = setInterval(pollRunningStates, 8000)
-  win.on('closed', () => clearInterval(runningPoll))
+  scheduleNextPoll()
+  win.on('closed', () => { if (pollTimer) clearTimeout(pollTimer) })
 }
