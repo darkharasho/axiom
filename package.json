@@ -1,7 +1,7 @@
 {
   "name": "axiom",
-  "version": "0.1.0",
-  "description": "AxiOM — One launcher for every Axi app",
+  "version": "0.1.1",
+  "description": "AxiOM \u2014 One launcher for every Axi app",
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && npm run build:electron && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",
