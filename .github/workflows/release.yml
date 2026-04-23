@@ -69,19 +69,30 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run build:win
 
-  notify:
+  publish:
     needs: [build-linux, build-windows]
     runs-on: ubuntu-latest
-    if: ${{ vars.DISCORD_WEBHOOK_URL != '' }}
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Set release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          if [ -f RELEASE_NOTES.md ]; then
+            gh release edit "$tag" --notes-file RELEASE_NOTES.md
+          fi
+
       - name: Post to Discord
+        if: ${{ vars.DISCORD_WEBHOOK_URL != '' }}
         env:
           DISCORD_WEBHOOK_URL: ${{ vars.DISCORD_WEBHOOK_URL }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           tag="${GITHUB_REF#refs/tags/}"
           release_url="https://github.com/darkharasho/axiom/releases/tag/${tag}"
-          notes=$(gh release view "$tag" --repo darkharasho/axiom --json body --jq '.body' 2>/dev/null || echo "")
+          notes=$(gh release view "$tag" --json body --jq '.body' 2>/dev/null || echo "")
 
           export TAG="$tag"
           export RELEASE_URL="$release_url"
