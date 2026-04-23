@@ -13,25 +13,10 @@ import {
 } from './gearlever'
 import { installWindows, installLinux, updateLinux, uninstallWindows, uninstallLinux } from './installer'
 import { setAutoStart, getAutoStart } from './autostart'
+import { isProcessRunning } from './process-check'
 
 let appStates: Record<AppId, AppState> = buildInitialStates()
 let lastCheckTime = 0
-
-async function isProcessRunning(appName: string): Promise<boolean> {
-  const { exec } = await import('child_process')
-  return new Promise(resolve => {
-    const cmd = process.platform === 'win32'
-      ? `tasklist /FI "IMAGENAME eq ${appName}.exe" /NH`
-      : `pgrep -i "${appName}"`
-    exec(cmd, (err, stdout) => {
-      if (process.platform === 'win32') {
-        resolve(stdout.toLowerCase().includes(appName.toLowerCase() + '.exe'))
-      } else {
-        resolve(!err)
-      }
-    })
-  })
-}
 
 export function getLastCheckTime(): number { return lastCheckTime }
 
@@ -181,6 +166,7 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
       shell.openExternal(AXITOOLS_INVITE_URL)
       return
     }
+    activateHyperMode()
     const meta = APP_META[appId]
     if (!isInstallable(meta)) return
     setState(win, appId, { status: 'launching' })
@@ -343,19 +329,41 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
     app.quit()
   })
 
+  const POLL_NORMAL_MS = 3000
+  const POLL_HYPER_MS = 500
+  const HYPER_DURATION_MS = 10000
+
+  let hyperModeUntil = 0
+  let pollTimer: ReturnType<typeof setTimeout> | null = null
+
+  function activateHyperMode() {
+    hyperModeUntil = Date.now() + HYPER_DURATION_MS
+  }
+
   async function pollRunningStates() {
-    for (const [id, meta] of Object.entries(APP_META)) {
+    const entries = Object.entries(APP_META).filter(([id, meta]) => {
       const appId = id as AppId
-      if (!isInstallable(meta)) continue
-      if (!appStates[appId].installedVersion) continue
+      return isInstallable(meta) && appStates[appId].installedVersion
+    })
+    await Promise.all(entries.map(async ([id, meta]) => {
+      const appId = id as AppId
       const running = await isProcessRunning(meta.name)
       if (running !== appStates[appId].isRunning) {
         setState(win, appId, { isRunning: running })
+        activateHyperMode()
       }
-    }
+    }))
+  }
+
+  function scheduleNextPoll() {
+    const delay = Date.now() < hyperModeUntil ? POLL_HYPER_MS : POLL_NORMAL_MS
+    pollTimer = setTimeout(async () => {
+      await pollRunningStates()
+      scheduleNextPoll()
+    }, delay)
   }
 
   pollRunningStates()
-  const runningPoll = setInterval(pollRunningStates, 8000)
-  win.on('closed', () => clearInterval(runningPoll))
+  scheduleNextPoll()
+  win.on('closed', () => { if (pollTimer) clearTimeout(pollTimer) })
 }
