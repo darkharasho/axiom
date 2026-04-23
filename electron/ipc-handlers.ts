@@ -139,7 +139,9 @@ export function registerIpcHandlers(win: BrowserWindow): void {
     try {
       if (process.platform === 'win32') {
         await installWindows(downloadUrl, (p) => setState(win, appId, { downloadProgress: p }))
-        setState(win, appId, { status: 'idle', downloadProgress: undefined })
+        const newVersion = appStates[appId].latestVersion
+        setInstalledVersion(appId, newVersion)
+        setState(win, appId, { status: 'idle', installedVersion: newVersion, downloadProgress: undefined })
       } else {
         setState(win, appId, { status: 'installing' })
         if (isUpdate) {
