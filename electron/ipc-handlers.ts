@@ -22,7 +22,7 @@ async function isProcessRunning(appName: string): Promise<boolean> {
   return new Promise(resolve => {
     const cmd = process.platform === 'win32'
       ? `tasklist /FI "IMAGENAME eq ${appName}.exe" /NH`
-      : `pgrep -fi "${appName}"`
+      : `pgrep -i "${appName}"`
     exec(cmd, (err, stdout) => {
       if (process.platform === 'win32') {
         resolve(stdout.toLowerCase().includes(appName.toLowerCase() + '.exe'))
