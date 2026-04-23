@@ -71,12 +71,12 @@ app.whenReady().then(() => {
   win = createPopupWindow()
   registerIpcHandlers(win)
 
-  tray.on('click', (_event, _bounds, position) => {
+  tray.on('click', (_event, bounds, position) => {
     if (!win) return
     if (win.isVisible()) {
       win.hide()
     } else {
-      showWindowNearTray(win, position)
+      showWindowNearTray(win, position, bounds)
       if (Date.now() - getLastCheckTime() > TRAY_RECHECK_MS) {
         runCheckUpdates(win)
       }

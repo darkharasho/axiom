@@ -40,13 +40,38 @@ export function createPopupWindow(): BrowserWindow {
   return win
 }
 
-export function showWindowNearTray(win: BrowserWindow, cursor: { x: number; y: number }): void {
-  const winBounds = win.getBounds()
+export function showWindowNearTray(
+  win: BrowserWindow,
+  cursor: { x: number; y: number },
+  trayBounds?: { x: number; y: number; width: number; height: number },
+): void {
+  const { width: winW, height: winH } = win.getBounds()
   const display = screen.getDisplayNearestPoint(cursor)
   const workArea = display.workArea
+  const MARGIN = 8
 
-  const x = workArea.x + workArea.width - winBounds.width - 8
-  const y = workArea.y + workArea.height - winBounds.height - 8
+  let x: number
+  let y: number
+
+  if (process.platform === 'win32' && trayBounds && trayBounds.width > 0) {
+    // Centre the window horizontally on the tray icon
+    x = Math.round(trayBounds.x + trayBounds.width / 2 - winW / 2)
+
+    // Detect which edge the taskbar is on and place the window on the inside
+    const taskbarAtBottom = trayBounds.y > workArea.y + workArea.height / 2
+    if (taskbarAtBottom) {
+      y = workArea.y + workArea.height - winH - MARGIN
+    } else {
+      y = workArea.y + MARGIN
+    }
+
+    // Clamp so the window stays within the work area
+    x = Math.max(workArea.x + MARGIN, Math.min(x, workArea.x + workArea.width - winW - MARGIN))
+  } else {
+    // Linux / fallback: bottom-right corner
+    x = workArea.x + workArea.width - winW - MARGIN
+    y = workArea.y + workArea.height - winH - MARGIN
+  }
 
   win.setPosition(x, y, false)
   win.show()
