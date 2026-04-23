@@ -1,5 +1,13 @@
 # Release Notes
 
+Version v0.1.7 — April 23, 2026
+
+## Fixes
+
+- Fixed a phantom "update available" bug on Linux. After updating an app through AxiOM and quitting, reopening AxiOM would sometimes show the same update pending again even though the app was already up to date. AxiOM now records the installed version itself instead of relying on the target app to write it on its next launch.
+
+---
+
 Version v0.1.6 — April 23, 2026
 
 ## Update All
