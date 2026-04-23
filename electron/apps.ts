@@ -38,7 +38,7 @@ export const APP_META: Record<AppId, AppMeta> = {
     repo: 'darkharasho/axiforge',
     configDir: 'axiforge-desktop',
     assetPattern: {
-      win: /AxiForge.*Setup.*\.exe$/i,
+      win: /AxiForge.*\.exe$/i,
       linux: /AxiForge.*\.AppImage$/i,
     },
   },
