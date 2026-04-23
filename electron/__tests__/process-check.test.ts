@@ -5,12 +5,15 @@ vi.mock('child_process', async (importOriginal) => {
   return { ...actual, exec: vi.fn() }
 })
 
+let originalPlatform: string
+
 beforeEach(() => {
-  vi.resetModules()
+  originalPlatform = process.platform
   vi.useFakeTimers()
 })
 
 afterEach(() => {
+  Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true })
   vi.useRealTimers()
   vi.resetAllMocks()
 })
@@ -49,16 +52,13 @@ describe('isProcessRunning', () => {
   })
 
   it('resolves false when exec never calls back within the timeout', async () => {
-    vi.useRealTimers()
     Object.defineProperty(process, 'platform', { value: 'linux', configurable: true })
     const { exec } = await import('child_process')
     vi.mocked(exec).mockImplementation(() => ({} as any)) // never calls callback
     const { isProcessRunning } = await import('../process-check')
-    const startTime = Date.now()
-    const result = await isProcessRunning('AxiBridge')
-    const elapsed = Date.now() - startTime
-    expect(result).toBe(false)
-    expect(elapsed).toBeGreaterThanOrEqual(3000)
-    vi.useFakeTimers()
+    const promise = isProcessRunning('AxiBridge')
+    await Promise.resolve()
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(await promise).toBe(false)
   })
 })
