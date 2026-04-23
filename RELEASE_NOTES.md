@@ -1,7 +1,11 @@
 # Release Notes
 
-Version v0.1.4 — April 23, 2026
+Version v0.1.5 — April 22, 2026
 
-## Windows tray positioning
+## Right-click context menu
 
-The popup now opens directly above the tray icon on Windows, centred horizontally over it. Works with taskbars on any edge and clamps to the screen so it never goes off-screen.
+Right-clicking the tray icon now shows a small context menu with **Open AxiOM** and **Quit**. This works on all platforms — previously right-clicking did nothing on Linux because the AppIndicator protocol doesn't fire click events, only context menus.
+
+## Update badge on the tray icon
+
+When any of your Axi apps has an update available, the tray icon now shows a small red badge in the corner (like Discord does). You can turn this off in Settings under **Badge tray icon on updates** — it's on by default.
