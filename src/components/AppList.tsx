@@ -1,4 +1,4 @@
-import { Settings, RefreshCw, LogOut } from 'lucide-react'
+import { Settings, RefreshCw, LogOut, ArrowUp } from 'lucide-react'
 import type { AppState, AppId, InstallableAppId } from '@shared/types'
 import { AppRow } from './AppRow'
 
@@ -151,6 +151,7 @@ export function AppList({ states, checking, onOpenSettings, onCheckUpdates, onOp
               onMouseEnter={e => (e.currentTarget.style.opacity = '0.8')}
               onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
             >
+              <ArrowUp size={10} />
               Update All
             </button>
           )}
