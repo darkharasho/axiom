@@ -13,25 +13,10 @@ import {
 } from './gearlever'
 import { installWindows, installLinux, updateLinux, uninstallWindows, uninstallLinux } from './installer'
 import { setAutoStart, getAutoStart } from './autostart'
+import { isProcessRunning } from './process-check'
 
 let appStates: Record<AppId, AppState> = buildInitialStates()
 let lastCheckTime = 0
-
-async function isProcessRunning(appName: string): Promise<boolean> {
-  const { exec } = await import('child_process')
-  return new Promise(resolve => {
-    const cmd = process.platform === 'win32'
-      ? `tasklist /FI "IMAGENAME eq ${appName}.exe" /NH`
-      : `pgrep -i "${appName}"`
-    exec(cmd, (err, stdout) => {
-      if (process.platform === 'win32') {
-        resolve(stdout.toLowerCase().includes(appName.toLowerCase() + '.exe'))
-      } else {
-        resolve(!err)
-      }
-    })
-  })
-}
 
 export function getLastCheckTime(): number { return lastCheckTime }
 
@@ -343,15 +328,17 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
   })
 
   async function pollRunningStates() {
-    for (const [id, meta] of Object.entries(APP_META)) {
+    const entries = Object.entries(APP_META).filter(([id, meta]) => {
       const appId = id as AppId
-      if (!isInstallable(meta)) continue
-      if (!appStates[appId].installedVersion) continue
+      return isInstallable(meta) && appStates[appId].installedVersion
+    })
+    await Promise.all(entries.map(async ([id, meta]) => {
+      const appId = id as AppId
       const running = await isProcessRunning(meta.name)
       if (running !== appStates[appId].isRunning) {
         setState(win, appId, { isRunning: running })
       }
-    }
+    }))
   }
 
   pollRunningStates()
