@@ -45,18 +45,23 @@ export function downloadFile(
 export async function installWindows(
   downloadUrl: string,
   onProgress: (p: DownloadProgress) => void,
+  onInstalling?: () => void,
 ): Promise<void> {
   const tmpDir = os.tmpdir()
   const filename = path.basename(new URL(downloadUrl).pathname)
   const dest = path.join(tmpDir, filename)
   await downloadFile(downloadUrl, dest, onProgress)
+  onInstalling?.()
   await new Promise<void>((resolve, reject) => {
-    const child = spawn(dest, [], { detached: true, stdio: 'ignore' })
+    // /S = silent (no UI), /LAUNCH=0 suppresses post-install launch on NSIS installers that support it
+    const child = spawn(dest, ['/S', '/LAUNCH=0'], { stdio: 'ignore', windowsHide: true })
     child.on('error', reject)
-    child.unref()
-    // Installer runs independently; resolve immediately after launch
-    resolve()
+    child.on('close', (code) => {
+      if (code === 0 || code === null) resolve()
+      else reject(new Error(`Installer exited with code ${code}`))
+    })
   })
+  fs.unlink(dest, () => {})
 }
 
 export async function installLinux(
