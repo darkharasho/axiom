@@ -5,3 +5,4 @@ dist_out/
 .superpowers/
 *.log
 .env
+.worktrees/
