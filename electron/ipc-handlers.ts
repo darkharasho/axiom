@@ -221,14 +221,31 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
     } else {
       const { execSync } = await import('child_process')
       try {
-        const ps = `(Get-ItemProperty 'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*' -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like '*${meta.name}*' } | Select-Object -First 1).InstallLocation`
-        const loc = execSync(`powershell -Command "${ps}"`, { encoding: 'utf8', timeout: 5000 }).trim()
-        if (loc) {
-          const { readdirSync } = await import('fs')
-          const exes = readdirSync(loc).filter(f => f.endsWith('.exe') && !f.includes('Uninstall'))
-          if (exes[0]) shell.openPath(`${loc}\\${exes[0]}`)
+        console.log(`[launch] ${meta.name}: querying registry`)
+        const ps = `(Get-ItemProperty 'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', 'HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*' -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like '*${meta.name}*' } | Select-Object -First 1 | ConvertTo-Json)`
+        const raw = execSync(`powershell -NoProfile -NonInteractive -Command "${ps}"`, { encoding: 'utf8', timeout: 15000 }).trim()
+        console.log(`[launch] ${meta.name}: registry result:`, raw || '(empty)')
+        if (!raw) return
+        const entry = JSON.parse(raw)
+        const loc = entry.InstallLocation?.trim()
+        const icon = entry.DisplayIcon?.split(',')[0]?.trim()
+        console.log(`[launch] ${meta.name}: InstallLocation=${loc} DisplayIcon=${icon}`)
+        const { readdirSync, existsSync, statSync } = await import('fs')
+        let target: string | undefined
+        if (icon && existsSync(icon) && icon.toLowerCase().endsWith('.exe')) {
+          target = icon
+        } else if (loc && existsSync(loc) && statSync(loc).isDirectory()) {
+          const exes = readdirSync(loc).filter(f => f.endsWith('.exe') && !/uninstall/i.test(f))
+          const preferred = exes.find(f => f.toLowerCase() === `${meta.name.toLowerCase()}.exe`) ?? exes[0]
+          if (preferred) target = `${loc}\\${preferred}`
         }
-      } catch { /* ignore */ }
+        console.log(`[launch] ${meta.name}: target=${target}`)
+        if (!target) return
+        const err = await shell.openPath(target)
+        if (err) console.error(`[launch] ${meta.name}: openPath failed:`, err)
+      } catch (e) {
+        console.error(`[launch] ${meta.name}: failed:`, e)
+      }
     }
   })
 
