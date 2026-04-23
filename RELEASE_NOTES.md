@@ -1,11 +1,9 @@
 # Release Notes
 
-Version v0.1.9 — April 23, 2026
+Version v0.1.10 — April 23, 2026
 
-## Auto-Start Actually Works on Linux
+## AxiOM Updates Show in the Titlebar
 
-The "Start AxiOM at login" toggle never did anything on Linux — the underlying Electron API only supports macOS and Windows. AxiOM now writes a proper `~/.config/autostart/axiom.desktop` entry pointing at the current AppImage, and removes it when you turn the toggle off.
+When a new version of AxiOM is ready to install, you'll now see a small gold "Update" pill next to the AxiOM wordmark at the top of the window. Click it to restart and install. While the update is still downloading, you'll see a subtle spinner in the same spot.
 
-The entry also self-repairs: every time AxiOM launches, it rewrites the file to point at the current AppImage path, so updating AxiOM won't leave autostart pointing at an old binary.
-
-NOTE: If you had the toggle enabled before this release, flip it off and back on once to write the new entry.
+This replaces the OS notification that used to pop up on launch — the indicator stays visible until you install, so you won't miss it.
