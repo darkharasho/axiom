@@ -168,6 +168,7 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
         setInstalledVersion(appId, newVersion)
         setState(win, appId, { status: 'idle', installedVersion: newVersion, downloadProgress: undefined })
       }
+      onCheckComplete?.()
     } catch (err) {
       setState(win, appId, { status: 'error', errorMessage: String(err) })
     }
