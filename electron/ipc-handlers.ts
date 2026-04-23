@@ -14,6 +14,18 @@ import {
 import { installWindows, installLinux, updateLinux, uninstallWindows, uninstallLinux } from './installer'
 import { setAutoStart, getAutoStart } from './autostart'
 import { isProcessRunning } from './process-check'
+import * as fsSync from 'fs'
+import * as osSync from 'os'
+import * as pathSync from 'path'
+
+function writeAxiomVersionFile(configDir: string | undefined, version: string | null): void {
+  if (process.platform !== 'linux' || !configDir || !version) return
+  try {
+    const dir = pathSync.join(osSync.homedir(), '.config', configDir)
+    fsSync.mkdirSync(dir, { recursive: true })
+    fsSync.writeFileSync(pathSync.join(dir, 'axiom-version'), version, 'utf-8')
+  } catch { /* ignore */ }
+}
 
 let appStates: Record<AppId, AppState> = buildInitialStates()
 let lastCheckTime = 0
@@ -140,6 +152,7 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
         )
         const newVersion = appStates[appId].latestVersion
         setInstalledVersion(appId, newVersion)
+        writeAxiomVersionFile(meta.configDir, newVersion)
         setState(win, appId, { status: 'idle', installedVersion: newVersion })
       } else {
         setState(win, appId, { status: 'installing' })
@@ -151,6 +164,7 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
         }
         const newVersion = appStates[appId].latestVersion
         setInstalledVersion(appId, newVersion)
+        writeAxiomVersionFile(meta.configDir, newVersion)
         setState(win, appId, { status: 'idle', installedVersion: newVersion, downloadProgress: undefined })
       }
       onCheckComplete?.()
@@ -245,6 +259,11 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
         }
       }
       setInstalledVersion(appId, null)
+      if (process.platform === 'linux' && meta.configDir) {
+        try {
+          fsSync.unlinkSync(pathSync.join(osSync.homedir(), '.config', meta.configDir, 'axiom-version'))
+        } catch { /* ignore */ }
+      }
       setState(win, appId, { status: 'idle', installedVersion: null })
     } catch (err) {
       setState(win, appId, { status: 'error', errorMessage: String(err) })
