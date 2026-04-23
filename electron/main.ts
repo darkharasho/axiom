@@ -119,7 +119,9 @@ app.whenReady().then(() => {
   if (app.isPackaged) {
     log.transports.console.level = false
     autoUpdater.logger = log
-    autoUpdater.checkForUpdatesAndNotify()
+    // Use checkForUpdates (not checkForUpdatesAndNotify) so we don't fire a
+    // system notification — the titlebar indicator in AppList handles UX.
+    autoUpdater.checkForUpdates()
   }
 })
 

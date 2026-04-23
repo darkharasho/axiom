@@ -1,10 +1,12 @@
 import { Settings, RefreshCw, LogOut, ArrowUp } from 'lucide-react'
 import type { AppState, AppId, InstallableAppId } from '@shared/types'
+import type { SelfUpdateState } from '../hooks/useSelfUpdate'
 import { AppRow } from './AppRow'
 
 interface Props {
   states: AppState[]
   checking: boolean
+  selfUpdate?: SelfUpdateState
   onOpenSettings: () => void
   onCheckUpdates: () => void
   onOpenInfo: (appId: AppId) => void
@@ -12,7 +14,7 @@ interface Props {
 
 const APP_ORDER: AppId[] = ['axibridge', 'axiforge', 'axipulse', 'axiam', 'axitools']
 
-export function AppList({ states, checking, onOpenSettings, onCheckUpdates, onOpenInfo }: Props) {
+export function AppList({ states, checking, selfUpdate, onOpenSettings, onCheckUpdates, onOpenInfo }: Props) {
   const stateMap = Object.fromEntries(states.map(s => [s.id, s])) as Record<AppId, AppState>
 
   const handleAction = (action: string, appId: AppId) => {
@@ -78,6 +80,50 @@ export function AppList({ states, checking, onOpenSettings, onCheckUpdates, onOp
           <span style={{ color: 'var(--text)' }}>Axi</span>
           <span style={{ color: 'var(--gold)' }}>OM</span>
         </span>
+        {selfUpdate?.status === 'ready' && (
+          <button
+            onClick={() => window.axiom.installSelfUpdate()}
+            title={`Restart to install AxiOM v${selfUpdate.version}`}
+            style={{
+              marginLeft: 6,
+              background: 'var(--gold)',
+              border: 'none',
+              borderRadius: 3,
+              color: 'var(--bg)',
+              fontSize: 9,
+              fontWeight: 700,
+              letterSpacing: '0.3px',
+              textTransform: 'uppercase',
+              padding: '2px 6px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 3,
+              cursor: 'pointer',
+            }}
+          >
+            <ArrowUp size={9} />
+            Update
+          </button>
+        )}
+        {(selfUpdate?.status === 'available' || selfUpdate?.status === 'downloading') && (
+          <span
+            title={selfUpdate.status === 'downloading' ? 'Downloading AxiOM update…' : `AxiOM v${selfUpdate.version} available`}
+            style={{
+              marginLeft: 6,
+              color: 'var(--gold-bright)',
+              fontSize: 9,
+              fontWeight: 600,
+              letterSpacing: '0.3px',
+              textTransform: 'uppercase',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 3,
+            }}
+          >
+            <RefreshCw size={9} className="spin" />
+            {selfUpdate.status === 'downloading' ? 'Updating' : 'Update'}
+          </span>
+        )}
         <button
           onClick={onOpenSettings}
           className="icon-btn"

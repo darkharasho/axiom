@@ -342,7 +342,21 @@ if ($proc) {
   autoUpdater.on('update-downloaded',    (info) => pushSelfUpdate('ready',         { version: info.version }))
   autoUpdater.on('error',                (err)  => pushSelfUpdate('error',         { error: err.message }))
 
+  const FAKE_UPDATE = !!process.env.AXIOM_FAKE_UPDATE
+  const FAKE_VERSION = '9.9.9'
+  const runFakeSelfUpdate = () => {
+    pushSelfUpdate('checking')
+    setTimeout(() => pushSelfUpdate('available', { version: FAKE_VERSION }), 1000)
+    setTimeout(() => pushSelfUpdate('downloading'), 2000)
+    setTimeout(() => pushSelfUpdate('ready', { version: FAKE_VERSION }), 4000)
+  }
+  if (FAKE_UPDATE) {
+    console.log('[fake-update] AXIOM_FAKE_UPDATE=1 — will simulate self-update sequence')
+    win.webContents.once('did-finish-load', runFakeSelfUpdate)
+  }
+
   ipcMain.handle('axiom:check-self-update', () => {
+    if (FAKE_UPDATE) { runFakeSelfUpdate(); return }
     if (app.isPackaged) {
       autoUpdater.checkForUpdates()
     } else {
@@ -351,6 +365,11 @@ if ($proc) {
   })
 
   ipcMain.handle('axiom:install-self-update', () => {
+    if (FAKE_UPDATE) {
+      console.log('[fake-update] would quitAndInstall; resetting to idle')
+      pushSelfUpdate('idle')
+      return
+    }
     autoUpdater.quitAndInstall()
   })
 

@@ -3,6 +3,7 @@ import { AppList } from './components/AppList'
 import { SettingsView } from './components/SettingsView'
 import { AppInfoView } from './components/AppInfoView'
 import { useAppStates } from './hooks/useAppStates'
+import { useSelfUpdate } from './hooks/useSelfUpdate'
 import type { AppId, InstallableAppId } from '@shared/types'
 
 type View = 'list' | 'settings' | 'info'
@@ -11,6 +12,7 @@ export default function App() {
   const [view, setView] = useState<View>('list')
   const [infoAppId, setInfoAppId] = useState<AppId | null>(null)
   const { states, checking, checkUpdates } = useAppStates()
+  const selfUpdate = useSelfUpdate()
 
   const infoState = infoAppId ? states.find(s => s.id === infoAppId) : undefined
 
@@ -20,6 +22,7 @@ export default function App() {
         <AppList
           states={states}
           checking={checking}
+          selfUpdate={selfUpdate}
           onOpenSettings={() => setView('settings')}
           onCheckUpdates={checkUpdates}
           onOpenInfo={id => { setInfoAppId(id); setView('info') }}
