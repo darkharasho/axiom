@@ -1,5 +1,23 @@
 # Release Notes
 
+Version v0.1.6 — April 23, 2026
+
+## Update All
+
+When 2 or more of your managed apps have updates pending, an "Update All" button now appears at the top of the list. One click, done.
+
+## Running Status Detects Much Faster
+
+The app used to check whether your tools were running every 8 seconds, sequentially. It now checks all apps in parallel every 3 seconds — and bumps to every 500ms for 10 seconds after you launch something. You'll see the status flip almost immediately instead of waiting around.
+
+## Fixes
+
+- The tray red dot now clears as soon as an update finishes installing. Previously it would stick around until the next time you opened AxiOM.
+- Right-click menu on the tray icon now positions correctly.
+- Minor button hierarchy polish in the app list.
+
+---
+
 Version v0.1.5 — April 22, 2026
 
 ## Right-click context menu
