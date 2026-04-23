@@ -98,7 +98,7 @@ app.whenReady().then(() => {
     {
       label: 'Open AxiOM', click: () => {
         const cursor = screen.getCursorScreenPoint()
-        toggleWindow(cursor)
+        toggleWindow(cursor, tray!.getBounds())
       },
     },
     { type: 'separator' },
