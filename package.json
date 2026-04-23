@@ -1,6 +1,6 @@
 {
   "name": "axiom",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "AxiOM \u2014 One launcher for every Axi app",
   "main": "dist-electron/main.js",
   "scripts": {

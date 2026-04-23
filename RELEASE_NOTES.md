@@ -1,7 +1,7 @@
 # Release Notes
 
-Version v0.1.3 — April 23, 2026
+Version v0.1.4 — April 23, 2026
 
-## Bug fixes
+## Windows tray positioning
 
-Fixed a crash in the main process when AxiOM checks for its own updates. The auto-updater was writing logs to stdout, which throws a broken pipe error when AxiOM is running as a tray app with no terminal attached.
+The popup now opens directly above the tray icon on Windows, centred horizontally over it. Works with taskbars on any edge and clamps to the screen so it never goes off-screen.
