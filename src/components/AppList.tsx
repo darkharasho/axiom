@@ -51,6 +51,16 @@ export function AppList({ states, checking, onOpenSettings, onCheckUpdates, onOp
     }
   }
 
+  const appsWithUpdates = states.filter(s => {
+    const hasUpdate = s.installedVersion && s.latestVersion && s.installedVersion !== s.latestVersion
+    const isBusy = s.status === 'downloading' || s.status === 'installing' || s.status === 'deleting'
+    return hasUpdate && !isBusy
+  })
+
+  const handleUpdateAll = () => {
+    appsWithUpdates.forEach(s => window.axiom.install(s.id as InstallableAppId))
+  }
+
   return (
     <div className="view-enter" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: 14 }}>
       {/* Header */}
@@ -98,6 +108,7 @@ export function AppList({ states, checking, onOpenSettings, onCheckUpdates, onOp
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
+        alignItems: 'center',
         marginTop: 10,
         paddingTop: 8,
         borderTop: '1px solid var(--border)',
@@ -122,24 +133,46 @@ export function AppList({ states, checking, onOpenSettings, onCheckUpdates, onOp
           <RefreshCw size={10} className={checking ? 'spin' : ''} />
           {checking ? 'Checking...' : 'Check for updates'}
         </button>
-        <button
-          onClick={() => window.axiom.quit()}
-          className="btn-ghost"
-          style={{
-            background: 'none',
-            color: 'var(--text-dim)',
-            fontSize: 11,
-            padding: '4px 0',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4,
-          }}
-          onMouseEnter={e => (e.currentTarget.style.color = '#e05252')}
-          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-dim)')}
-        >
-          <LogOut size={10} />
-          Quit
-        </button>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {appsWithUpdates.length >= 2 && (
+            <button
+              onClick={handleUpdateAll}
+              className="btn-ghost"
+              style={{
+                background: 'none',
+                color: 'var(--gold-bright)',
+                fontSize: 11,
+                padding: '4px 0',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+              }}
+              onMouseEnter={e => (e.currentTarget.style.opacity = '0.8')}
+              onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+            >
+              Update All
+            </button>
+          )}
+          <button
+            onClick={() => window.axiom.quit()}
+            className="btn-ghost"
+            style={{
+              background: 'none',
+              color: 'var(--text-dim)',
+              fontSize: 11,
+              padding: '4px 0',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#e05252')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-dim)')}
+          >
+            <LogOut size={10} />
+            Quit
+          </button>
+        </div>
       </div>
     </div>
   )
