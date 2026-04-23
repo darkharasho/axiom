@@ -86,6 +86,16 @@ export function SettingsView({ onBack }: Props) {
         />
       </div>
 
+      {/* Tray badge */}
+      <div style={row}>
+        <span style={label}>Badge tray icon on updates</span>
+        <Toggle
+          id="tray-badge"
+          checked={config.trayBadge ?? true}
+          onChange={checked => updateConfig({ trayBadge: checked })}
+        />
+      </div>
+
       {/* AxiOM self-update */}
       <div style={{ ...row, borderBottom: 'none', paddingBottom: 0 }}>
         <span style={label}>AxiOM updates</span>

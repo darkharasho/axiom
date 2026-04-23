@@ -36,6 +36,7 @@ export interface ConfigApp {
 export interface Config {
   autoStart: boolean
   notifyOnUpdates: boolean
+  trayBadge: boolean
   apps: Record<InstallableAppId, ConfigApp>
 }
 
@@ -47,6 +48,7 @@ export interface ReleaseInfo {
 export const DEFAULT_CONFIG: Config = {
   autoStart: false,
   notifyOnUpdates: false,
+  trayBadge: true,
   apps: {
     axibridge: { installedVersion: null, lastChecked: null },
     axiforge:  { installedVersion: null, lastChecked: null },

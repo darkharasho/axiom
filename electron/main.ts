@@ -1,4 +1,5 @@
-import { app, Tray, nativeImage, nativeTheme } from 'electron'
+import { app, Tray, nativeImage, nativeTheme, Menu, screen } from 'electron'
+import type { KeyboardEvent, Rectangle, Point } from 'electron'
 import path from 'path'
 import { execSync } from 'child_process'
 import { autoUpdater } from 'electron-updater'
@@ -10,7 +11,7 @@ if (process.platform === 'linux') {
   app.commandLine.appendSwitch('ozone-platform', 'x11')
 }
 import { createPopupWindow, showWindowNearTray } from './window'
-import { registerIpcHandlers, runCheckUpdates, getLastCheckTime } from './ipc-handlers'
+import { registerIpcHandlers, runCheckUpdates, getLastCheckTime, hasAnyUpdates } from './ipc-handlers'
 import { readConfig } from './config'
 import { setAutoStart } from './autostart'
 
@@ -34,7 +35,7 @@ function isWindowsTaskbarDark(): boolean {
   }
 }
 
-function getIconPath(): string {
+function getIconPath(badge = false): string {
   let variant: string
   if (process.platform === 'linux') {
     variant = 'white'
@@ -43,11 +44,13 @@ function getIconPath(): string {
   } else {
     variant = nativeTheme.shouldUseDarkColors ? 'white' : 'black'
   }
-  return path.join(__dirname, `../public/AxiOM-${variant === 'white' ? 'White' : 'Black'}.png`)
+  const name = variant === 'white' ? 'White' : 'Black'
+  const suffix = badge ? '-badge' : ''
+  return path.join(__dirname, `../public/AxiOM-${name}${suffix}.png`)
 }
 
-function getAppIcon() {
-  const raw = nativeImage.createFromPath(getIconPath())
+function getAppIcon(badge = false) {
+  const raw = nativeImage.createFromPath(getIconPath(badge))
   if (process.platform === 'win32') {
     const sizes = [16, 32, 48, 64, 128, 256]
     const multi = nativeImage.createEmpty()
@@ -59,6 +62,11 @@ function getAppIcon() {
   return raw
 }
 
+function updateTrayIcon() {
+  const badge = readConfig().trayBadge && hasAnyUpdates()
+  tray?.setImage(getAppIcon(badge).resize({ width: 16, height: 16 }))
+}
+
 app.on('window-all-closed', () => {
   // Intentionally do nothing — keep the app running as a tray app
 })
@@ -66,12 +74,11 @@ app.on('window-all-closed', () => {
 app.whenReady().then(() => {
   tray = new Tray(getAppIcon().resize({ width: 16, height: 16 }))
   tray.setToolTip('AxiOM')
-  tray.setContextMenu(null)
 
   win = createPopupWindow()
-  registerIpcHandlers(win)
+  registerIpcHandlers(win, updateTrayIcon)
 
-  tray.on('click', (_event, bounds, position) => {
+  const toggleWindow = (position: Point, bounds?: Rectangle) => {
     if (!win) return
     if (win.isVisible()) {
       win.hide()
@@ -81,20 +88,33 @@ app.whenReady().then(() => {
         runCheckUpdates(win)
       }
     }
+  }
+
+  tray.on('click', (_event: KeyboardEvent, bounds: Rectangle, position: Point) => {
+    toggleWindow(position, bounds)
   })
+
+  tray.setContextMenu(Menu.buildFromTemplate([
+    {
+      label: 'Open AxiOM', click: () => {
+        const cursor = screen.getCursorScreenPoint()
+        toggleWindow(cursor)
+      },
+    },
+    { type: 'separator' },
+    { label: 'Quit', click: () => app.quit() },
+  ]))
 
   const cfg = readConfig()
   setAutoStart(cfg.autoStart)
 
   win.webContents.once('did-finish-load', () => {
-    runCheckUpdates(win!)
+    runCheckUpdates(win!).then(updateTrayIcon)
   })
 
-  setInterval(() => { if (win) runCheckUpdates(win) }, CHECK_INTERVAL_MS)
+  setInterval(() => { if (win) runCheckUpdates(win).then(updateTrayIcon) }, CHECK_INTERVAL_MS)
 
-  nativeTheme.on('updated', () => {
-    tray?.setImage(getAppIcon().resize({ width: 16, height: 16 }))
-  })
+  nativeTheme.on('updated', updateTrayIcon)
 
   if (app.isPackaged) {
     log.transports.console.level = false

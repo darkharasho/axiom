@@ -35,6 +35,12 @@ async function isProcessRunning(appName: string): Promise<boolean> {
 
 export function getLastCheckTime(): number { return lastCheckTime }
 
+export function hasAnyUpdates(): boolean {
+  return Object.values(appStates).some(s =>
+    s.installedVersion != null && s.latestVersion != null && s.installedVersion !== s.latestVersion
+  )
+}
+
 export async function runCheckUpdates(win: BrowserWindow): Promise<void> {
   const before = { ...appStates }
   for (const [id, meta] of Object.entries(APP_META)) {
@@ -105,12 +111,13 @@ function setState(win: BrowserWindow, appId: AppId, patch: Partial<AppState>): v
   pushStates(win)
 }
 
-export function registerIpcHandlers(win: BrowserWindow): void {
+export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => void): void {
   ipcMain.handle('axiom:get-states', () => Object.values(appStates))
 
   ipcMain.handle('axiom:get-config', () => readConfig())
   ipcMain.handle('axiom:set-config', (_e, patch: Partial<ReturnType<typeof readConfig>>) => {
     patchConfig(patch)
+    if ('trayBadge' in patch) onCheckComplete?.()
     return readConfig()
   })
 
@@ -120,7 +127,10 @@ export function registerIpcHandlers(win: BrowserWindow): void {
     patchConfig({ autoStart: enabled })
   })
 
-  ipcMain.handle('axiom:check-updates', () => runCheckUpdates(win))
+  ipcMain.handle('axiom:check-updates', async () => {
+    await runCheckUpdates(win)
+    onCheckComplete?.()
+  })
 
   ipcMain.handle('axiom:install', async (_e, appId: InstallableAppId) => {
     const meta = APP_META[appId]
