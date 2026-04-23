@@ -165,6 +165,7 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
       shell.openExternal(AXITOOLS_INVITE_URL)
       return
     }
+    activateHyperMode()
     const meta = APP_META[appId]
     if (!isInstallable(meta)) return
     setState(win, appId, { status: 'launching' })
