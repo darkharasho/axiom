@@ -15,8 +15,9 @@ import { registerIpcHandlers, runCheckUpdates, getLastCheckTime, hasAnyUpdates }
 import { readConfig } from './config'
 import { setAutoStart } from './autostart'
 
-const CHECK_INTERVAL_MS = 30 * 60 * 1000  // 30 minutes
-const TRAY_RECHECK_MS   =  5 * 60 * 1000  //  5 minutes
+const CHECK_INTERVAL_MS      = 30 * 60 * 1000  // 30 minutes
+const TRAY_RECHECK_MS        =  5 * 60 * 1000  //  5 minutes
+const SELF_UPDATE_INTERVAL_MS = 60 * 60 * 1000  //  1 hour
 import type { BrowserWindow } from 'electron'
 
 let tray: Tray | null = null
@@ -122,6 +123,7 @@ app.whenReady().then(() => {
     // Use checkForUpdates (not checkForUpdatesAndNotify) so we don't fire a
     // system notification — the titlebar indicator in AppList handles UX.
     autoUpdater.checkForUpdates()
+    setInterval(() => { autoUpdater.checkForUpdates() }, SELF_UPDATE_INTERVAL_MS)
   }
 })
 
