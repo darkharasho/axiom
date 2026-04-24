@@ -1,9 +1,7 @@
 # Release Notes
 
-Version v0.1.10 — April 23, 2026
+Version v0.1.11 — April 24, 2026
 
-## AxiOM Updates Show in the Titlebar
+## Auto-update checks while you're away
 
-When a new version of AxiOM is ready to install, you'll now see a small gold "Update" pill next to the AxiOM wordmark at the top of the window. Click it to restart and install. While the update is still downloading, you'll see a subtle spinner in the same spot.
-
-This replaces the OS notification that used to pop up on launch — the indicator stays visible until you install, so you won't miss it.
+Axiom previously only checked for its own updates once at startup. If you leave it running in the tray for a day or two, you'd never know a new version was out until you restarted. Now it checks every hour automatically — no restart required to get notified.
