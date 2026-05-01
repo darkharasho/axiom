@@ -1,7 +1,9 @@
 # Release Notes
 
-Version v0.1.12 — May 1, 2026
+Version v0.1.13 — May 1, 2026
 
-## Lighter memory footprint
+## Linux launcher fixes
 
-AxiOM now runs noticeably leaner in the background. The GPU helper process is gone (the tray popup doesn't need it), V8's heap is capped to a sensible size, and a few unused Chromium services are turned off. You should see the total RAM used by AxiOM drop without anything looking or feeling different.
+- `gtk-launch` should now consistently open apps after an update. Previously a stale `.desktop` entry could point at an AppImage that no longer existed, so launches silently failed.
+- On startup, AxiOM sweeps `${appId}.desktop` files and rewrites any whose `TryExec` points at a missing or outdated AppImage.
+- Updates always rewrite the desktop entry from scratch instead of trying to regex-patch the existing one, which was fragile when the entry had been created by GearLever or the AppImage's own first-run prompt.
