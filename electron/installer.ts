@@ -5,6 +5,7 @@ import path from 'path'
 import os from 'os'
 import { execSync, spawn } from 'child_process'
 import type { DownloadProgress } from './shared/types'
+import { writeLinuxDesktopEntry, findInstalledAppImage } from './desktopEntry'
 
 export function downloadFile(
   url: string,
@@ -83,21 +84,7 @@ export async function updateLinux(
   downloadUrl: string,
   onProgress: (p: DownloadProgress) => void,
 ): Promise<void> {
-  const searchDirs = [
-    path.join(os.homedir(), 'AppImages'),
-    path.join(os.homedir(), 'Applications'),
-    path.join(os.homedir(), '.local', 'bin'),
-    os.homedir(),
-  ]
-
-  let existingPath: string | null = null
-  for (const dir of searchDirs) {
-    try {
-      const files = fs.readdirSync(dir)
-      const match = files.find(f => f.toLowerCase().endsWith('.appimage') && f.toLowerCase().includes(appName.toLowerCase()))
-      if (match) { existingPath = path.join(dir, match); break }
-    } catch { /* ignore */ }
-  }
+  const existingPath = findInstalledAppImage(appName)
 
   const newFilename = path.basename(new URL(downloadUrl).pathname)
   const installDir = existingPath ? path.dirname(existingPath) : path.join(os.homedir(), 'AppImages')
@@ -109,15 +96,13 @@ export async function updateLinux(
 
   if (existingPath && existingPath !== newPath) {
     fs.unlinkSync(existingPath)
-    // Update the GearLever .desktop file if the path changed
-    const desktopPath = path.join(os.homedir(), '.local', 'share', 'applications', `${appId}.desktop`)
-    if (fs.existsSync(desktopPath)) {
-      const content = fs.readFileSync(desktopPath, 'utf-8')
-      const updated = content
-        .replace(new RegExp(existingPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), newPath)
-      fs.writeFileSync(desktopPath, updated, 'utf-8')
-    }
   }
+
+  // Always (re)write the desktop entry so `gtk-launch ${appId}` resolves to the
+  // file we just wrote. Regex-patching the existing file is fragile — the entry
+  // may have been created by the AppImage's own first-run integration prompt
+  // with a different format, or by a prior update path that left it stale.
+  writeLinuxDesktopEntry(appId, appName, newPath)
 }
 
 export function uninstallWindows(appName: string): Promise<void> {

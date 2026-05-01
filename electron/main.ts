@@ -23,6 +23,8 @@ import { createPopupWindow, showWindowNearTray } from './window'
 import { registerIpcHandlers, runCheckUpdates, getLastCheckTime, hasAnyUpdates } from './ipc-handlers'
 import { readConfig } from './config'
 import { setAutoStart } from './autostart'
+import { refreshOrphanedDesktopEntries } from './desktopEntry'
+import { APP_META, isInstallable } from './apps'
 
 const CHECK_INTERVAL_MS      = 30 * 60 * 1000  // 30 minutes
 const TRAY_RECHECK_MS        =  5 * 60 * 1000  //  5 minutes
@@ -82,6 +84,11 @@ app.on('window-all-closed', () => {
 })
 
 app.whenReady().then(() => {
+  if (process.platform === 'linux') {
+    refreshOrphanedDesktopEntries(
+      Object.values(APP_META).filter(isInstallable).map((m) => ({ id: m.id, name: m.name })),
+    )
+  }
   tray = new Tray(getAppIcon().resize({ width: 16, height: 16 }))
   tray.setToolTip('AxiOM')
 
