@@ -10,6 +10,15 @@ import log from 'electron-log'
 if (process.platform === 'linux') {
   app.commandLine.appendSwitch('ozone-platform', 'x11')
 }
+
+// Memory trims: this is a 320x420 tray popup with simple CSS transitions —
+// no canvas/WebGL/video — so the GPU helper process is pure overhead.
+app.disableHardwareAcceleration()
+app.commandLine.appendSwitch('js-flags', '--max-old-space-size=128')
+app.commandLine.appendSwitch(
+  'disable-features',
+  'CalculateNativeWinOcclusion,Translate,MediaRouter',
+)
 import { createPopupWindow, showWindowNearTray } from './window'
 import { registerIpcHandlers, runCheckUpdates, getLastCheckTime, hasAnyUpdates } from './ipc-handlers'
 import { readConfig } from './config'
