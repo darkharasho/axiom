@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import type { AppState, AppId, InstallableAppId, Config } from '../electron/shared/types'
 
 declare global {

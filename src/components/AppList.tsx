@@ -80,6 +80,26 @@ export function AppList({ states, checking, selfUpdate, onOpenSettings, onCheckU
           <span style={{ color: 'var(--text)' }}>Axi</span>
           <span style={{ color: 'var(--gold)' }}>OM</span>
         </span>
+        {import.meta.env.DEV && (
+          <span
+            title="Running from the dev server"
+            style={{
+              marginLeft: 4,
+              border: '1px solid var(--gold)',
+              borderRadius: 3,
+              color: 'var(--gold-bright)',
+              background: 'rgba(212, 175, 55, 0.12)',
+              fontSize: 9,
+              fontWeight: 700,
+              letterSpacing: '0.5px',
+              textTransform: 'uppercase',
+              padding: '1px 5px',
+              lineHeight: 1.2,
+            }}
+          >
+            dev
+          </span>
+        )}
         {selfUpdate?.status === 'ready' && (
           <button
             onClick={() => window.axiom.installSelfUpdate()}
