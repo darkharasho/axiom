@@ -78,14 +78,14 @@ describe('detectInstalledPlugins', () => {
     expect(arc!.location.dir).toBe('')
   })
 
-  it('detects arcdps under Nexus (addons/arcdps/ArcDPS.dll)', () => {
-    const nexusDir = path.join(gw2, 'addons', 'arcdps')
-    fs.mkdirSync(nexusDir, { recursive: true })
-    fs.writeFileSync(path.join(nexusDir, 'ArcDPS.dll'), 'fake')
+  it('detects arcdps under Nexus (addons/ArcDPS.dll)', () => {
+    const addonsDir = path.join(gw2, 'addons')
+    fs.mkdirSync(addonsDir, { recursive: true })
+    fs.writeFileSync(path.join(addonsDir, 'ArcDPS.dll'), 'fake')
     const found = detectInstalledPlugins(gw2)
     const arc = found.find(p => p.id === 'arcdps')
     expect(arc).toBeDefined()
-    expect(arc!.location.dir).toBe('addons/arcdps')
+    expect(arc!.location.dir).toBe('addons')
   })
 
   it('detects a github plugin in bin64', () => {
@@ -118,9 +118,9 @@ describe('detectInstalledPlugins', () => {
 
   it('returns each meta only once even when present in multiple locations', () => {
     fs.writeFileSync(path.join(gw2, 'd3d11.dll'), 'fake')
-    const nexusDir = path.join(gw2, 'addons', 'arcdps')
-    fs.mkdirSync(nexusDir, { recursive: true })
-    fs.writeFileSync(path.join(nexusDir, 'ArcDPS.dll'), 'fake')
+    const addonsDir = path.join(gw2, 'addons')
+    fs.mkdirSync(addonsDir, { recursive: true })
+    fs.writeFileSync(path.join(addonsDir, 'ArcDPS.dll'), 'fake')
     const found = detectInstalledPlugins(gw2)
     const arcCount = found.filter(p => p.id === 'arcdps').length
     expect(arcCount).toBe(1)

@@ -28,10 +28,10 @@ describe('ARCDPS_REGISTRY', () => {
     expect(ue?.locations[0].dir).toBe('bin64/arcdps/extensions')
   })
 
-  it('arcdps prefers addons/arcdps (ArcDPS.dll) over GW2 root (d3d11.dll)', () => {
-    // addons/arcdps must be checked first because Nexus also uses root d3d11.dll
+  it('arcdps prefers addons/ (ArcDPS.dll, Nexus chainload) over GW2 root (d3d11.dll)', () => {
+    // addons/ must be checked first because Nexus also uses root d3d11.dll
     const arc = getPluginMeta('arcdps')!
-    expect(arc.locations.map(l => l.dir)).toEqual(['addons/arcdps', ''])
+    expect(arc.locations.map(l => l.dir)).toEqual(['addons', ''])
     expect(arc.locations[0].installFilename).toBe('ArcDPS.dll')
     expect(arc.locations[1].installFilename).toBe('d3d11.dll')
   })

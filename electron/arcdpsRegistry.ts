@@ -8,7 +8,6 @@ export type InstallDir =
   | 'bin64'
   | 'bin64/arcdps/extensions'
   | 'addons'
-  | 'addons/arcdps'
 
 export interface PluginLocation {
   dir: InstallDir
@@ -41,15 +40,15 @@ export const ARCDPS_REGISTRY: ArcPluginMeta[] = [
   {
     id: 'arcdps',
     name: 'arcdps',
-    description: 'DPS meter and addon loader. Loads as ArcDPS.dll under addons/arcdps/ when chainloaded by GW2 Nexus, or as d3d11.dll in the GW2 root in a standalone setup.',
+    description: 'DPS meter and addon loader. Loads as ArcDPS.dll inside the GW2 Nexus addons/ folder, or as d3d11.dll in the GW2 root in a standalone setup.',
     source: { kind: 'deltaconnected' },
     // Nexus location checked first because a Nexus install also puts d3d11.dll
     // in the root (the Nexus loader), which would otherwise be misidentified
     // as arcdps. detectInstalledPlugins additionally skips the root d3d11.dll
     // candidate when <GW2>/addons/ exists.
     locations: [
-      { dir: 'addons/arcdps', dllPattern: /^ArcDPS\.dll$/i,  installFilename: 'ArcDPS.dll' },
-      { dir: '',              dllPattern: /^d3d11\.dll$/i,   installFilename: 'd3d11.dll' },
+      { dir: 'addons', dllPattern: /^ArcDPS\.dll$/i, installFilename: 'ArcDPS.dll' },
+      { dir: '',       dllPattern: /^d3d11\.dll$/i,  installFilename: 'd3d11.dll' },
     ],
     alwaysShow: true,
   },
@@ -96,6 +95,15 @@ export const ARCDPS_REGISTRY: ArcPluginMeta[] = [
     source: { kind: 'github', repo: 'knoxfighter/GW2-ArcDPS-Mechanics-Log' },
     locations: arcOrNexus('arcdps_mechanics.dll', /^arcdps_mechanics?.*\.dll$/i),
     assetPattern: /\.dll$/i,
+    alwaysShow: false,
+  },
+  {
+    id: 'healing_stats',
+    name: 'Healing Stats',
+    description: 'Tracks outgoing healing per squad member (arcdps does not report heals natively).',
+    source: { kind: 'github', repo: 'Krappa322/arcdps_healing_stats' },
+    locations: arcOrNexus('arcdps_healing_stats.dll'),
+    assetPattern: /^arcdps_healing_stats\.dll$/i,
     alwaysShow: false,
   },
   {
