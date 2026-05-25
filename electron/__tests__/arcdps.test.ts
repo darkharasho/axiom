@@ -145,7 +145,7 @@ describe('checkArcdpsCoreUpdate', () => {
       text: async () => '5d41402abc4b2a76b9719d911017c592 *d3d11.dll\n',
     } as any)
     const r = await checkArcdpsCoreUpdate(dll, fetchImpl)
-    expect(r).toEqual({ upToDate: true, remoteMd5: '5d41402abc4b2a76b9719d911017c592' })
+    expect(r).toEqual({ upToDate: true, remoteMd5: '5d41402abc4b2a76b9719d911017c592', localMd5: '5d41402abc4b2a76b9719d911017c592' })
     fs.unlinkSync(dll)
   })
 

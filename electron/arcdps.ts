@@ -110,7 +110,7 @@ type FetchLike = (url: string) => Promise<{ ok: boolean; text(): Promise<string>
 export async function checkArcdpsCoreUpdate(
   dllPath: string,
   fetchImpl: FetchLike = fetch as unknown as FetchLike,
-): Promise<{ upToDate: boolean; remoteMd5: string } | null> {
+): Promise<{ upToDate: boolean; remoteMd5: string; localMd5: string } | null> {
   try {
     const res = await fetchImpl(ARCDPS_CORE_MD5_URL)
     if (!res.ok) return null
@@ -118,8 +118,8 @@ export async function checkArcdpsCoreUpdate(
     // md5sum format: "<hex>  filename" or "<hex> *filename"
     const remoteMd5 = body.trim().split(/\s+/)[0]?.toLowerCase()
     if (!remoteMd5 || !/^[a-f0-9]{32}$/.test(remoteMd5)) return null
-    const local = computeFileMd5(dllPath).toLowerCase()
-    return { upToDate: local === remoteMd5, remoteMd5 }
+    const localMd5 = computeFileMd5(dllPath).toLowerCase()
+    return { upToDate: localMd5 === remoteMd5, remoteMd5, localMd5 }
   } catch {
     return null
   }
@@ -174,7 +174,7 @@ export interface BuildStateOpts {
   overrideError?: string | null
   recordedInstalls: Record<string, { installedTag: string | null; installedAt: string | null }>
   fetchRelease: (repo: string, assetPattern: RegExp) => Promise<{ version: string; downloadUrl: string } | null>
-  fetchCoreMd5: (dllPath: string) => Promise<{ upToDate: boolean; remoteMd5: string } | null>
+  fetchCoreMd5: (dllPath: string) => Promise<{ upToDate: boolean; remoteMd5: string; localMd5: string } | null>
 }
 
 export async function buildArcdpsState(opts: BuildStateOpts): Promise<ArcdpsState> {
@@ -207,6 +207,7 @@ export async function buildArcdpsState(opts: BuildStateOpts): Promise<ArcdpsStat
     if (meta.source.kind === 'deltaconnected' && det) {
       const r = await opts.fetchCoreMd5(det.dllPath)
       if (r) {
+        base.installedTag = r.localMd5.slice(0, 7)
         base.latestTag = r.remoteMd5.slice(0, 7)
         base.downloadUrl = ARCDPS_CORE_URL
         base.upToDate = r.upToDate
