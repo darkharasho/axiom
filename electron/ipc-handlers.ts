@@ -1,4 +1,4 @@
-import { ipcMain, shell, app, Notification } from 'electron'
+import { ipcMain, shell, app, Notification, dialog } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import type { BrowserWindow } from 'electron'
 import type { AppId, InstallableAppId, AppState, ArcdpsState } from './shared/types'
@@ -182,6 +182,16 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
     const cfg = readConfig()
     patchConfig({ arcdps: { ...cfg.arcdps, gw2PathOverride: p } })
     await refreshArcdps(win)
+  })
+
+  ipcMain.handle('arcdps:pick-gw2-folder', async () => {
+    const result = await dialog.showOpenDialog(win, {
+      title: 'Select Guild Wars 2 install folder',
+      properties: ['openDirectory'],
+      defaultPath: arcdpsState.gw2Path ?? undefined,
+    })
+    if (result.canceled || result.filePaths.length === 0) return null
+    return result.filePaths[0]
   })
 
   ipcMain.handle('arcdps:install', async (_e, id: string) => {

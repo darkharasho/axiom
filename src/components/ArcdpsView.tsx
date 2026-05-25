@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { ChevronLeft, RefreshCw } from 'lucide-react'
 import { useArcdpsState } from '../hooks/useArcdpsState'
 import { ArcdpsRow } from './ArcdpsRow'
@@ -10,12 +11,17 @@ export function ArcdpsView({ onBack }: Props) {
   const { state, checking, check, install, setGw2Path } = useArcdpsState()
   const { gw2Path, gw2PathSource, plugins } = state
 
-  const handleChangePath = () => {
-    // NOTE: Using window.prompt for v1 — a future task should swap this for a native folder picker dialog
-    const current = gw2Path ?? ''
-    const newPath = window.prompt('Enter GW2 installation path (leave empty to clear):', current)
-    if (newPath === null) return // user cancelled
-    setGw2Path(newPath.trim() || null)
+  const didInitialCheck = useRef(false)
+  useEffect(() => {
+    if (didInitialCheck.current) return
+    didInitialCheck.current = true
+    check()
+  }, [check])
+
+  const handleChangePath = async () => {
+    const picked = await window.axiom.pickGw2Folder()
+    if (picked === null) return
+    await setGw2Path(picked)
   }
 
   const sourceLabel = (source: typeof gw2PathSource) => {

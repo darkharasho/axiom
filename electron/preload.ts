@@ -84,6 +84,9 @@ contextBridge.exposeInMainWorld('axiom', {
   setGw2Path: (p: string | null): Promise<void> =>
     ipcRenderer.invoke('arcdps:set-gw2-path', p),
 
+  pickGw2Folder: (): Promise<string | null> =>
+    ipcRenderer.invoke('arcdps:pick-gw2-folder'),
+
   onArcdpsStateUpdated: (cb: (state: ArcdpsState) => void) => {
     ipcRenderer.on('arcdps:state-updated', (_e, state) => cb(state))
     return () => ipcRenderer.removeAllListeners('arcdps:state-updated')

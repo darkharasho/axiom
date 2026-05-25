@@ -29,6 +29,7 @@ declare global {
       checkArcdpsUpdates: () => Promise<void>
       installArcdpsPlugin: (id: string) => Promise<void>
       setGw2Path: (p: string | null) => Promise<void>
+      pickGw2Folder: () => Promise<string | null>
       onArcdpsStateUpdated: (cb: (state: ArcdpsState) => void) => () => void
     }
   }
