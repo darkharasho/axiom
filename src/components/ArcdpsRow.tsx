@@ -8,13 +8,14 @@ interface Props {
 }
 
 export function ArcdpsRow({ plugin, onInstall }: Props) {
-  const { id, name, description, installed, installedTag, latestTag, upToDate, downloadUrl, status, errorMessage, downloadProgress } = plugin
+  const { id, name, description, installed, disabled, installedTag, latestTag, upToDate, downloadUrl, status, errorMessage, downloadProgress } = plugin
 
   const isBusy = status === 'downloading' || status === 'installing'
   const isDisabled = isBusy || (installed && upToDate === true) || !downloadUrl
 
   const statusText = () => {
     if (!installed) return 'Not installed'
+    if (disabled) return 'Disabled'
     if (upToDate === true) return 'Up to date'
     if (upToDate === false) return 'Update available'
     return 'Unknown'
@@ -23,6 +24,7 @@ export function ArcdpsRow({ plugin, onInstall }: Props) {
   const statusColor = () => {
     if (errorMessage) return '#e05252'
     if (!installed) return 'var(--text-faint)'
+    if (disabled) return 'var(--text-faint)'
     if (upToDate === false) return 'var(--gold-bright)'
     if (upToDate === true) return 'var(--text-dim)'
     return 'var(--text-dim)'

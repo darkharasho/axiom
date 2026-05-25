@@ -135,6 +135,14 @@ export interface DetectedPlugin {
   dllPath: string
   sizeBytes: number
   mtime: Date
+  disabled: boolean
+}
+
+// Nexus and ad-hoc disable conventions: Foo.dll_0, Foo.dll.disabled, Foo.dll.old
+const DISABLE_SUFFIX_RE = /(_\d+|\.disabled|\.old)$/i
+
+function stripDisableSuffix(name: string): string {
+  return name.replace(DISABLE_SUFFIX_RE, '')
 }
 
 function safeReaddir(dir: string): string[] {
@@ -158,11 +166,18 @@ export function detectInstalledPlugins(gw2Path: string): DetectedPlugin[] {
       if (meta.id === 'arcdps' && location.dir === '' && nexusInstalled) continue
       const dir = resolveInstallDir(gw2Path, location.dir)
       for (const file of safeReaddir(dir)) {
-        if (!location.dllPattern.test(file)) continue
+        const stripped = stripDisableSuffix(file)
+        const directMatch = location.dllPattern.test(file)
+        const disabledMatch = !directMatch && stripped !== file && location.dllPattern.test(stripped)
+        if (!directMatch && !disabledMatch) continue
         const full = path.join(dir, file)
         try {
           const st = fs.statSync(full)
-          out.push({ id: meta.id, meta, location, dllPath: full, sizeBytes: st.size, mtime: st.mtime })
+          out.push({
+            id: meta.id, meta, location, dllPath: full,
+            sizeBytes: st.size, mtime: st.mtime,
+            disabled: disabledMatch,
+          })
           seen.add(meta.id)
           break
         } catch { /* ignore */ }
@@ -199,6 +214,7 @@ export async function buildArcdpsState(opts: BuildStateOpts): Promise<ArcdpsStat
       description: meta.description,
       alwaysShow: meta.alwaysShow,
       installed: !!det,
+      disabled: !!det?.disabled,
       installedDir: det ? det.location.dir : null,
       installedTag: recorded?.installedTag ?? null,
       installedAt: recorded?.installedAt ?? null,

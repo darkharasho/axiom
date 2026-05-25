@@ -46,6 +46,7 @@ export interface ArcdpsPluginState {
   description: string
   alwaysShow: boolean
   installed: boolean
+  disabled: boolean                   // matched a .dll_N / .disabled / .old variant
   installedDir: string | null         // relative dir under the GW2 root where the DLL was found (e.g. '', 'bin64', 'addons')
   installedTag: string | null         // recorded by AxiOM on install; null if unknown/manual
   installedAt: string | null          // ISO timestamp from AxiOM install
