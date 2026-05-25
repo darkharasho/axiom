@@ -52,7 +52,7 @@ export const ARCDPS_REGISTRY: ArcPluginMeta[] = [
   {
     id: 'arcdps_axipulse',
     name: 'AxiPulse (arcdps plugin)',
-    description: 'Streams fight summaries from arcdps to your AxiPulse desktop app.',
+    description: 'AxiPulse’s combat analysis (damage, timelines, performance history) running in-game as an arcdps panel.',
     source: { kind: 'github', repo: 'darkharasho/arcdps-axipulse' },
     locations: arcOrNexus('arcdps_axipulse.dll'),
     assetPattern: /^arcdps_axipulse\.dll$/i,
