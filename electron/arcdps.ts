@@ -138,8 +138,12 @@ export interface DetectedPlugin {
   disabled: boolean
 }
 
-// Nexus and ad-hoc disable conventions: Foo.dll_0, Foo.dll.disabled, Foo.dll.old
-const DISABLE_SUFFIX_RE = /(_\d+|\.disabled|\.old)$/i
+// Nexus and ad-hoc disable conventions:
+//   Foo.dll_0       (Nexus numbered disable)
+//   Foo.dll.disabled
+//   Foo.dll.old
+//   Foo.dll.bak     (AxiOM's own atomic-install backup)
+const DISABLE_SUFFIX_RE = /(_\d+|\.disabled|\.old|\.bak)$/i
 
 function stripDisableSuffix(name: string): string {
   return name.replace(DISABLE_SUFFIX_RE, '')
@@ -159,21 +163,33 @@ function scanDirForPlugin(
   location: PluginLocation,
   meta: ArcPluginMeta,
 ): DetectedPlugin | null {
-  for (const file of safeReaddir(dir)) {
-    const stripped = stripDisableSuffix(file)
-    const directMatch = location.dllPattern.test(file)
-    const disabledMatch = !directMatch && stripped !== file && location.dllPattern.test(stripped)
-    if (!directMatch && !disabledMatch) continue
+  // Two passes: live matches always win over disabled variants regardless of
+  // readdir order, so a stale .bak alongside a live .dll never wins.
+  const files = safeReaddir(dir)
+  const build = (file: string, disabled: boolean): DetectedPlugin | null => {
     const full = path.join(dir, file)
     try {
       const st = fs.statSync(full)
-      if (!st.isFile()) continue
+      if (!st.isFile()) return null
       return {
         id: meta.id, meta, location, dllPath: full,
         sizeBytes: st.size, mtime: st.mtime,
-        disabled: disabledMatch,
+        disabled,
       }
-    } catch { /* ignore */ }
+    } catch { return null }
+  }
+  for (const file of files) {
+    if (location.dllPattern.test(file)) {
+      const det = build(file, false)
+      if (det) return det
+    }
+  }
+  for (const file of files) {
+    const stripped = stripDisableSuffix(file)
+    if (stripped === file) continue
+    if (!location.dllPattern.test(stripped)) continue
+    const det = build(file, true)
+    if (det) return det
   }
   return null
 }
