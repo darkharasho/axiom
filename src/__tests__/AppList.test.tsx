@@ -15,6 +15,7 @@ const makeState = (id: AppState['id'], overrides: Partial<AppState> = {}): AppSt
 const defaultProps = {
   checking: false,
   onOpenSettings: vi.fn(),
+  onOpenArcdps: vi.fn(),
   onCheckUpdates: vi.fn(),
   onOpenInfo: vi.fn(),
 }

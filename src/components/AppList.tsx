@@ -8,13 +8,14 @@ interface Props {
   checking: boolean
   selfUpdate?: SelfUpdateState
   onOpenSettings: () => void
+  onOpenArcdps: () => void
   onCheckUpdates: () => void
   onOpenInfo: (appId: AppId) => void
 }
 
 const APP_ORDER: AppId[] = ['axibridge', 'axiforge', 'axipulse', 'axiam', 'axitools']
 
-export function AppList({ states, checking, selfUpdate, onOpenSettings, onCheckUpdates, onOpenInfo }: Props) {
+export function AppList({ states, checking, selfUpdate, onOpenSettings, onOpenArcdps, onCheckUpdates, onOpenInfo }: Props) {
   const stateMap = Object.fromEntries(states.map(s => [s.id, s])) as Record<AppId, AppState>
 
   const handleAction = (action: string, appId: AppId) => {
@@ -145,10 +146,27 @@ export function AppList({ states, checking, selfUpdate, onOpenSettings, onCheckU
           </span>
         )}
         <button
-          onClick={onOpenSettings}
+          onClick={onOpenArcdps}
           className="icon-btn"
           style={{
             marginLeft: 'auto',
+            background: 'none',
+            border: 'none',
+            color: 'var(--text-faint)',
+            cursor: 'pointer',
+            padding: '2px 4px',
+            borderRadius: 3,
+            display: 'flex',
+            alignItems: 'center',
+          }}
+          title="arcdps plugins"
+        >
+          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.3px', textTransform: 'uppercase', lineHeight: 1 }}>arcdps</span>
+        </button>
+        <button
+          onClick={onOpenSettings}
+          className="icon-btn"
+          style={{
             background: 'none',
             border: 'none',
             color: 'var(--text-faint)',
