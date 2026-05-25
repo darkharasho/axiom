@@ -191,6 +191,7 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
     if (!current.gw2Path) return
     const plugin = current.plugins.find(p => p.id === id)
     if (!plugin?.downloadUrl) return
+    if (plugin.status === 'downloading' || plugin.status === 'installing') return
 
     if (await isProcessRunning('Gw2-64')) {
       setArcdpsPlugin(win, id, { status: 'error', errorMessage: 'Close Guild Wars 2 before updating arcdps plugins.' })
