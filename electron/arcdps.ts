@@ -2,7 +2,7 @@ import crypto from 'crypto'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
-import type { ArcdpsState } from './shared/types'
+import type { ArcdpsPluginState, ArcdpsState } from './shared/types'
 
 type Gw2Source = ArcdpsState['gw2PathSource']
 
@@ -138,4 +138,61 @@ export function detectInstalledPlugins(gw2Path: string): DetectedPlugin[] {
     }
   }
   return out
+}
+
+export interface BuildStateOpts {
+  gw2Path: string | null
+  gw2PathSource: ArcdpsState['gw2PathSource']
+  recordedInstalls: Record<string, { installedTag: string | null; installedAt: string | null }>
+  fetchRelease: (repo: string, assetPattern: RegExp) => Promise<{ version: string; downloadUrl: string } | null>
+  fetchCoreMd5: (dllPath: string) => Promise<{ upToDate: boolean; remoteMd5: string } | null>
+}
+
+export async function buildArcdpsState(opts: BuildStateOpts): Promise<ArcdpsState> {
+  if (!opts.gw2Path) {
+    return { gw2Path: null, gw2PathSource: opts.gw2PathSource, plugins: [] }
+  }
+  const detected = detectInstalledPlugins(opts.gw2Path)
+  const detectedById = new Map(detected.map(d => [d.id, d]))
+
+  const plugins: ArcdpsPluginState[] = []
+  for (const meta of ARCDPS_REGISTRY) {
+    const det = detectedById.get(meta.id)
+    if (!meta.alwaysShow && !det) continue
+    const recorded = opts.recordedInstalls[meta.id]
+    const base: ArcdpsPluginState = {
+      id: meta.id,
+      name: meta.name,
+      alwaysShow: meta.alwaysShow,
+      installed: !!det,
+      installedTag: recorded?.installedTag ?? null,
+      installedAt: recorded?.installedAt ?? null,
+      latestTag: null,
+      downloadUrl: null,
+      upToDate: null,
+      status: 'idle',
+    }
+
+    if (meta.source.kind === 'deltaconnected' && det) {
+      const r = await opts.fetchCoreMd5(det.dllPath)
+      if (r) {
+        base.latestTag = r.remoteMd5.slice(0, 7)
+        base.downloadUrl = ARCDPS_CORE_URL
+        base.upToDate = r.upToDate
+      }
+    } else if (meta.source.kind === 'deltaconnected' && !det) {
+      base.downloadUrl = ARCDPS_CORE_URL
+    } else if (meta.source.kind === 'github' && meta.assetPattern) {
+      const rel = await opts.fetchRelease(meta.source.repo, meta.assetPattern)
+      if (rel) {
+        base.latestTag = rel.version
+        base.downloadUrl = rel.downloadUrl
+        base.upToDate = det && recorded?.installedTag === rel.version ? true
+          : det && recorded?.installedTag && recorded.installedTag !== rel.version ? false
+          : null
+      }
+    }
+    plugins.push(base)
+  }
+  return { gw2Path: opts.gw2Path, gw2PathSource: opts.gw2PathSource, plugins }
 }

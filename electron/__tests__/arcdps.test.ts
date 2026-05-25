@@ -5,7 +5,7 @@ import path from 'path'
 
 vi.mock('electron', () => ({ app: { getPath: () => '/tmp/axiom-test-userdata' } }))
 
-import { resolveGw2Path, detectInstalledPlugins, computeFileMd5, checkArcdpsCoreUpdate } from '../arcdps'
+import { resolveGw2Path, detectInstalledPlugins, computeFileMd5, checkArcdpsCoreUpdate, buildArcdpsState } from '../arcdps'
 
 describe('resolveGw2Path', () => {
   const tmpRoot = path.join(os.tmpdir(), `axiom-arcdps-${Date.now()}`)
@@ -141,5 +141,53 @@ describe('checkArcdpsCoreUpdate', () => {
     const fetchImpl = vi.fn().mockResolvedValue({ ok: false } as any)
     expect(await checkArcdpsCoreUpdate(dll, fetchImpl)).toBeNull()
     fs.unlinkSync(dll)
+  })
+})
+
+describe('buildArcdpsState', () => {
+  it('always shows arcdps and arcdps_axipulse even when not installed', async () => {
+    const gw2 = path.join(os.tmpdir(), `arcdps-state-${Date.now()}`)
+    fs.mkdirSync(path.join(gw2, 'bin64'), { recursive: true })
+    fs.writeFileSync(path.join(gw2, 'bin64', 'Gw2-64.exe'), 'x')
+    const state = await buildArcdpsState({
+      gw2Path: gw2,
+      gw2PathSource: 'manual',
+      recordedInstalls: {},
+      fetchRelease: async () => null,
+      fetchCoreMd5: async () => null,
+    })
+    expect(state.plugins.find(p => p.id === 'arcdps')).toBeDefined()
+    expect(state.plugins.find(p => p.id === 'arcdps_axipulse')).toBeDefined()
+    expect(state.plugins.find(p => p.id === 'boon_table')).toBeUndefined()
+  })
+
+  it('shows a detect-only plugin when its DLL exists', async () => {
+    const gw2 = path.join(os.tmpdir(), `arcdps-state2-${Date.now()}`)
+    fs.mkdirSync(path.join(gw2, 'bin64'), { recursive: true })
+    fs.writeFileSync(path.join(gw2, 'bin64', 'Gw2-64.exe'), 'x')
+    fs.writeFileSync(path.join(gw2, 'bin64', 'arcdps_boon_table.dll'), 'fake')
+    const state = await buildArcdpsState({
+      gw2Path: gw2,
+      gw2PathSource: 'manual',
+      recordedInstalls: { boon_table: { installedTag: 'v1.0', installedAt: '2026-01-01' } },
+      fetchRelease: async () => ({ version: '1.1', downloadUrl: 'https://x/y.dll' }),
+      fetchCoreMd5: async () => null,
+    })
+    const bt = state.plugins.find(p => p.id === 'boon_table')!
+    expect(bt.installed).toBe(true)
+    expect(bt.installedTag).toBe('v1.0')
+    expect(bt.latestTag).toBe('1.1')
+    expect(bt.upToDate).toBe(false)
+  })
+
+  it('returns empty plugins list when no gw2Path', async () => {
+    const state = await buildArcdpsState({
+      gw2Path: null,
+      gw2PathSource: 'none',
+      recordedInstalls: {},
+      fetchRelease: async () => null,
+      fetchCoreMd5: async () => null,
+    })
+    expect(state.plugins).toEqual([])
   })
 })
