@@ -154,6 +154,30 @@ export function resolveInstallDir(gw2: string, kind: InstallDir): string {
   return kind === '' ? gw2 : path.join(gw2, ...kind.split('/'))
 }
 
+function scanDirForPlugin(
+  dir: string,
+  location: PluginLocation,
+  meta: ArcPluginMeta,
+): DetectedPlugin | null {
+  for (const file of safeReaddir(dir)) {
+    const stripped = stripDisableSuffix(file)
+    const directMatch = location.dllPattern.test(file)
+    const disabledMatch = !directMatch && stripped !== file && location.dllPattern.test(stripped)
+    if (!directMatch && !disabledMatch) continue
+    const full = path.join(dir, file)
+    try {
+      const st = fs.statSync(full)
+      if (!st.isFile()) continue
+      return {
+        id: meta.id, meta, location, dllPath: full,
+        sizeBytes: st.size, mtime: st.mtime,
+        disabled: disabledMatch,
+      }
+    } catch { /* ignore */ }
+  }
+  return null
+}
+
 export function detectInstalledPlugins(gw2Path: string): DetectedPlugin[] {
   const nexusInstalled = fs.existsSync(path.join(gw2Path, 'addons'))
   const out: DetectedPlugin[] = []
@@ -164,23 +188,22 @@ export function detectInstalledPlugins(gw2Path: string): DetectedPlugin[] {
       // arcdps shares its d3d11.dll filename with GW2 Nexus's loader. If Nexus
       // is installed (addons/ exists) the root d3d11.dll is Nexus, not arcdps.
       if (meta.id === 'arcdps' && location.dir === '' && nexusInstalled) continue
-      const dir = resolveInstallDir(gw2Path, location.dir)
-      for (const file of safeReaddir(dir)) {
-        const stripped = stripDisableSuffix(file)
-        const directMatch = location.dllPattern.test(file)
-        const disabledMatch = !directMatch && stripped !== file && location.dllPattern.test(stripped)
-        if (!directMatch && !disabledMatch) continue
-        const full = path.join(dir, file)
-        try {
-          const st = fs.statSync(full)
-          out.push({
-            id: meta.id, meta, location, dllPath: full,
-            sizeBytes: st.size, mtime: st.mtime,
-            disabled: disabledMatch,
-          })
-          seen.add(meta.id)
-          break
-        } catch { /* ignore */ }
+      const baseDir = resolveInstallDir(gw2Path, location.dir)
+      // Look in the base location first.
+      let found = scanDirForPlugin(baseDir, location, meta)
+      // For addons/, Nexus sometimes nests an addon inside its own subfolder
+      // (e.g. addons/<Addon>/<Addon>.dll). Scan one level deep in that case.
+      if (!found && location.dir === 'addons') {
+        for (const entry of safeReaddir(baseDir)) {
+          const sub = path.join(baseDir, entry)
+          try { if (!fs.statSync(sub).isDirectory()) continue } catch { continue }
+          found = scanDirForPlugin(sub, location, meta)
+          if (found) break
+        }
+      }
+      if (found) {
+        out.push(found)
+        seen.add(meta.id)
       }
     }
   }
