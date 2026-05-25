@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { ArcdpsState } from '@shared/types'
 
-const EMPTY: ArcdpsState = { gw2Path: null, gw2PathSource: 'none', plugins: [] }
+const EMPTY: ArcdpsState = { gw2Path: null, gw2PathSource: 'none', overrideError: null, plugins: [] }
 
 export function useArcdpsState() {
   const [state, setState] = useState<ArcdpsState>(EMPTY)

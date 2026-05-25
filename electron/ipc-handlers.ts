@@ -38,7 +38,7 @@ function writeAxiomVersionFile(configDir: string | undefined, version: string | 
 
 let appStates: Record<AppId, AppState> = buildInitialStates()
 let lastCheckTime = 0
-let arcdpsState: ArcdpsState = { gw2Path: null, gw2PathSource: 'none', plugins: [] }
+let arcdpsState: ArcdpsState = { gw2Path: null, gw2PathSource: 'none', overrideError: null, plugins: [] }
 
 export function getLastCheckTime(): number { return lastCheckTime }
 
@@ -72,6 +72,7 @@ async function refreshArcdps(win: BrowserWindow): Promise<void> {
   arcdpsState = await buildArcdpsState({
     gw2Path: resolved.path,
     gw2PathSource: resolved.source,
+    overrideError: resolved.overrideError,
     recordedInstalls: cfg.arcdps.plugins,
     fetchRelease: (repo, pattern) => fetchLatestRelease(repo, pattern),
     fetchCoreMd5: (dll) => checkArcdpsCoreUpdate(dll),

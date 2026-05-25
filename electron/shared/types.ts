@@ -58,6 +58,7 @@ export interface ArcdpsPluginState {
 export interface ArcdpsState {
   gw2Path: string | null
   gw2PathSource: 'axiam' | 'auto' | 'manual' | 'none'
+  overrideError: string | null
   plugins: ArcdpsPluginState[]
 }
 

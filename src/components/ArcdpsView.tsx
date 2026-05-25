@@ -9,7 +9,7 @@ interface Props {
 
 export function ArcdpsView({ onBack }: Props) {
   const { state, checking, check, install, setGw2Path } = useArcdpsState()
-  const { gw2Path, gw2PathSource, plugins } = state
+  const { gw2Path, gw2PathSource, overrideError, plugins } = state
 
   const didInitialCheck = useRef(false)
   useEffect(() => {
@@ -119,6 +119,20 @@ export function ArcdpsView({ onBack }: Props) {
           Change…
         </button>
       </div>
+
+      {overrideError && (
+        <div style={{
+          fontSize: 11,
+          color: 'var(--danger, #c66)',
+          marginBottom: 10,
+          padding: '6px 8px',
+          background: 'rgba(200, 100, 100, 0.08)',
+          border: '1px solid rgba(200, 100, 100, 0.2)',
+          borderRadius: 3,
+        }}>
+          {overrideError}
+        </div>
+      )}
 
       {/* Plugin list or empty state */}
       <div style={{ flex: 1, overflowY: 'auto' }}>

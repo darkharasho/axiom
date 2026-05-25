@@ -19,7 +19,7 @@ describe('resolveGw2Path', () => {
     fs.mkdirSync(path.join(gw2, 'bin64'), { recursive: true })
     fs.writeFileSync(path.join(gw2, 'bin64', 'Gw2-64.exe'), 'x')
     const result = resolveGw2Path({ override: gw2, axiamConfigPath: '/nonexistent', candidates: [] })
-    expect(result).toEqual({ path: gw2, source: 'manual' })
+    expect(result).toEqual({ path: gw2, source: 'manual', overrideError: null })
   })
 
   it('falls back to AxiAM config when no override', () => {
@@ -29,7 +29,7 @@ describe('resolveGw2Path', () => {
     const axiamCfg = path.join(tmpRoot, 'axiam.json')
     fs.writeFileSync(axiamCfg, JSON.stringify({ gw2Path: gw2 }))
     const result = resolveGw2Path({ override: null, axiamConfigPath: axiamCfg, candidates: [] })
-    expect(result).toEqual({ path: gw2, source: 'axiam' })
+    expect(result).toEqual({ path: gw2, source: 'axiam', overrideError: null })
   })
 
   it('falls back to candidates when AxiAM config missing', () => {
@@ -37,12 +37,12 @@ describe('resolveGw2Path', () => {
     fs.mkdirSync(path.join(gw2, 'bin64'), { recursive: true })
     fs.writeFileSync(path.join(gw2, 'bin64', 'Gw2-64.exe'), 'x')
     const result = resolveGw2Path({ override: null, axiamConfigPath: '/nonexistent', candidates: [gw2] })
-    expect(result).toEqual({ path: gw2, source: 'auto' })
+    expect(result).toEqual({ path: gw2, source: 'auto', overrideError: null })
   })
 
   it('returns none when nothing resolves', () => {
     const result = resolveGw2Path({ override: null, axiamConfigPath: '/nonexistent', candidates: [] })
-    expect(result).toEqual({ path: null, source: 'none' })
+    expect(result).toEqual({ path: null, source: 'none', overrideError: null })
   })
 
   it('ignores AxiAM path that does not contain bin64/Gw2-64.exe', () => {
@@ -51,7 +51,7 @@ describe('resolveGw2Path', () => {
     const axiamCfg = path.join(tmpRoot, 'axiam.json')
     fs.writeFileSync(axiamCfg, JSON.stringify({ gw2Path: bogus }))
     const result = resolveGw2Path({ override: null, axiamConfigPath: axiamCfg, candidates: [] })
-    expect(result).toEqual({ path: null, source: 'none' })
+    expect(result).toEqual({ path: null, source: 'none', overrideError: null })
   })
 })
 

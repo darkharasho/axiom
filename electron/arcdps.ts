@@ -12,15 +12,29 @@ export interface ResolveGw2Opts {
   candidates: string[]
 }
 
-function looksLikeGw2(dir: string): boolean {
+function hasGw2Exe(bin64: string): boolean {
   try {
-    return (
-      fs.statSync(dir).isDirectory() &&
-      fs.existsSync(path.join(dir, 'bin64', 'Gw2-64.exe'))
-    )
+    if (!fs.statSync(bin64).isDirectory()) return false
+    return fs.readdirSync(bin64).some(f => /^gw2(-64)?\.exe$/i.test(f))
   } catch {
     return false
   }
+}
+
+function looksLikeGw2(dir: string): boolean {
+  try {
+    if (!fs.statSync(dir).isDirectory()) return false
+    // Accept either the install root (contains bin64/) or the bin64/ folder itself.
+    if (hasGw2Exe(path.join(dir, 'bin64'))) return true
+    if (path.basename(dir).toLowerCase() === 'bin64' && hasGw2Exe(dir)) return true
+    return false
+  } catch {
+    return false
+  }
+}
+
+function normalizeGw2Root(dir: string): string {
+  return path.basename(dir).toLowerCase() === 'bin64' ? path.dirname(dir) : dir
 }
 
 function readAxiamGw2Path(cfgPath: string): string | null {
@@ -33,18 +47,30 @@ function readAxiamGw2Path(cfgPath: string): string | null {
   }
 }
 
-export function resolveGw2Path(opts: ResolveGw2Opts): { path: string | null; source: Gw2Source } {
-  if (opts.override && looksLikeGw2(opts.override)) {
-    return { path: opts.override, source: 'manual' }
+export function resolveGw2Path(opts: ResolveGw2Opts): { path: string | null; source: Gw2Source; overrideError: string | null } {
+  if (opts.override) {
+    if (looksLikeGw2(opts.override)) {
+      return { path: normalizeGw2Root(opts.override), source: 'manual', overrideError: null }
+    }
+    // Override was set by the user but no Gw2(-64).exe found under bin64/.
+    // Fall through to other sources, but report the rejection so the UI can show it.
+    const fromAxiam = readAxiamGw2Path(opts.axiamConfigPath)
+    if (fromAxiam && looksLikeGw2(fromAxiam)) {
+      return { path: normalizeGw2Root(fromAxiam), source: 'axiam', overrideError: `No Gw2-64.exe found under ${path.join(opts.override, 'bin64')}` }
+    }
+    for (const c of opts.candidates) {
+      if (looksLikeGw2(c)) return { path: normalizeGw2Root(c), source: 'auto', overrideError: `No Gw2-64.exe found under ${path.join(opts.override, 'bin64')}` }
+    }
+    return { path: null, source: 'none', overrideError: `No Gw2-64.exe found under ${path.join(opts.override, 'bin64')}` }
   }
   const fromAxiam = readAxiamGw2Path(opts.axiamConfigPath)
   if (fromAxiam && looksLikeGw2(fromAxiam)) {
-    return { path: fromAxiam, source: 'axiam' }
+    return { path: normalizeGw2Root(fromAxiam), source: 'axiam', overrideError: null }
   }
   for (const c of opts.candidates) {
-    if (looksLikeGw2(c)) return { path: c, source: 'auto' }
+    if (looksLikeGw2(c)) return { path: normalizeGw2Root(c), source: 'auto', overrideError: null }
   }
-  return { path: null, source: 'none' }
+  return { path: null, source: 'none', overrideError: null }
 }
 
 export function defaultAxiamConfigPath(): string {
@@ -143,6 +169,7 @@ export function detectInstalledPlugins(gw2Path: string): DetectedPlugin[] {
 export interface BuildStateOpts {
   gw2Path: string | null
   gw2PathSource: ArcdpsState['gw2PathSource']
+  overrideError?: string | null
   recordedInstalls: Record<string, { installedTag: string | null; installedAt: string | null }>
   fetchRelease: (repo: string, assetPattern: RegExp) => Promise<{ version: string; downloadUrl: string } | null>
   fetchCoreMd5: (dllPath: string) => Promise<{ upToDate: boolean; remoteMd5: string } | null>
@@ -150,7 +177,7 @@ export interface BuildStateOpts {
 
 export async function buildArcdpsState(opts: BuildStateOpts): Promise<ArcdpsState> {
   if (!opts.gw2Path) {
-    return { gw2Path: null, gw2PathSource: opts.gw2PathSource, plugins: [] }
+    return { gw2Path: null, gw2PathSource: opts.gw2PathSource, overrideError: opts.overrideError ?? null, plugins: [] }
   }
   const detected = detectInstalledPlugins(opts.gw2Path)
   const detectedById = new Map(detected.map(d => [d.id, d]))
@@ -194,7 +221,7 @@ export async function buildArcdpsState(opts: BuildStateOpts): Promise<ArcdpsStat
     }
     plugins.push(base)
   }
-  return { gw2Path: opts.gw2Path, gw2PathSource: opts.gw2PathSource, plugins }
+  return { gw2Path: opts.gw2Path, gw2PathSource: opts.gw2PathSource, overrideError: opts.overrideError ?? null, plugins }
 }
 
 export interface InstallPluginOpts {
