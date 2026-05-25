@@ -23,9 +23,11 @@ describe('ARCDPS_REGISTRY', () => {
     }
   })
 
-  it('unofficial_extras installs into the extensions subfolder', () => {
-    const ue = getPluginMeta('unofficial_extras')
-    expect(ue?.locations[0].dir).toBe('bin64/arcdps/extensions')
+  it('unofficial_extras supports both the Nexus addons/ location and the legacy extensions subfolder', () => {
+    const ue = getPluginMeta('unofficial_extras')!
+    const dirs = ue.locations.map(l => l.dir)
+    expect(dirs).toContain('addons')
+    expect(dirs).toContain('bin64/arcdps/extensions')
   })
 
   it('arcdps prefers addons/ (ArcDPS.dll, Nexus chainload) over GW2 root (d3d11.dll)', () => {
