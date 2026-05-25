@@ -2,6 +2,7 @@ import { Settings, RefreshCw, LogOut, ArrowUp } from 'lucide-react'
 import type { AppState, AppId, InstallableAppId } from '@shared/types'
 import type { SelfUpdateState } from '../hooks/useSelfUpdate'
 import { AppRow } from './AppRow'
+import { useArcdpsState } from '../hooks/useArcdpsState'
 
 interface Props {
   states: AppState[]
@@ -17,6 +18,8 @@ const APP_ORDER: AppId[] = ['axibridge', 'axiforge', 'axipulse', 'axiam', 'axito
 
 export function AppList({ states, checking, selfUpdate, onOpenSettings, onOpenArcdps, onCheckUpdates, onOpenInfo }: Props) {
   const stateMap = Object.fromEntries(states.map(s => [s.id, s])) as Record<AppId, AppState>
+  const { state: arcdpsState } = useArcdpsState()
+  const arcdpsHasUpdate = arcdpsState.plugins.some(p => p.upToDate === false)
 
   const handleAction = (action: string, appId: AppId) => {
     switch (action) {
@@ -150,6 +153,7 @@ export function AppList({ states, checking, selfUpdate, onOpenSettings, onOpenAr
           className="icon-btn"
           style={{
             marginLeft: 'auto',
+            position: 'relative',
             background: 'none',
             border: 'none',
             color: 'var(--text-faint)',
@@ -159,9 +163,24 @@ export function AppList({ states, checking, selfUpdate, onOpenSettings, onOpenAr
             display: 'flex',
             alignItems: 'center',
           }}
-          title="arcdps plugins"
+          title={arcdpsHasUpdate ? 'arcdps plugins — update available' : 'arcdps plugins'}
         >
           <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.3px', textTransform: 'uppercase', lineHeight: 1 }}>arcdps</span>
+          {arcdpsHasUpdate && (
+            <span
+              aria-hidden
+              style={{
+                position: 'absolute',
+                top: 1,
+                right: 1,
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                background: 'var(--gold-bright)',
+                boxShadow: '0 0 4px var(--gold-bright)',
+              }}
+            />
+          )}
         </button>
         <button
           onClick={onOpenSettings}
