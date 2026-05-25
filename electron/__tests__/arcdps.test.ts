@@ -5,7 +5,7 @@ import path from 'path'
 
 vi.mock('electron', () => ({ app: { getPath: () => '/tmp/axiom-test-userdata' } }))
 
-import { resolveGw2Path, detectInstalledPlugins, computeFileMd5, checkArcdpsCoreUpdate, buildArcdpsState } from '../arcdps'
+import { resolveGw2Path, detectInstalledPlugins, computeFileMd5, checkArcdpsCoreUpdate, buildArcdpsState, installPluginFile } from '../arcdps'
 
 describe('resolveGw2Path', () => {
   const tmpRoot = path.join(os.tmpdir(), `axiom-arcdps-${Date.now()}`)
@@ -189,5 +189,51 @@ describe('buildArcdpsState', () => {
       fetchCoreMd5: async () => null,
     })
     expect(state.plugins).toEqual([])
+  })
+})
+
+describe('installPluginFile', () => {
+  const root = path.join(os.tmpdir(), `arcdps-install-${Date.now()}`)
+  beforeEach(() => {
+    fs.rmSync(root, { recursive: true, force: true })
+    fs.mkdirSync(root, { recursive: true })
+  })
+
+  it('places the new file at target when no prior file', async () => {
+    const target = path.join(root, 'd3d11.dll')
+    const download = vi.fn(async (_url: string, dest: string) => {
+      fs.writeFileSync(dest, 'new')
+    })
+    await installPluginFile({ targetPath: target, downloadUrl: 'http://x', download })
+    expect(fs.readFileSync(target, 'utf-8')).toBe('new')
+  })
+
+  it('backs up existing file and replaces it', async () => {
+    const target = path.join(root, 'd3d11.dll')
+    fs.writeFileSync(target, 'old')
+    const download = vi.fn(async (_url: string, dest: string) => {
+      fs.writeFileSync(dest, 'new')
+    })
+    await installPluginFile({ targetPath: target, downloadUrl: 'http://x', download })
+    expect(fs.readFileSync(target, 'utf-8')).toBe('new')
+    expect(fs.readFileSync(target + '.bak', 'utf-8')).toBe('old')
+  })
+
+  it('rolls back from .bak when download fails', async () => {
+    const target = path.join(root, 'd3d11.dll')
+    fs.writeFileSync(target, 'old')
+    const download = vi.fn(async () => { throw new Error('network') })
+    await expect(installPluginFile({ targetPath: target, downloadUrl: 'http://x', download }))
+      .rejects.toThrow('network')
+    expect(fs.readFileSync(target, 'utf-8')).toBe('old')
+  })
+
+  it('creates installDir if missing', async () => {
+    const target = path.join(root, 'nested', 'sub', 'extras.dll')
+    const download = vi.fn(async (_url: string, dest: string) => {
+      fs.writeFileSync(dest, 'new')
+    })
+    await installPluginFile({ targetPath: target, downloadUrl: 'http://x', download })
+    expect(fs.readFileSync(target, 'utf-8')).toBe('new')
   })
 })

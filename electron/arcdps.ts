@@ -196,3 +196,38 @@ export async function buildArcdpsState(opts: BuildStateOpts): Promise<ArcdpsStat
   }
   return { gw2Path: opts.gw2Path, gw2PathSource: opts.gw2PathSource, plugins }
 }
+
+export interface InstallPluginOpts {
+  targetPath: string
+  downloadUrl: string
+  download: (url: string, dest: string) => Promise<void>
+}
+
+export async function installPluginFile(opts: InstallPluginOpts): Promise<void> {
+  const dir = path.dirname(opts.targetPath)
+  fs.mkdirSync(dir, { recursive: true })
+  const tmp = opts.targetPath + '.new'
+  const bak = opts.targetPath + '.bak'
+
+  try {
+    await opts.download(opts.downloadUrl, tmp)
+  } catch (err) {
+    try { fs.unlinkSync(tmp) } catch { /* ignore */ }
+    throw err
+  }
+
+  const hadPrior = fs.existsSync(opts.targetPath)
+  if (hadPrior) {
+    try { fs.unlinkSync(bak) } catch { /* ignore */ }
+    fs.renameSync(opts.targetPath, bak)
+  }
+  try {
+    fs.renameSync(tmp, opts.targetPath)
+  } catch (err) {
+    if (hadPrior) {
+      try { fs.renameSync(bak, opts.targetPath) } catch { /* best-effort */ }
+    }
+    try { fs.unlinkSync(tmp) } catch { /* ignore */ }
+    throw err
+  }
+}
