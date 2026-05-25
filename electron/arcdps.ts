@@ -12,28 +12,27 @@ export interface ResolveGw2Opts {
   candidates: string[]
 }
 
-function hasGw2Exe(bin64: string): boolean {
+function hasGw2Exe(dir: string): boolean {
   try {
-    if (!fs.statSync(bin64).isDirectory()) return false
-    return fs.readdirSync(bin64).some(f => /^gw2(-64)?\.exe$/i.test(f))
+    if (!fs.statSync(dir).isDirectory()) return false
+    return fs.readdirSync(dir).some(f => /^gw2(-64)?\.exe$/i.test(f))
   } catch {
     return false
   }
 }
 
+// A folder counts as a GW2 install if Gw2(-64).exe appears in it OR in a
+// bin64/ subfolder. The launcher lives in the root; the game binary lives in
+// bin64/. Different installs (Steam/standalone/Wine) put the exe in different
+// places, so accept either.
 function looksLikeGw2(dir: string): boolean {
-  try {
-    if (!fs.statSync(dir).isDirectory()) return false
-    // Accept either the install root (contains bin64/) or the bin64/ folder itself.
-    if (hasGw2Exe(path.join(dir, 'bin64'))) return true
-    if (path.basename(dir).toLowerCase() === 'bin64' && hasGw2Exe(dir)) return true
-    return false
-  } catch {
-    return false
-  }
+  if (hasGw2Exe(dir)) return true
+  if (hasGw2Exe(path.join(dir, 'bin64'))) return true
+  return false
 }
 
 function normalizeGw2Root(dir: string): string {
+  // If the user picked the bin64/ folder, walk up one level so the root is stored.
   return path.basename(dir).toLowerCase() === 'bin64' ? path.dirname(dir) : dir
 }
 
@@ -56,12 +55,12 @@ export function resolveGw2Path(opts: ResolveGw2Opts): { path: string | null; sou
     // Fall through to other sources, but report the rejection so the UI can show it.
     const fromAxiam = readAxiamGw2Path(opts.axiamConfigPath)
     if (fromAxiam && looksLikeGw2(fromAxiam)) {
-      return { path: normalizeGw2Root(fromAxiam), source: 'axiam', overrideError: `No Gw2-64.exe found under ${path.join(opts.override, 'bin64')}` }
+      return { path: normalizeGw2Root(fromAxiam), source: 'axiam', overrideError: `No Gw2-64.exe found in ${opts.override} or its bin64/ subfolder.` }
     }
     for (const c of opts.candidates) {
-      if (looksLikeGw2(c)) return { path: normalizeGw2Root(c), source: 'auto', overrideError: `No Gw2-64.exe found under ${path.join(opts.override, 'bin64')}` }
+      if (looksLikeGw2(c)) return { path: normalizeGw2Root(c), source: 'auto', overrideError: `No Gw2-64.exe found in ${opts.override} or its bin64/ subfolder.` }
     }
-    return { path: null, source: 'none', overrideError: `No Gw2-64.exe found under ${path.join(opts.override, 'bin64')}` }
+    return { path: null, source: 'none', overrideError: `No Gw2-64.exe found in ${opts.override} or its bin64/ subfolder.` }
   }
   const fromAxiam = readAxiamGw2Path(opts.axiamConfigPath)
   if (fromAxiam && looksLikeGw2(fromAxiam)) {
