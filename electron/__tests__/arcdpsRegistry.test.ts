@@ -25,6 +25,19 @@ describe('ARCDPS_REGISTRY', () => {
 
   it('unofficial_extras installs into the extensions subfolder', () => {
     const ue = getPluginMeta('unofficial_extras')
-    expect(ue?.installDir).toBe('bin64/arcdps/extensions')
+    expect(ue?.locations[0].dir).toBe('bin64/arcdps/extensions')
+  })
+
+  it('arcdps loads from GW2 root (d3d11.dll) or addons/arcdps (ArcDPS.dll)', () => {
+    const arc = getPluginMeta('arcdps')!
+    expect(arc.locations.map(l => l.dir)).toEqual(['', 'addons/arcdps'])
+    expect(arc.locations[0].installFilename).toBe('d3d11.dll')
+    expect(arc.locations[1].installFilename).toBe('ArcDPS.dll')
+  })
+
+  it('every entry has a non-empty description', () => {
+    for (const p of ARCDPS_REGISTRY) {
+      expect(p.description.length).toBeGreaterThan(0)
+    }
   })
 })

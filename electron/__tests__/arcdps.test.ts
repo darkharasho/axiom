@@ -70,16 +70,39 @@ describe('detectInstalledPlugins', () => {
     expect(detectInstalledPlugins(gw2)).toEqual([])
   })
 
-  it('detects arcdps core (d3d11.dll)', () => {
-    fs.writeFileSync(path.join(bin64, 'd3d11.dll'), 'fake')
+  it('detects arcdps core (d3d11.dll in GW2 root)', () => {
+    fs.writeFileSync(path.join(gw2, 'd3d11.dll'), 'fake')
     const found = detectInstalledPlugins(gw2)
-    expect(found.map(p => p.id)).toContain('arcdps')
+    const arc = found.find(p => p.id === 'arcdps')
+    expect(arc).toBeDefined()
+    expect(arc!.location.dir).toBe('')
+  })
+
+  it('detects arcdps under Nexus (addons/arcdps/ArcDPS.dll)', () => {
+    const nexusDir = path.join(gw2, 'addons', 'arcdps')
+    fs.mkdirSync(nexusDir, { recursive: true })
+    fs.writeFileSync(path.join(nexusDir, 'ArcDPS.dll'), 'fake')
+    const found = detectInstalledPlugins(gw2)
+    const arc = found.find(p => p.id === 'arcdps')
+    expect(arc).toBeDefined()
+    expect(arc!.location.dir).toBe('addons/arcdps')
   })
 
   it('detects a github plugin in bin64', () => {
     fs.writeFileSync(path.join(bin64, 'arcdps_boon_table.dll'), 'fake')
     const found = detectInstalledPlugins(gw2)
-    expect(found.map(p => p.id)).toContain('boon_table')
+    const bt = found.find(p => p.id === 'boon_table')
+    expect(bt).toBeDefined()
+    expect(bt!.location.dir).toBe('bin64')
+  })
+
+  it('detects a github plugin in addons/ (Nexus location)', () => {
+    fs.mkdirSync(path.join(gw2, 'addons'), { recursive: true })
+    fs.writeFileSync(path.join(gw2, 'addons', 'arcdps_boon_table.dll'), 'fake')
+    const found = detectInstalledPlugins(gw2)
+    const bt = found.find(p => p.id === 'boon_table')
+    expect(bt).toBeDefined()
+    expect(bt!.location.dir).toBe('addons')
   })
 
   it('detects unofficial_extras in extensions/', () => {
@@ -89,12 +112,15 @@ describe('detectInstalledPlugins', () => {
   })
 
   it('ignores arbitrary DLLs not in the registry', () => {
-    fs.writeFileSync(path.join(bin64, 'random_other.dll'), 'fake')
+    fs.writeFileSync(path.join(gw2, 'random_other.dll'), 'fake')
     expect(detectInstalledPlugins(gw2)).toEqual([])
   })
 
-  it('returns each meta only once even if both bin64 and extensions match', () => {
-    fs.writeFileSync(path.join(bin64, 'd3d11.dll'), 'fake')
+  it('returns each meta only once even when present in multiple locations', () => {
+    fs.writeFileSync(path.join(gw2, 'd3d11.dll'), 'fake')
+    const nexusDir = path.join(gw2, 'addons', 'arcdps')
+    fs.mkdirSync(nexusDir, { recursive: true })
+    fs.writeFileSync(path.join(nexusDir, 'ArcDPS.dll'), 'fake')
     const found = detectInstalledPlugins(gw2)
     const arcCount = found.filter(p => p.id === 'arcdps').length
     expect(arcCount).toBe(1)

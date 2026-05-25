@@ -126,12 +126,13 @@ export async function checkArcdpsCoreUpdate(
   }
 }
 
-import type { ArcPluginMeta, InstallDir } from './arcdpsRegistry'
+import type { ArcPluginMeta, InstallDir, PluginLocation } from './arcdpsRegistry'
 import { ARCDPS_REGISTRY } from './arcdpsRegistry'
 
 export interface DetectedPlugin {
   id: string
   meta: ArcPluginMeta
+  location: PluginLocation
   dllPath: string
   sizeBytes: number
   mtime: Date
@@ -141,26 +142,28 @@ function safeReaddir(dir: string): string[] {
   try { return fs.readdirSync(dir) } catch { return [] }
 }
 
-function resolveInstallDir(gw2: string, kind: InstallDir): string {
-  return kind === 'bin64'
-    ? path.join(gw2, 'bin64')
-    : path.join(gw2, 'bin64', 'arcdps', 'extensions')
+export function resolveInstallDir(gw2: string, kind: InstallDir): string {
+  // '' = GW2 install root
+  return kind === '' ? gw2 : path.join(gw2, ...kind.split('/'))
 }
 
 export function detectInstalledPlugins(gw2Path: string): DetectedPlugin[] {
   const out: DetectedPlugin[] = []
   const seen = new Set<string>()
   for (const meta of ARCDPS_REGISTRY) {
-    const dir = resolveInstallDir(gw2Path, meta.installDir)
-    for (const file of safeReaddir(dir)) {
-      if (!meta.dllPattern.test(file)) continue
-      if (seen.has(meta.id)) continue
-      const full = path.join(dir, file)
-      try {
-        const st = fs.statSync(full)
-        out.push({ id: meta.id, meta, dllPath: full, sizeBytes: st.size, mtime: st.mtime })
-        seen.add(meta.id)
-      } catch { /* ignore */ }
+    for (const location of meta.locations) {
+      if (seen.has(meta.id)) break
+      const dir = resolveInstallDir(gw2Path, location.dir)
+      for (const file of safeReaddir(dir)) {
+        if (!location.dllPattern.test(file)) continue
+        const full = path.join(dir, file)
+        try {
+          const st = fs.statSync(full)
+          out.push({ id: meta.id, meta, location, dllPath: full, sizeBytes: st.size, mtime: st.mtime })
+          seen.add(meta.id)
+          break
+        } catch { /* ignore */ }
+      }
     }
   }
   return out
@@ -190,8 +193,10 @@ export async function buildArcdpsState(opts: BuildStateOpts): Promise<ArcdpsStat
     const base: ArcdpsPluginState = {
       id: meta.id,
       name: meta.name,
+      description: meta.description,
       alwaysShow: meta.alwaysShow,
       installed: !!det,
+      installedDir: det ? det.location.dir : null,
       installedTag: recorded?.installedTag ?? null,
       installedAt: recorded?.installedAt ?? null,
       latestTag: null,

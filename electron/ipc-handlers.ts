@@ -209,14 +209,13 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
       return
     }
 
-    const filename = meta.source.kind === 'deltaconnected'
-      ? 'd3d11.dll'
-      : pathSync.basename(new URL(plugin.downloadUrl).pathname)
-    const targetPath = pathSync.join(
-      current.gw2Path,
-      meta.installDir === 'bin64' ? 'bin64' : pathSync.join('bin64', 'arcdps', 'extensions'),
-      filename,
-    )
+    // Install at the location where the plugin is already detected; otherwise
+    // fall back to the first declared location (the preferred default).
+    const location = (plugin.installedDir != null
+      ? meta.locations.find(l => l.dir === plugin.installedDir)
+      : undefined) ?? meta.locations[0]
+    const installDirAbs = location.dir === '' ? current.gw2Path : pathSync.join(current.gw2Path, ...location.dir.split('/'))
+    const targetPath = pathSync.join(installDirAbs, location.installFilename)
 
     setArcdpsPlugin(win, id, {
       status: 'downloading',

@@ -8,7 +8,7 @@ interface Props {
 }
 
 export function ArcdpsRow({ plugin, onInstall }: Props) {
-  const { id, name, installed, installedTag, latestTag, upToDate, downloadUrl, status, errorMessage, downloadProgress } = plugin
+  const { id, name, description, installed, installedTag, latestTag, upToDate, downloadUrl, status, errorMessage, downloadProgress } = plugin
 
   const isBusy = status === 'downloading' || status === 'installing'
   const isDisabled = isBusy || (installed && upToDate === true) || !downloadUrl
@@ -67,7 +67,12 @@ export function ArcdpsRow({ plugin, onInstall }: Props) {
         }}>
           {name}
         </div>
-        <div style={{ fontSize: 10, color: statusColor(), marginTop: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
+        {description && (
+          <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 1, lineHeight: 1.35 }}>
+            {description}
+          </div>
+        )}
+        <div style={{ fontSize: 10, color: statusColor(), marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
           <span>{statusText()}</span>
           {installedTag && (
             <span style={{ color: 'var(--text-faint)' }}>installed: {installedTag}</span>

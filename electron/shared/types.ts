@@ -43,8 +43,10 @@ export type ArcdpsPluginStatus =
 export interface ArcdpsPluginState {
   id: string                          // matches ArcPluginMeta.id
   name: string
+  description: string
   alwaysShow: boolean
   installed: boolean
+  installedDir: string | null         // relative dir under the GW2 root where the DLL was found (e.g. '', 'bin64', 'addons')
   installedTag: string | null         // recorded by AxiOM on install; null if unknown/manual
   installedAt: string | null          // ISO timestamp from AxiOM install
   latestTag: string | null            // 'latest' arcdps for the core; semver tag for github
