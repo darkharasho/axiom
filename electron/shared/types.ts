@@ -80,6 +80,8 @@ export interface Config {
 export interface ReleaseInfo {
   version: string
   downloadUrl: string
+  assetSize?: number          // bytes of the matched release asset
+  publishedAt?: string        // ISO timestamp of the release
 }
 
 export const DEFAULT_CONFIG: Config = {

@@ -177,7 +177,7 @@ export interface BuildStateOpts {
   gw2PathSource: ArcdpsState['gw2PathSource']
   overrideError?: string | null
   recordedInstalls: Record<string, { installedTag: string | null; installedAt: string | null }>
-  fetchRelease: (repo: string, assetPattern: RegExp) => Promise<{ version: string; downloadUrl: string } | null>
+  fetchRelease: (repo: string, assetPattern: RegExp) => Promise<{ version: string; downloadUrl: string; assetSize?: number; publishedAt?: string } | null>
   fetchCoreMd5: (dllPath: string) => Promise<{ upToDate: boolean; remoteMd5: string; localMd5: string } | null>
 }
 
@@ -223,9 +223,25 @@ export async function buildArcdpsState(opts: BuildStateOpts): Promise<ArcdpsStat
       if (rel) {
         base.latestTag = rel.version
         base.downloadUrl = rel.downloadUrl
-        base.upToDate = det && recorded?.installedTag === rel.version ? true
-          : det && recorded?.installedTag && recorded.installedTag !== rel.version ? false
-          : null
+        if (det) {
+          // Fall back to the local file's mtime as the "installed" hint when
+          // no AxiOM-managed tag is recorded (i.e., the user installed manually).
+          if (!base.installedTag) {
+            base.installedTag = det.mtime.toISOString().slice(0, 10)
+          }
+          if (recorded?.installedTag === rel.version) {
+            base.upToDate = true
+          } else if (recorded?.installedTag && recorded.installedTag !== rel.version) {
+            base.upToDate = false
+          } else if (rel.assetSize != null) {
+            // No recorded tag — compare local file size to the published asset.
+            // GitHub release assets keep a stable size per version, so a match
+            // is a strong (though not perfect) "up to date" signal.
+            base.upToDate = det.sizeBytes === rel.assetSize
+          } else {
+            base.upToDate = null
+          }
+        }
       }
     }
     plugins.push(base)
