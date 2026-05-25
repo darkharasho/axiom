@@ -1,0 +1,71 @@
+import fs from 'fs'
+import os from 'os'
+import path from 'path'
+import type { ArcdpsState } from './shared/types'
+
+type Gw2Source = ArcdpsState['gw2PathSource']
+
+export interface ResolveGw2Opts {
+  override: string | null
+  axiamConfigPath: string
+  candidates: string[]
+}
+
+function looksLikeGw2(dir: string): boolean {
+  try {
+    return (
+      fs.statSync(dir).isDirectory() &&
+      fs.existsSync(path.join(dir, 'bin64', 'Gw2-64.exe'))
+    )
+  } catch {
+    return false
+  }
+}
+
+function readAxiamGw2Path(cfgPath: string): string | null {
+  try {
+    const raw = fs.readFileSync(cfgPath, 'utf-8')
+    const parsed = JSON.parse(raw) as { gw2Path?: unknown }
+    return typeof parsed.gw2Path === 'string' ? parsed.gw2Path : null
+  } catch {
+    return null
+  }
+}
+
+export function resolveGw2Path(opts: ResolveGw2Opts): { path: string | null; source: Gw2Source } {
+  if (opts.override && looksLikeGw2(opts.override)) {
+    return { path: opts.override, source: 'manual' }
+  }
+  const fromAxiam = readAxiamGw2Path(opts.axiamConfigPath)
+  if (fromAxiam && looksLikeGw2(fromAxiam)) {
+    return { path: fromAxiam, source: 'axiam' }
+  }
+  for (const c of opts.candidates) {
+    if (looksLikeGw2(c)) return { path: c, source: 'auto' }
+  }
+  return { path: null, source: 'none' }
+}
+
+export function defaultAxiamConfigPath(): string {
+  if (process.platform === 'win32') {
+    return path.join(process.env.APPDATA ?? path.join(os.homedir(), 'AppData', 'Roaming'), 'axiam', 'config.json')
+  }
+  return path.join(os.homedir(), '.config', 'axiam', 'config.json')
+}
+
+export function defaultGw2Candidates(): string[] {
+  if (process.platform === 'win32') {
+    return [
+      'C:\\Program Files\\Guild Wars 2',
+      'C:\\Program Files (x86)\\Guild Wars 2',
+      'C:\\Guild Wars 2',
+      path.join(process.env.ProgramFiles ?? 'C:\\Program Files', 'Guild Wars 2'),
+    ]
+  }
+  const home = os.homedir()
+  return [
+    path.join(home, '.steam', 'steam', 'steamapps', 'common', 'Guild Wars 2'),
+    path.join(home, '.local', 'share', 'Steam', 'steamapps', 'common', 'Guild Wars 2'),
+    path.join(home, 'Games', 'guild-wars-2', 'drive_c', 'Program Files', 'Guild Wars 2'),
+  ]
+}
