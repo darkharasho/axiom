@@ -18,6 +18,11 @@ export function readConfig(): Config {
       ...DEFAULT_CONFIG,
       ...raw,
       apps: { ...DEFAULT_CONFIG.apps, ...raw.apps },
+      arcdps: {
+        ...DEFAULT_CONFIG.arcdps,
+        ...(raw.arcdps ?? {}),
+        plugins: { ...DEFAULT_CONFIG.arcdps.plugins, ...(raw.arcdps?.plugins ?? {}) },
+      },
     }
   } catch {
     return structuredClone(DEFAULT_CONFIG)

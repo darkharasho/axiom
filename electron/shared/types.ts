@@ -33,11 +33,45 @@ export interface ConfigApp {
   lastChecked: string | null
 }
 
+export type ArcdpsPluginStatus =
+  | 'idle'
+  | 'checking'
+  | 'downloading'
+  | 'installing'
+  | 'error'
+
+export interface ArcdpsPluginState {
+  id: string                          // matches ArcPluginMeta.id
+  name: string
+  alwaysShow: boolean
+  installed: boolean
+  installedTag: string | null         // recorded by AxiOM on install; null if unknown/manual
+  installedAt: string | null          // ISO timestamp from AxiOM install
+  latestTag: string | null            // 'latest' arcdps for the core; semver tag for github
+  downloadUrl: string | null
+  upToDate: boolean | null            // null = unknown
+  status: ArcdpsPluginStatus
+  errorMessage?: string
+  downloadProgress?: DownloadProgress
+}
+
+export interface ArcdpsState {
+  gw2Path: string | null
+  gw2PathSource: 'axiam' | 'auto' | 'manual' | 'none'
+  plugins: ArcdpsPluginState[]
+}
+
+export interface ConfigArcdps {
+  gw2PathOverride: string | null
+  plugins: Record<string, { installedTag: string | null; installedAt: string | null }>
+}
+
 export interface Config {
   autoStart: boolean
   notifyOnUpdates: boolean
   trayBadge: boolean
   apps: Record<InstallableAppId, ConfigApp>
+  arcdps: ConfigArcdps
 }
 
 export interface ReleaseInfo {
@@ -54,5 +88,9 @@ export const DEFAULT_CONFIG: Config = {
     axiforge:  { installedVersion: null, lastChecked: null },
     axipulse:  { installedVersion: null, lastChecked: null },
     axiam:     { installedVersion: null, lastChecked: null },
+  },
+  arcdps: {
+    gw2PathOverride: null,
+    plugins: {},
   },
 }

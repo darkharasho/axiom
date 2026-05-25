@@ -11,6 +11,10 @@ const EMPTY_CONFIG: Config = {
     axipulse:  { installedVersion: null, lastChecked: null },
     axiam:     { installedVersion: null, lastChecked: null },
   },
+  arcdps: {
+    gw2PathOverride: null,
+    plugins: {},
+  },
 }
 
 // Module-level cache so re-mounting SettingsView doesn't flash back to defaults

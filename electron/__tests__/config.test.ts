@@ -26,7 +26,7 @@ describe('config', () => {
 
   it('writes and reads back a config', async () => {
     const { readConfig, writeConfig } = await import('../config')
-    writeConfig({ autoStart: true, notifyOnUpdates: false, trayBadge: true, apps: readConfig().apps })
+    writeConfig({ autoStart: true, notifyOnUpdates: false, trayBadge: true, apps: readConfig().apps, arcdps: readConfig().arcdps })
     const cfg = readConfig()
     expect(cfg.autoStart).toBe(true)
   })
