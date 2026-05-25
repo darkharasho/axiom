@@ -1,7 +1,7 @@
 import { ipcMain, shell, app, Notification } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import type { BrowserWindow } from 'electron'
-import type { AppId, InstallableAppId, AppState } from './shared/types'
+import type { AppId, InstallableAppId, AppState, ArcdpsState } from './shared/types'
 import { APP_META, isInstallable } from './apps'
 import { readConfig, patchConfig, setInstalledVersion } from './config'
 import { fetchLatestRelease } from './github'
@@ -11,12 +11,21 @@ import {
   installGearLever,
   openInGearLever,
 } from './gearlever'
-import { installWindows, installLinux, updateLinux, uninstallWindows, uninstallLinux } from './installer'
+import { installWindows, installLinux, updateLinux, uninstallWindows, uninstallLinux, downloadFile } from './installer'
 import { setAutoStart, getAutoStart } from './autostart'
 import { isProcessRunning } from './process-check'
 import * as fsSync from 'fs'
 import * as osSync from 'os'
 import * as pathSync from 'path'
+import {
+  resolveGw2Path,
+  defaultAxiamConfigPath,
+  defaultGw2Candidates,
+  buildArcdpsState,
+  installPluginFile,
+  checkArcdpsCoreUpdate,
+} from './arcdps'
+import { getPluginMeta } from './arcdpsRegistry'
 
 function writeAxiomVersionFile(configDir: string | undefined, version: string | null): void {
   if (process.platform !== 'linux' || !configDir || !version) return
@@ -29,13 +38,45 @@ function writeAxiomVersionFile(configDir: string | undefined, version: string | 
 
 let appStates: Record<AppId, AppState> = buildInitialStates()
 let lastCheckTime = 0
+let arcdpsState: ArcdpsState = { gw2Path: null, gw2PathSource: 'none', plugins: [] }
 
 export function getLastCheckTime(): number { return lastCheckTime }
 
 export function hasAnyUpdates(): boolean {
-  return Object.values(appStates).some(s =>
+  const appsHave = Object.values(appStates).some(s =>
     s.installedVersion != null && s.latestVersion != null && s.installedVersion !== s.latestVersion
   )
+  const arcdpsHave = arcdpsState.plugins.some(p => p.upToDate === false)
+  return appsHave || arcdpsHave
+}
+
+function pushArcdps(win: BrowserWindow): void {
+  win.webContents.send('arcdps:state-updated', arcdpsState)
+}
+
+function setArcdpsPlugin(win: BrowserWindow, id: string, patch: Partial<ArcdpsState['plugins'][number]>): void {
+  arcdpsState = {
+    ...arcdpsState,
+    plugins: arcdpsState.plugins.map(p => p.id === id ? { ...p, ...patch } : p),
+  }
+  pushArcdps(win)
+}
+
+async function refreshArcdps(win: BrowserWindow): Promise<void> {
+  const cfg = readConfig()
+  const resolved = resolveGw2Path({
+    override: cfg.arcdps.gw2PathOverride,
+    axiamConfigPath: defaultAxiamConfigPath(),
+    candidates: defaultGw2Candidates(),
+  })
+  arcdpsState = await buildArcdpsState({
+    gw2Path: resolved.path,
+    gw2PathSource: resolved.source,
+    recordedInstalls: cfg.arcdps.plugins,
+    fetchRelease: (repo, pattern) => fetchLatestRelease(repo, pattern),
+    fetchCoreMd5: (dll) => checkArcdpsCoreUpdate(dll),
+  })
+  pushArcdps(win)
 }
 
 export async function runCheckUpdates(win: BrowserWindow): Promise<void> {
@@ -59,6 +100,7 @@ export async function runCheckUpdates(win: BrowserWindow): Promise<void> {
       downloadUrl: release?.downloadUrl ?? null,
     })
   }
+  await refreshArcdps(win)
   lastCheckTime = Date.now()
 
   // Send notifications for newly discovered updates
@@ -127,6 +169,77 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
   ipcMain.handle('axiom:check-updates', async () => {
     await runCheckUpdates(win)
     onCheckComplete?.()
+  })
+
+  ipcMain.handle('arcdps:get-state', () => arcdpsState)
+
+  ipcMain.handle('arcdps:check-updates', async () => {
+    await refreshArcdps(win)
+    onCheckComplete?.()
+  })
+
+  ipcMain.handle('arcdps:set-gw2-path', async (_e, p: string | null) => {
+    const cfg = readConfig()
+    patchConfig({ arcdps: { ...cfg.arcdps, gw2PathOverride: p } })
+    await refreshArcdps(win)
+  })
+
+  ipcMain.handle('arcdps:install', async (_e, id: string) => {
+    const meta = getPluginMeta(id)
+    if (!meta) return
+    const current = arcdpsState
+    if (!current.gw2Path) return
+    const plugin = current.plugins.find(p => p.id === id)
+    if (!plugin?.downloadUrl) return
+
+    if (await isProcessRunning('Gw2-64')) {
+      setArcdpsPlugin(win, id, { status: 'error', errorMessage: 'Close Guild Wars 2 before updating arcdps plugins.' })
+      return
+    }
+
+    const filename = meta.source.kind === 'deltaconnected'
+      ? 'd3d11.dll'
+      : pathSync.basename(new URL(plugin.downloadUrl).pathname)
+    const targetPath = pathSync.join(
+      current.gw2Path,
+      meta.installDir === 'bin64' ? 'bin64' : pathSync.join('bin64', 'arcdps', 'extensions'),
+      filename,
+    )
+
+    setArcdpsPlugin(win, id, {
+      status: 'downloading',
+      errorMessage: undefined,
+      downloadProgress: { percent: 0, bytesReceived: 0, totalBytes: 0 },
+    })
+    try {
+      await installPluginFile({
+        targetPath,
+        downloadUrl: plugin.downloadUrl,
+        download: (url, dest) => downloadFile(url, dest, (p) => setArcdpsPlugin(win, id, { downloadProgress: p })),
+      })
+      const cfg = readConfig()
+      const newTag = plugin.latestTag
+      patchConfig({
+        arcdps: {
+          ...cfg.arcdps,
+          plugins: {
+            ...cfg.arcdps.plugins,
+            [id]: { installedTag: newTag, installedAt: new Date().toISOString() },
+          },
+        },
+      })
+      setArcdpsPlugin(win, id, {
+        status: 'idle',
+        installed: true,
+        installedTag: newTag,
+        installedAt: new Date().toISOString(),
+        upToDate: true,
+        downloadProgress: undefined,
+      })
+      onCheckComplete?.()
+    } catch (err) {
+      setArcdpsPlugin(win, id, { status: 'error', errorMessage: String(err), downloadProgress: undefined })
+    }
   })
 
   ipcMain.handle('axiom:install', async (_e, appId: InstallableAppId) => {
