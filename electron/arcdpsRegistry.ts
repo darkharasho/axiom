@@ -174,8 +174,11 @@ export const ARCDPS_REGISTRY: ArcPluginMeta[] = [
     name: 'Unofficial Extras',
     description: 'Extra arcdps callbacks (squad chat, ready check) required by several other plugins.',
     source: { kind: 'github', repo: 'Krappa322/arcdps_unofficial_extras_releases' },
+    // GW2 Nexus renames the asset to Unofficial_Extras.dll under addons/;
+    // standalone arcdps loads it as extras.dll from bin64/arcdps/extensions/.
     locations: [
-      { dir: 'bin64/arcdps/extensions', dllPattern: /^extras\.dll$/i, installFilename: 'extras.dll' },
+      { dir: 'addons',                  dllPattern: /^Unofficial_Extras\.dll$/i, installFilename: 'Unofficial_Extras.dll' },
+      { dir: 'bin64/arcdps/extensions', dllPattern: /^extras\.dll$/i,            installFilename: 'extras.dll' },
     ],
     assetPattern: /^extras\.dll$/i,
     alwaysShow: false,
