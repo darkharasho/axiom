@@ -158,7 +158,7 @@ export function AppList({ states, checking, selfUpdate, onOpenSettings, onOpenAr
             border: 'none',
             color: 'var(--text-faint)',
             cursor: 'pointer',
-            padding: '2px 4px',
+            padding: '2px 6px',
             borderRadius: 3,
             display: 'flex',
             alignItems: 'center',
