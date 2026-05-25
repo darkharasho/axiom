@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-import type { AppState, AppId, InstallableAppId, Config } from '../electron/shared/types'
+import type { AppState, AppId, InstallableAppId, Config, ArcdpsState } from '../electron/shared/types'
 
 declare global {
   interface Window {
@@ -25,6 +25,12 @@ declare global {
       onStatesUpdated: (cb: (states: AppState[]) => void) => () => void
       onRequestCheckUpdates: (cb: () => void) => () => void
       onGearLeverProgress: (cb: (chunk: string) => void) => () => void
+      getArcdpsState: () => Promise<ArcdpsState>
+      checkArcdpsUpdates: () => Promise<void>
+      installArcdpsPlugin: (id: string) => Promise<void>
+      setGw2Path: (p: string | null) => Promise<void>
+      pickGw2Folder: () => Promise<string | null>
+      onArcdpsStateUpdated: (cb: (state: ArcdpsState) => void) => () => void
     }
   }
 }

@@ -1,0 +1,265 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import fs from 'fs'
+import os from 'os'
+import path from 'path'
+
+vi.mock('electron', () => ({ app: { getPath: () => '/tmp/axiom-test-userdata' } }))
+
+import { resolveGw2Path, detectInstalledPlugins, computeFileMd5, checkArcdpsCoreUpdate, buildArcdpsState, installPluginFile } from '../arcdps'
+
+describe('resolveGw2Path', () => {
+  const tmpRoot = path.join(os.tmpdir(), `axiom-arcdps-${Date.now()}`)
+  beforeEach(() => {
+    fs.rmSync(tmpRoot, { recursive: true, force: true })
+    fs.mkdirSync(tmpRoot, { recursive: true })
+  })
+
+  it('returns manual override when configured', () => {
+    const gw2 = path.join(tmpRoot, 'GW2Manual')
+    fs.mkdirSync(path.join(gw2, 'bin64'), { recursive: true })
+    fs.writeFileSync(path.join(gw2, 'bin64', 'Gw2-64.exe'), 'x')
+    const result = resolveGw2Path({ override: gw2, axiamConfigPath: '/nonexistent', candidates: [] })
+    expect(result).toEqual({ path: gw2, source: 'manual', overrideError: null })
+  })
+
+  it('falls back to AxiAM config when no override', () => {
+    const gw2 = path.join(tmpRoot, 'GW2Axiam')
+    fs.mkdirSync(path.join(gw2, 'bin64'), { recursive: true })
+    fs.writeFileSync(path.join(gw2, 'bin64', 'Gw2-64.exe'), 'x')
+    const axiamCfg = path.join(tmpRoot, 'axiam.json')
+    fs.writeFileSync(axiamCfg, JSON.stringify({ gw2Path: gw2 }))
+    const result = resolveGw2Path({ override: null, axiamConfigPath: axiamCfg, candidates: [] })
+    expect(result).toEqual({ path: gw2, source: 'axiam', overrideError: null })
+  })
+
+  it('falls back to candidates when AxiAM config missing', () => {
+    const gw2 = path.join(tmpRoot, 'GW2Auto')
+    fs.mkdirSync(path.join(gw2, 'bin64'), { recursive: true })
+    fs.writeFileSync(path.join(gw2, 'bin64', 'Gw2-64.exe'), 'x')
+    const result = resolveGw2Path({ override: null, axiamConfigPath: '/nonexistent', candidates: [gw2] })
+    expect(result).toEqual({ path: gw2, source: 'auto', overrideError: null })
+  })
+
+  it('returns none when nothing resolves', () => {
+    const result = resolveGw2Path({ override: null, axiamConfigPath: '/nonexistent', candidates: [] })
+    expect(result).toEqual({ path: null, source: 'none', overrideError: null })
+  })
+
+  it('ignores AxiAM path that does not contain bin64/Gw2-64.exe', () => {
+    const bogus = path.join(tmpRoot, 'NotGW2')
+    fs.mkdirSync(bogus, { recursive: true })
+    const axiamCfg = path.join(tmpRoot, 'axiam.json')
+    fs.writeFileSync(axiamCfg, JSON.stringify({ gw2Path: bogus }))
+    const result = resolveGw2Path({ override: null, axiamConfigPath: axiamCfg, candidates: [] })
+    expect(result).toEqual({ path: null, source: 'none', overrideError: null })
+  })
+})
+
+describe('detectInstalledPlugins', () => {
+  const tmpRoot = path.join(os.tmpdir(), `axiom-arcdps-detect-${Date.now()}`)
+  const gw2 = path.join(tmpRoot, 'GW2')
+  const bin64 = path.join(gw2, 'bin64')
+  const ext = path.join(bin64, 'arcdps', 'extensions')
+
+  beforeEach(() => {
+    fs.rmSync(tmpRoot, { recursive: true, force: true })
+    fs.mkdirSync(ext, { recursive: true })
+  })
+
+  it('returns empty when no DLLs present', () => {
+    expect(detectInstalledPlugins(gw2)).toEqual([])
+  })
+
+  it('detects arcdps core (d3d11.dll in GW2 root)', () => {
+    fs.writeFileSync(path.join(gw2, 'd3d11.dll'), 'fake')
+    const found = detectInstalledPlugins(gw2)
+    const arc = found.find(p => p.id === 'arcdps')
+    expect(arc).toBeDefined()
+    expect(arc!.location.dir).toBe('')
+  })
+
+  it('detects arcdps under Nexus (addons/ArcDPS.dll)', () => {
+    const addonsDir = path.join(gw2, 'addons')
+    fs.mkdirSync(addonsDir, { recursive: true })
+    fs.writeFileSync(path.join(addonsDir, 'ArcDPS.dll'), 'fake')
+    const found = detectInstalledPlugins(gw2)
+    const arc = found.find(p => p.id === 'arcdps')
+    expect(arc).toBeDefined()
+    expect(arc!.location.dir).toBe('addons')
+  })
+
+  it('detects a github plugin in bin64', () => {
+    fs.writeFileSync(path.join(bin64, 'arcdps_boon_table.dll'), 'fake')
+    const found = detectInstalledPlugins(gw2)
+    const bt = found.find(p => p.id === 'boon_table')
+    expect(bt).toBeDefined()
+    expect(bt!.location.dir).toBe('bin64')
+  })
+
+  it('detects a github plugin in addons/ (Nexus location)', () => {
+    fs.mkdirSync(path.join(gw2, 'addons'), { recursive: true })
+    fs.writeFileSync(path.join(gw2, 'addons', 'arcdps_boon_table.dll'), 'fake')
+    const found = detectInstalledPlugins(gw2)
+    const bt = found.find(p => p.id === 'boon_table')
+    expect(bt).toBeDefined()
+    expect(bt!.location.dir).toBe('addons')
+  })
+
+  it('detects unofficial_extras in extensions/', () => {
+    fs.writeFileSync(path.join(ext, 'extras.dll'), 'fake')
+    const found = detectInstalledPlugins(gw2)
+    expect(found.map(p => p.id)).toContain('unofficial_extras')
+  })
+
+  it('ignores arbitrary DLLs not in the registry', () => {
+    fs.writeFileSync(path.join(gw2, 'random_other.dll'), 'fake')
+    expect(detectInstalledPlugins(gw2)).toEqual([])
+  })
+
+  it('returns each meta only once even when present in multiple locations', () => {
+    fs.writeFileSync(path.join(gw2, 'd3d11.dll'), 'fake')
+    const addonsDir = path.join(gw2, 'addons')
+    fs.mkdirSync(addonsDir, { recursive: true })
+    fs.writeFileSync(path.join(addonsDir, 'ArcDPS.dll'), 'fake')
+    const found = detectInstalledPlugins(gw2)
+    const arcCount = found.filter(p => p.id === 'arcdps').length
+    expect(arcCount).toBe(1)
+  })
+})
+
+describe('computeFileMd5', () => {
+  it('returns md5 hex of a file', () => {
+    const f = path.join(os.tmpdir(), `md5-${Date.now()}.bin`)
+    fs.writeFileSync(f, 'hello')
+    expect(computeFileMd5(f)).toBe('5d41402abc4b2a76b9719d911017c592')
+    fs.unlinkSync(f)
+  })
+})
+
+describe('checkArcdpsCoreUpdate', () => {
+  it('reports up-to-date when hashes match', async () => {
+    const dll = path.join(os.tmpdir(), `arc-${Date.now()}.dll`)
+    fs.writeFileSync(dll, 'hello')
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: true,
+      text: async () => '5d41402abc4b2a76b9719d911017c592 *d3d11.dll\n',
+    } as any)
+    const r = await checkArcdpsCoreUpdate(dll, fetchImpl)
+    expect(r).toEqual({ upToDate: true, remoteMd5: '5d41402abc4b2a76b9719d911017c592', localMd5: '5d41402abc4b2a76b9719d911017c592' })
+    fs.unlinkSync(dll)
+  })
+
+  it('reports update available when hashes differ', async () => {
+    const dll = path.join(os.tmpdir(), `arc-${Date.now()}.dll`)
+    fs.writeFileSync(dll, 'world')
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: true,
+      text: async () => '5d41402abc4b2a76b9719d911017c592 *d3d11.dll\n',
+    } as any)
+    const r = await checkArcdpsCoreUpdate(dll, fetchImpl)
+    expect(r?.upToDate).toBe(false)
+    fs.unlinkSync(dll)
+  })
+
+  it('returns null when fetch fails', async () => {
+    const dll = path.join(os.tmpdir(), `arc-${Date.now()}.dll`)
+    fs.writeFileSync(dll, 'hello')
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: false } as any)
+    expect(await checkArcdpsCoreUpdate(dll, fetchImpl)).toBeNull()
+    fs.unlinkSync(dll)
+  })
+})
+
+describe('buildArcdpsState', () => {
+  it('always shows arcdps and arcdps_axipulse even when not installed', async () => {
+    const gw2 = path.join(os.tmpdir(), `arcdps-state-${Date.now()}`)
+    fs.mkdirSync(path.join(gw2, 'bin64'), { recursive: true })
+    fs.writeFileSync(path.join(gw2, 'bin64', 'Gw2-64.exe'), 'x')
+    const state = await buildArcdpsState({
+      gw2Path: gw2,
+      gw2PathSource: 'manual',
+      recordedInstalls: {},
+      fetchRelease: async () => null,
+      fetchCoreMd5: async () => null,
+    })
+    expect(state.plugins.find(p => p.id === 'arcdps')).toBeDefined()
+    expect(state.plugins.find(p => p.id === 'arcdps_axipulse')).toBeDefined()
+    expect(state.plugins.find(p => p.id === 'boon_table')).toBeUndefined()
+  })
+
+  it('shows a detect-only plugin when its DLL exists', async () => {
+    const gw2 = path.join(os.tmpdir(), `arcdps-state2-${Date.now()}`)
+    fs.mkdirSync(path.join(gw2, 'bin64'), { recursive: true })
+    fs.writeFileSync(path.join(gw2, 'bin64', 'Gw2-64.exe'), 'x')
+    fs.writeFileSync(path.join(gw2, 'bin64', 'arcdps_boon_table.dll'), 'fake')
+    const state = await buildArcdpsState({
+      gw2Path: gw2,
+      gw2PathSource: 'manual',
+      recordedInstalls: { boon_table: { installedTag: 'v1.0', installedAt: '2026-01-01' } },
+      fetchRelease: async () => ({ version: '1.1', downloadUrl: 'https://x/y.dll' }),
+      fetchCoreMd5: async () => null,
+    })
+    const bt = state.plugins.find(p => p.id === 'boon_table')!
+    expect(bt.installed).toBe(true)
+    expect(bt.installedTag).toBe('v1.0')
+    expect(bt.latestTag).toBe('1.1')
+    expect(bt.upToDate).toBe(false)
+  })
+
+  it('returns empty plugins list when no gw2Path', async () => {
+    const state = await buildArcdpsState({
+      gw2Path: null,
+      gw2PathSource: 'none',
+      recordedInstalls: {},
+      fetchRelease: async () => null,
+      fetchCoreMd5: async () => null,
+    })
+    expect(state.plugins).toEqual([])
+  })
+})
+
+describe('installPluginFile', () => {
+  const root = path.join(os.tmpdir(), `arcdps-install-${Date.now()}`)
+  beforeEach(() => {
+    fs.rmSync(root, { recursive: true, force: true })
+    fs.mkdirSync(root, { recursive: true })
+  })
+
+  it('places the new file at target when no prior file', async () => {
+    const target = path.join(root, 'd3d11.dll')
+    const download = vi.fn(async (_url: string, dest: string) => {
+      fs.writeFileSync(dest, 'new')
+    })
+    await installPluginFile({ targetPath: target, downloadUrl: 'http://x', download })
+    expect(fs.readFileSync(target, 'utf-8')).toBe('new')
+  })
+
+  it('backs up existing file and replaces it', async () => {
+    const target = path.join(root, 'd3d11.dll')
+    fs.writeFileSync(target, 'old')
+    const download = vi.fn(async (_url: string, dest: string) => {
+      fs.writeFileSync(dest, 'new')
+    })
+    await installPluginFile({ targetPath: target, downloadUrl: 'http://x', download })
+    expect(fs.readFileSync(target, 'utf-8')).toBe('new')
+    expect(fs.readFileSync(target + '.bak', 'utf-8')).toBe('old')
+  })
+
+  it('rolls back from .bak when download fails', async () => {
+    const target = path.join(root, 'd3d11.dll')
+    fs.writeFileSync(target, 'old')
+    const download = vi.fn(async () => { throw new Error('network') })
+    await expect(installPluginFile({ targetPath: target, downloadUrl: 'http://x', download }))
+      .rejects.toThrow('network')
+    expect(fs.readFileSync(target, 'utf-8')).toBe('old')
+  })
+
+  it('creates installDir if missing', async () => {
+    const target = path.join(root, 'nested', 'sub', 'extras.dll')
+    const download = vi.fn(async (_url: string, dest: string) => {
+      fs.writeFileSync(dest, 'new')
+    })
+    await installPluginFile({ targetPath: target, downloadUrl: 'http://x', download })
+    expect(fs.readFileSync(target, 'utf-8')).toBe('new')
+  })
+})

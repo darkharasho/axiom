@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { AppList } from './components/AppList'
 import { SettingsView } from './components/SettingsView'
 import { AppInfoView } from './components/AppInfoView'
+import { ArcdpsView } from './components/ArcdpsView'
 import { useAppStates } from './hooks/useAppStates'
 import { useSelfUpdate } from './hooks/useSelfUpdate'
 import type { AppId, InstallableAppId } from '@shared/types'
 
-type View = 'list' | 'settings' | 'info'
+type View = 'list' | 'settings' | 'info' | 'arcdps'
 
 export default function App() {
   const [view, setView] = useState<View>('list')
@@ -24,12 +25,16 @@ export default function App() {
           checking={checking}
           selfUpdate={selfUpdate}
           onOpenSettings={() => setView('settings')}
+          onOpenArcdps={() => setView('arcdps')}
           onCheckUpdates={checkUpdates}
           onOpenInfo={id => { setInfoAppId(id); setView('info') }}
         />
       )}
       {view === 'settings' && (
         <SettingsView onBack={() => setView('list')} />
+      )}
+      {view === 'arcdps' && (
+        <ArcdpsView onBack={() => setView('list')} />
       )}
       {view === 'info' && infoAppId && (
         <AppInfoView

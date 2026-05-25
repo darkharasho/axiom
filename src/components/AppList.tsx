@@ -2,20 +2,24 @@ import { Settings, RefreshCw, LogOut, ArrowUp } from 'lucide-react'
 import type { AppState, AppId, InstallableAppId } from '@shared/types'
 import type { SelfUpdateState } from '../hooks/useSelfUpdate'
 import { AppRow } from './AppRow'
+import { useArcdpsState } from '../hooks/useArcdpsState'
 
 interface Props {
   states: AppState[]
   checking: boolean
   selfUpdate?: SelfUpdateState
   onOpenSettings: () => void
+  onOpenArcdps: () => void
   onCheckUpdates: () => void
   onOpenInfo: (appId: AppId) => void
 }
 
 const APP_ORDER: AppId[] = ['axibridge', 'axiforge', 'axipulse', 'axiam', 'axitools']
 
-export function AppList({ states, checking, selfUpdate, onOpenSettings, onCheckUpdates, onOpenInfo }: Props) {
+export function AppList({ states, checking, selfUpdate, onOpenSettings, onOpenArcdps, onCheckUpdates, onOpenInfo }: Props) {
   const stateMap = Object.fromEntries(states.map(s => [s.id, s])) as Record<AppId, AppState>
+  const { state: arcdpsState } = useArcdpsState()
+  const arcdpsHasUpdate = arcdpsState.plugins.some(p => p.upToDate === false)
 
   const handleAction = (action: string, appId: AppId) => {
     switch (action) {
@@ -145,10 +149,43 @@ export function AppList({ states, checking, selfUpdate, onOpenSettings, onCheckU
           </span>
         )}
         <button
-          onClick={onOpenSettings}
+          onClick={onOpenArcdps}
           className="icon-btn"
           style={{
             marginLeft: 'auto',
+            position: 'relative',
+            background: 'none',
+            border: 'none',
+            color: 'var(--text-faint)',
+            cursor: 'pointer',
+            padding: '2px 6px',
+            borderRadius: 3,
+            display: 'flex',
+            alignItems: 'center',
+          }}
+          title={arcdpsHasUpdate ? 'arcdps plugins — update available' : 'arcdps plugins'}
+        >
+          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.3px', textTransform: 'uppercase', lineHeight: 1 }}>arcdps</span>
+          {arcdpsHasUpdate && (
+            <span
+              aria-hidden
+              style={{
+                position: 'absolute',
+                top: -2,
+                right: -2,
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                background: 'var(--gold-bright)',
+                boxShadow: '0 0 4px var(--gold-bright)',
+              }}
+            />
+          )}
+        </button>
+        <button
+          onClick={onOpenSettings}
+          className="icon-btn"
+          style={{
             background: 'none',
             border: 'none',
             color: 'var(--text-faint)',

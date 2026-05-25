@@ -11,11 +11,20 @@ export async function fetchLatestRelease(
       headers: { Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' },
     })
     if (!res.ok) return null
-    const data = await res.json() as { tag_name: string; assets: { name: string; browser_download_url: string }[] }
+    const data = await res.json() as {
+      tag_name: string
+      published_at?: string
+      assets: { name: string; browser_download_url: string; size?: number }[]
+    }
     const version = data.tag_name.replace(/^v/, '')
     const asset = data.assets.find(a => assetPattern.test(a.name))
     if (!asset) return null
-    return { version, downloadUrl: asset.browser_download_url }
+    return {
+      version,
+      downloadUrl: asset.browser_download_url,
+      assetSize: asset.size,
+      publishedAt: data.published_at,
+    }
   } catch {
     return null
   }

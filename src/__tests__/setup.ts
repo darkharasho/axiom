@@ -32,4 +32,10 @@ vi.stubGlobal('axiom', {
   checkSelfUpdate: vi.fn().mockResolvedValue(undefined),
   installSelfUpdate: vi.fn().mockResolvedValue(undefined),
   onSelfUpdateStatus: vi.fn().mockReturnValue(() => {}),
+  getArcdpsState: vi.fn().mockResolvedValue({ gw2Path: null, gw2PathSource: 'none', overrideError: null, plugins: [] }),
+  checkArcdpsUpdates: vi.fn().mockResolvedValue(undefined),
+  installArcdpsPlugin: vi.fn().mockResolvedValue(undefined),
+  setGw2Path: vi.fn().mockResolvedValue(undefined),
+  pickGw2Folder: vi.fn().mockResolvedValue(null),
+  onArcdpsStateUpdated: vi.fn().mockReturnValue(() => {}),
 })
