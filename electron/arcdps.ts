@@ -147,11 +147,15 @@ export function resolveInstallDir(gw2: string, kind: InstallDir): string {
 }
 
 export function detectInstalledPlugins(gw2Path: string): DetectedPlugin[] {
+  const nexusInstalled = fs.existsSync(path.join(gw2Path, 'addons'))
   const out: DetectedPlugin[] = []
   const seen = new Set<string>()
   for (const meta of ARCDPS_REGISTRY) {
     for (const location of meta.locations) {
       if (seen.has(meta.id)) break
+      // arcdps shares its d3d11.dll filename with GW2 Nexus's loader. If Nexus
+      // is installed (addons/ exists) the root d3d11.dll is Nexus, not arcdps.
+      if (meta.id === 'arcdps' && location.dir === '' && nexusInstalled) continue
       const dir = resolveInstallDir(gw2Path, location.dir)
       for (const file of safeReaddir(dir)) {
         if (!location.dllPattern.test(file)) continue

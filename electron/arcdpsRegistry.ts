@@ -41,11 +41,15 @@ export const ARCDPS_REGISTRY: ArcPluginMeta[] = [
   {
     id: 'arcdps',
     name: 'arcdps',
-    description: 'DPS meter and addon loader. Loads as d3d11.dll in the GW2 root, or as ArcDPS.dll under addons/arcdps/ when chainloaded by GW2 Nexus.',
+    description: 'DPS meter and addon loader. Loads as ArcDPS.dll under addons/arcdps/ when chainloaded by GW2 Nexus, or as d3d11.dll in the GW2 root in a standalone setup.',
     source: { kind: 'deltaconnected' },
+    // Nexus location checked first because a Nexus install also puts d3d11.dll
+    // in the root (the Nexus loader), which would otherwise be misidentified
+    // as arcdps. detectInstalledPlugins additionally skips the root d3d11.dll
+    // candidate when <GW2>/addons/ exists.
     locations: [
-      { dir: '',              dllPattern: /^d3d11\.dll$/i,   installFilename: 'd3d11.dll' },
       { dir: 'addons/arcdps', dllPattern: /^ArcDPS\.dll$/i,  installFilename: 'ArcDPS.dll' },
+      { dir: '',              dllPattern: /^d3d11\.dll$/i,   installFilename: 'd3d11.dll' },
     ],
     alwaysShow: true,
   },
