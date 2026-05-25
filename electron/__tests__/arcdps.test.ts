@@ -5,7 +5,7 @@ import path from 'path'
 
 vi.mock('electron', () => ({ app: { getPath: () => '/tmp/axiom-test-userdata' } }))
 
-import { resolveGw2Path, detectInstalledPlugins } from '../arcdps'
+import { resolveGw2Path, detectInstalledPlugins, computeFileMd5, checkArcdpsCoreUpdate } from '../arcdps'
 
 describe('resolveGw2Path', () => {
   const tmpRoot = path.join(os.tmpdir(), `axiom-arcdps-${Date.now()}`)
@@ -98,5 +98,48 @@ describe('detectInstalledPlugins', () => {
     const found = detectInstalledPlugins(gw2)
     const arcCount = found.filter(p => p.id === 'arcdps').length
     expect(arcCount).toBe(1)
+  })
+})
+
+describe('computeFileMd5', () => {
+  it('returns md5 hex of a file', () => {
+    const f = path.join(os.tmpdir(), `md5-${Date.now()}.bin`)
+    fs.writeFileSync(f, 'hello')
+    expect(computeFileMd5(f)).toBe('5d41402abc4b2a76b9719d911017c592')
+    fs.unlinkSync(f)
+  })
+})
+
+describe('checkArcdpsCoreUpdate', () => {
+  it('reports up-to-date when hashes match', async () => {
+    const dll = path.join(os.tmpdir(), `arc-${Date.now()}.dll`)
+    fs.writeFileSync(dll, 'hello')
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: true,
+      text: async () => '5d41402abc4b2a76b9719d911017c592 *d3d11.dll\n',
+    } as any)
+    const r = await checkArcdpsCoreUpdate(dll, fetchImpl)
+    expect(r).toEqual({ upToDate: true, remoteMd5: '5d41402abc4b2a76b9719d911017c592' })
+    fs.unlinkSync(dll)
+  })
+
+  it('reports update available when hashes differ', async () => {
+    const dll = path.join(os.tmpdir(), `arc-${Date.now()}.dll`)
+    fs.writeFileSync(dll, 'world')
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: true,
+      text: async () => '5d41402abc4b2a76b9719d911017c592 *d3d11.dll\n',
+    } as any)
+    const r = await checkArcdpsCoreUpdate(dll, fetchImpl)
+    expect(r?.upToDate).toBe(false)
+    fs.unlinkSync(dll)
+  })
+
+  it('returns null when fetch fails', async () => {
+    const dll = path.join(os.tmpdir(), `arc-${Date.now()}.dll`)
+    fs.writeFileSync(dll, 'hello')
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: false } as any)
+    expect(await checkArcdpsCoreUpdate(dll, fetchImpl)).toBeNull()
+    fs.unlinkSync(dll)
   })
 })

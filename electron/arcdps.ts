@@ -1,3 +1,4 @@
+import crypto from 'crypto'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
@@ -68,6 +69,35 @@ export function defaultGw2Candidates(): string[] {
     path.join(home, '.local', 'share', 'Steam', 'steamapps', 'common', 'Guild Wars 2'),
     path.join(home, 'Games', 'guild-wars-2', 'drive_c', 'Program Files', 'Guild Wars 2'),
   ]
+}
+
+export const ARCDPS_CORE_URL = 'https://www.deltaconnected.com/arcdps/x64/d3d11.dll'
+export const ARCDPS_CORE_MD5_URL = 'https://www.deltaconnected.com/arcdps/x64/d3d11.dll.md5sum'
+
+export function computeFileMd5(file: string): string {
+  const hash = crypto.createHash('md5')
+  hash.update(fs.readFileSync(file))
+  return hash.digest('hex')
+}
+
+type FetchLike = (url: string) => Promise<{ ok: boolean; text(): Promise<string> }>
+
+export async function checkArcdpsCoreUpdate(
+  dllPath: string,
+  fetchImpl: FetchLike = fetch as unknown as FetchLike,
+): Promise<{ upToDate: boolean; remoteMd5: string } | null> {
+  try {
+    const res = await fetchImpl(ARCDPS_CORE_MD5_URL)
+    if (!res.ok) return null
+    const body = await res.text()
+    // md5sum format: "<hex>  filename" or "<hex> *filename"
+    const remoteMd5 = body.trim().split(/\s+/)[0]?.toLowerCase()
+    if (!remoteMd5 || !/^[a-f0-9]{32}$/.test(remoteMd5)) return null
+    const local = computeFileMd5(dllPath).toLowerCase()
+    return { upToDate: local === remoteMd5, remoteMd5 }
+  } catch {
+    return null
+  }
 }
 
 import type { ArcPluginMeta, InstallDir } from './arcdpsRegistry'
