@@ -5,7 +5,7 @@ import path from 'path'
 
 vi.mock('electron', () => ({ app: { getPath: () => '/tmp/axiom-test-userdata' } }))
 
-import { resolveGw2Path } from '../arcdps'
+import { resolveGw2Path, detectInstalledPlugins } from '../arcdps'
 
 describe('resolveGw2Path', () => {
   const tmpRoot = path.join(os.tmpdir(), `axiom-arcdps-${Date.now()}`)
@@ -52,5 +52,51 @@ describe('resolveGw2Path', () => {
     fs.writeFileSync(axiamCfg, JSON.stringify({ gw2Path: bogus }))
     const result = resolveGw2Path({ override: null, axiamConfigPath: axiamCfg, candidates: [] })
     expect(result).toEqual({ path: null, source: 'none' })
+  })
+})
+
+describe('detectInstalledPlugins', () => {
+  const tmpRoot = path.join(os.tmpdir(), `axiom-arcdps-detect-${Date.now()}`)
+  const gw2 = path.join(tmpRoot, 'GW2')
+  const bin64 = path.join(gw2, 'bin64')
+  const ext = path.join(bin64, 'arcdps', 'extensions')
+
+  beforeEach(() => {
+    fs.rmSync(tmpRoot, { recursive: true, force: true })
+    fs.mkdirSync(ext, { recursive: true })
+  })
+
+  it('returns empty when no DLLs present', () => {
+    expect(detectInstalledPlugins(gw2)).toEqual([])
+  })
+
+  it('detects arcdps core (d3d11.dll)', () => {
+    fs.writeFileSync(path.join(bin64, 'd3d11.dll'), 'fake')
+    const found = detectInstalledPlugins(gw2)
+    expect(found.map(p => p.id)).toContain('arcdps')
+  })
+
+  it('detects a github plugin in bin64', () => {
+    fs.writeFileSync(path.join(bin64, 'arcdps_boon_table.dll'), 'fake')
+    const found = detectInstalledPlugins(gw2)
+    expect(found.map(p => p.id)).toContain('boon_table')
+  })
+
+  it('detects unofficial_extras in extensions/', () => {
+    fs.writeFileSync(path.join(ext, 'extras.dll'), 'fake')
+    const found = detectInstalledPlugins(gw2)
+    expect(found.map(p => p.id)).toContain('unofficial_extras')
+  })
+
+  it('ignores arbitrary DLLs not in the registry', () => {
+    fs.writeFileSync(path.join(bin64, 'random_other.dll'), 'fake')
+    expect(detectInstalledPlugins(gw2)).toEqual([])
+  })
+
+  it('returns each meta only once even if both bin64 and extensions match', () => {
+    fs.writeFileSync(path.join(bin64, 'd3d11.dll'), 'fake')
+    const found = detectInstalledPlugins(gw2)
+    const arcCount = found.filter(p => p.id === 'arcdps').length
+    expect(arcCount).toBe(1)
   })
 })

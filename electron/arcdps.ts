@@ -69,3 +69,43 @@ export function defaultGw2Candidates(): string[] {
     path.join(home, 'Games', 'guild-wars-2', 'drive_c', 'Program Files', 'Guild Wars 2'),
   ]
 }
+
+import type { ArcPluginMeta, InstallDir } from './arcdpsRegistry'
+import { ARCDPS_REGISTRY } from './arcdpsRegistry'
+
+export interface DetectedPlugin {
+  id: string
+  meta: ArcPluginMeta
+  dllPath: string
+  sizeBytes: number
+  mtime: Date
+}
+
+function safeReaddir(dir: string): string[] {
+  try { return fs.readdirSync(dir) } catch { return [] }
+}
+
+function resolveInstallDir(gw2: string, kind: InstallDir): string {
+  return kind === 'bin64'
+    ? path.join(gw2, 'bin64')
+    : path.join(gw2, 'bin64', 'arcdps', 'extensions')
+}
+
+export function detectInstalledPlugins(gw2Path: string): DetectedPlugin[] {
+  const out: DetectedPlugin[] = []
+  const seen = new Set<string>()
+  for (const meta of ARCDPS_REGISTRY) {
+    const dir = resolveInstallDir(gw2Path, meta.installDir)
+    for (const file of safeReaddir(dir)) {
+      if (!meta.dllPattern.test(file)) continue
+      if (seen.has(meta.id)) continue
+      const full = path.join(dir, file)
+      try {
+        const st = fs.statSync(full)
+        out.push({ id: meta.id, meta, dllPath: full, sizeBytes: st.size, mtime: st.mtime })
+        seen.add(meta.id)
+      } catch { /* ignore */ }
+    }
+  }
+  return out
+}
