@@ -224,22 +224,22 @@ export async function buildArcdpsState(opts: BuildStateOpts): Promise<ArcdpsStat
         base.latestTag = rel.version
         base.downloadUrl = rel.downloadUrl
         if (det) {
-          // Fall back to the local file's mtime as the "installed" hint when
-          // no AxiOM-managed tag is recorded (i.e., the user installed manually).
-          if (!base.installedTag) {
-            base.installedTag = det.mtime.toISOString().slice(0, 10)
-          }
-          if (recorded?.installedTag === rel.version) {
-            base.upToDate = true
-          } else if (recorded?.installedTag && recorded.installedTag !== rel.version) {
-            base.upToDate = false
-          } else if (rel.assetSize != null) {
-            // No recorded tag — compare local file size to the published asset.
-            // GitHub release assets keep a stable size per version, so a match
-            // is a strong (though not perfect) "up to date" signal.
-            base.upToDate = det.sizeBytes === rel.assetSize
+          // Compare ground truth (local file size on disk) to the published
+          // asset size whenever we can. This catches the case where the user
+          // updated outside AxiOM after we recorded a tag — without it, our
+          // 'installed' would stay stuck on whatever AxiOM last wrote.
+          if (rel.assetSize != null) {
+            const sizeMatches = det.sizeBytes === rel.assetSize
+            base.upToDate = sizeMatches
+            base.installedTag = sizeMatches
+              ? rel.version
+              : det.mtime.toISOString().slice(0, 10)
+          } else if (recorded?.installedTag) {
+            base.upToDate = recorded.installedTag === rel.version
+            base.installedTag = recorded.installedTag
           } else {
             base.upToDate = null
+            base.installedTag = det.mtime.toISOString().slice(0, 10)
           }
         }
       }
