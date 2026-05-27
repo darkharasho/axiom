@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import crypto from 'crypto'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
@@ -204,6 +205,59 @@ describe('buildArcdpsState', () => {
     expect(bt.installedTag).toBe('v1.0')
     expect(bt.latestTag).toBe('1.1')
     expect(bt.upToDate).toBe(false)
+  })
+
+  it('uses asset digest (not size) to decide up-to-date when sizes collide', async () => {
+    // Regression: AxiPulse v0.1.8 and v0.2.0 shipped DLLs with identical
+    // byte sizes. Size-only equivalence falsely reported "up to date".
+    const gw2 = path.join(os.tmpdir(), `arcdps-state-digest-${Date.now()}`)
+    fs.mkdirSync(path.join(gw2, 'bin64'), { recursive: true })
+    fs.writeFileSync(path.join(gw2, 'bin64', 'Gw2-64.exe'), 'x')
+    const dll = path.join(gw2, 'bin64', 'arcdps_axipulse.dll')
+    const localBytes = Buffer.from('local-v0.1.8-bytes')
+    fs.writeFileSync(dll, localBytes)
+    const remoteSha256 = 'a'.repeat(64) // differs from sha256(localBytes)
+    const state = await buildArcdpsState({
+      gw2Path: gw2,
+      gw2PathSource: 'manual',
+      recordedInstalls: { arcdps_axipulse: { installedTag: '0.1.8', installedAt: '2026-05-25' } },
+      fetchRelease: async () => ({
+        version: '0.2.0',
+        downloadUrl: 'https://example.test/arcdps_axipulse.dll',
+        assetSize: localBytes.length,            // collides on purpose
+        assetDigest: `sha256:${remoteSha256}`,
+      }),
+      fetchCoreMd5: async () => null,
+    })
+    const p = state.plugins.find(x => x.id === 'arcdps_axipulse')!
+    expect(p.upToDate).toBe(false)
+    expect(p.installedTag).toBe('0.1.8')
+    expect(p.latestTag).toBe('0.2.0')
+  })
+
+  it('reports up-to-date when local digest matches the asset digest', async () => {
+    const gw2 = path.join(os.tmpdir(), `arcdps-state-digest-match-${Date.now()}`)
+    fs.mkdirSync(path.join(gw2, 'bin64'), { recursive: true })
+    fs.writeFileSync(path.join(gw2, 'bin64', 'Gw2-64.exe'), 'x')
+    const dll = path.join(gw2, 'bin64', 'arcdps_axipulse.dll')
+    const bytes = Buffer.from('matching-bytes')
+    fs.writeFileSync(dll, bytes)
+    const sha256 = crypto.createHash('sha256').update(bytes).digest('hex')
+    const state = await buildArcdpsState({
+      gw2Path: gw2,
+      gw2PathSource: 'manual',
+      recordedInstalls: {},
+      fetchRelease: async () => ({
+        version: '0.2.0',
+        downloadUrl: 'https://example.test/arcdps_axipulse.dll',
+        assetSize: 999,                          // intentionally wrong
+        assetDigest: `sha256:${sha256}`,
+      }),
+      fetchCoreMd5: async () => null,
+    })
+    const p = state.plugins.find(x => x.id === 'arcdps_axipulse')!
+    expect(p.upToDate).toBe(true)
+    expect(p.installedTag).toBe('0.2.0')
   })
 
   it('returns empty plugins list when no gw2Path', async () => {

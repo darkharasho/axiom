@@ -14,7 +14,7 @@ export async function fetchLatestRelease(
     const data = await res.json() as {
       tag_name: string
       published_at?: string
-      assets: { name: string; browser_download_url: string; size?: number }[]
+      assets: { name: string; browser_download_url: string; size?: number; digest?: string | null }[]
     }
     const version = data.tag_name.replace(/^v/, '')
     const asset = data.assets.find(a => assetPattern.test(a.name))
@@ -23,6 +23,7 @@ export async function fetchLatestRelease(
       version,
       downloadUrl: asset.browser_download_url,
       assetSize: asset.size,
+      assetDigest: asset.digest ?? undefined,
       publishedAt: data.published_at,
     }
   } catch {

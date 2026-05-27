@@ -1,11 +1,18 @@
 # Release Notes
 
-Version v0.2.1 — May 25, 2026
+Version v0.2.2 — May 26, 2026
 
-## Catches more plugin layouts
+## arcdps plugin updates aren't fooled by same-size DLLs anymore
 
-A few install layouts slipped past v0.2.0's detection — fixed now:
+If you had AxiPulse v0.1.8 installed, AxiOM was telling you it was up to date
+even after v0.2.0 shipped. Both releases happened to be exactly the same
+number of bytes on disk, and the update check was using file size to decide
+whether you were current.
 
-- **Unofficial Extras** is detected when the file is named `arcdps_unofficial_extras.dll` (the prefixed variant some installers use), in addition to the previously-supported `Unofficial_Extras.dll` and `extras.dll`.
-- **Nexus subfolder layout**: if Nexus put an addon in its own folder (`addons/<Addon>/<Addon>.dll`) instead of the top of `addons/`, AxiOM now walks one level deep to find it.
-- **`.bak` files** count as a disabled variant. If the live `.dll` is gone and only the backup remains, the row shows the plugin as "Disabled" so you know the file is still on disk. The live `.dll` always wins over a `.bak` when both are present.
+AxiOM now compares the SHA256 hash of the local plugin against the digest
+published on GitHub, which is what actually tells you whether the file
+changed. Same fix applies to every arcdps plugin AxiOM manages — not just
+AxiPulse.
+
+NOTE: hit "Check for updates" after upgrading; plugins that were falsely
+marked up to date will now show an Update button.

@@ -82,6 +82,7 @@ export interface ReleaseInfo {
   version: string
   downloadUrl: string
   assetSize?: number          // bytes of the matched release asset
+  assetDigest?: string        // "<algo>:<hex>" digest of the asset (e.g. "sha256:…")
   publishedAt?: string        // ISO timestamp of the release
 }
 

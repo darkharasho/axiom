@@ -105,6 +105,21 @@ export function computeFileMd5(file: string): string {
   return hash.digest('hex')
 }
 
+// Parses GitHub's asset.digest field, e.g. "sha256:<hex>".
+// Returns null for unsupported algorithms so callers can fall back cleanly.
+function parseAssetDigest(d: string | undefined): { algo: 'sha256' | 'sha1' | 'md5'; hex: string } | null {
+  if (!d) return null
+  const m = /^(sha256|sha1|md5):([a-f0-9]+)$/i.exec(d.trim())
+  if (!m) return null
+  return { algo: m[1].toLowerCase() as 'sha256' | 'sha1' | 'md5', hex: m[2].toLowerCase() }
+}
+
+export function computeFileDigest(file: string, algo: 'sha256' | 'sha1' | 'md5'): string {
+  const hash = crypto.createHash(algo)
+  hash.update(fs.readFileSync(file))
+  return hash.digest('hex')
+}
+
 type FetchLike = (url: string) => Promise<{ ok: boolean; text(): Promise<string> }>
 
 export async function checkArcdpsCoreUpdate(
@@ -231,7 +246,7 @@ export interface BuildStateOpts {
   gw2PathSource: ArcdpsState['gw2PathSource']
   overrideError?: string | null
   recordedInstalls: Record<string, { installedTag: string | null; installedAt: string | null }>
-  fetchRelease: (repo: string, assetPattern: RegExp) => Promise<{ version: string; downloadUrl: string; assetSize?: number; publishedAt?: string } | null>
+  fetchRelease: (repo: string, assetPattern: RegExp) => Promise<{ version: string; downloadUrl: string; assetSize?: number; assetDigest?: string; publishedAt?: string } | null>
   fetchCoreMd5: (dllPath: string) => Promise<{ upToDate: boolean; remoteMd5: string; localMd5: string } | null>
 }
 
@@ -279,20 +294,38 @@ export async function buildArcdpsState(opts: BuildStateOpts): Promise<ArcdpsStat
         base.latestTag = rel.version
         base.downloadUrl = rel.downloadUrl
         if (det) {
-          // Compare ground truth (local file size on disk) to the published
-          // asset size whenever we can. This catches the case where the user
-          // updated outside AxiOM after we recorded a tag — without it, our
-          // 'installed' would stay stuck on whatever AxiOM last wrote.
-          if (rel.assetSize != null) {
+          // Prefer the published asset digest (sha256/sha1/md5): different
+          // releases can ship DLLs with identical byte sizes (PE section
+          // padding is coarse), so size alone is not a reliable equivalence
+          // check — AxiPulse v0.1.8 and v0.2.0 are both 44452864 bytes.
+          // Fall back to recorded tag, then size, then unknown.
+          const parsed = parseAssetDigest(rel.assetDigest)
+          let resolved = false
+          if (parsed) {
+            try {
+              const localHex = computeFileDigest(det.dllPath, parsed.algo)
+              const matches = localHex === parsed.hex
+              base.upToDate = matches
+              base.installedTag = matches
+                ? rel.version
+                : (recorded?.installedTag ?? det.mtime.toISOString().slice(0, 10))
+              resolved = true
+            } catch { /* fall through to other signals */ }
+          }
+          if (!resolved && recorded?.installedTag) {
+            base.upToDate = recorded.installedTag === rel.version
+            base.installedTag = recorded.installedTag
+            resolved = true
+          }
+          if (!resolved && rel.assetSize != null) {
             const sizeMatches = det.sizeBytes === rel.assetSize
             base.upToDate = sizeMatches
             base.installedTag = sizeMatches
               ? rel.version
               : det.mtime.toISOString().slice(0, 10)
-          } else if (recorded?.installedTag) {
-            base.upToDate = recorded.installedTag === rel.version
-            base.installedTag = recorded.installedTag
-          } else {
+            resolved = true
+          }
+          if (!resolved) {
             base.upToDate = null
             base.installedTag = det.mtime.toISOString().slice(0, 10)
           }
