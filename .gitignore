@@ -6,3 +6,4 @@ dist_out/
 *.log
 .env
 .worktrees/
+graphify-out/
