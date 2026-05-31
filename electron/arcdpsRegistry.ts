@@ -170,6 +170,15 @@ export const ARCDPS_REGISTRY: ArcPluginMeta[] = [
     alwaysShow: false,
   },
   {
+    id: 'commander_tag_accessibility',
+    name: 'Commander Tag Accessibility',
+    description: 'Recolors and restyles commander tags to be easier to distinguish for colorblind players.',
+    source: { kind: 'github', repo: 'jake-greygoose/Commander-Tag-Accessibility-releases' },
+    locations: arcOrNexus('CommanderTagAccessibility.dll'),
+    assetPattern: /^CommanderTagAccessibility\.dll$/i,
+    alwaysShow: false,
+  },
+  {
     id: 'unofficial_extras',
     name: 'Unofficial Extras',
     description: 'Extra arcdps callbacks (squad chat, ready check) required by several other plugins.',
