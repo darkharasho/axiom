@@ -5,6 +5,13 @@ import path from 'path'
 export default defineConfig({
   plugins: [react()],
   test: {
+    // Limit parallelism to avoid exhausting system memory
+    pool: 'forks',
+    poolOptions: {
+      forks: { maxForks: 2, minForks: 1 },
+    },
+    maxWorkers: 2,
+    minWorkers: 1,
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/__tests__/setup.ts'],
