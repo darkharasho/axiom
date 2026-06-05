@@ -67,7 +67,8 @@ export const ARCDPS_REGISTRY: ArcPluginMeta[] = [
     description: 'Marks squad members’ roles (heal, quickness, alacrity, etc.) in the arcdps overlay.',
     source: { kind: 'github', repo: 'xvwyh/SquadRoles' },
     locations: arcOrNexus('arcdps_squad_roles.dll'),
-    assetPattern: /^arcdps_squad_roles\.dll$/i,
+    // Release ships arcdps_squadroles.dll (no underscore); tolerate both.
+    assetPattern: /^arcdps_squad_?roles\.dll$/i,
     alwaysShow: false,
   },
   {
@@ -85,7 +86,8 @@ export const ARCDPS_REGISTRY: ArcPluginMeta[] = [
     description: 'Live overlay listing nearby players with profession and account.',
     source: { kind: 'github', repo: 'Calcoph/gw2-player-list' },
     locations: arcOrNexus('arcdps_player_list.dll'),
-    assetPattern: /^arcdps_player_list\.dll$/i,
+    // Release ships player_list.dll (no arcdps_ prefix); tolerate both.
+    assetPattern: /^(arcdps_)?player_list\.dll$/i,
     alwaysShow: false,
   },
   {
@@ -112,7 +114,8 @@ export const ARCDPS_REGISTRY: ArcPluginMeta[] = [
     description: 'Looks up squad members on killproof.me to show LI / KP at a glance.',
     source: { kind: 'github', repo: 'knoxfighter/arcdps-killproof.me-plugin' },
     locations: arcOrNexus('arcdps_killproof_me.dll'),
-    assetPattern: /^arcdps_killproof_me\.dll$/i,
+    // knoxfighter ships the DLL with a d3d9_/d3d11_ loader prefix.
+    assetPattern: /^(d3d9_|d3d11_)?arcdps_killproof_me\.dll$/i,
     alwaysShow: false,
   },
   {
@@ -148,7 +151,8 @@ export const ARCDPS_REGISTRY: ArcPluginMeta[] = [
     description: 'Boon, condition, and buff helper overlay with custom alerts.',
     source: { kind: 'github', repo: 'Zerthox/gw2-buddy' },
     locations: arcOrNexus('arcdps_buddy.dll'),
-    assetPattern: /\.dll$/i,
+    // Release also ships nexus_buddy.dll; match the arcdps build specifically.
+    assetPattern: /^arcdps_buddy\.dll$/i,
     alwaysShow: false,
   },
   {
@@ -157,7 +161,8 @@ export const ARCDPS_REGISTRY: ArcPluginMeta[] = [
     description: 'Live boon-uptime table for the squad during fights.',
     source: { kind: 'github', repo: 'knoxfighter/GW2-ArcDPS-Boon-Table' },
     locations: arcOrNexus('arcdps_boon_table.dll'),
-    assetPattern: /^arcdps_boon_table\.dll$/i,
+    // knoxfighter ships d3d9_arcdps_table.dll (loader prefix, no "boon_").
+    assetPattern: /^(d3d9_|d3d11_)?arcdps_(boon_)?table\.dll$/i,
     alwaysShow: false,
   },
   {
@@ -191,7 +196,10 @@ export const ARCDPS_REGISTRY: ArcPluginMeta[] = [
       { dir: 'addons',                  dllPattern: /^(arcdps_unofficial_extras|Unofficial_Extras|extras)\.dll$/i, installFilename: 'Unofficial_Extras.dll' },
       { dir: 'bin64/arcdps/extensions', dllPattern: /^extras\.dll$/i,                                              installFilename: 'extras.dll' },
     ],
-    assetPattern: /^extras\.dll$/i,
+    // The release publishes the DLL as arcdps_unofficial_extras.dll; older
+    // builds shipped extras.dll. Match either (plus the Nexus rename) so
+    // fetchLatestRelease finds the asset and version matching can run.
+    assetPattern: /^(arcdps_unofficial_extras|Unofficial_Extras|extras)\.dll$/i,
     alwaysShow: false,
   },
 ]
