@@ -1,7 +1,15 @@
 # Release Notes
 
-Version v0.2.3 — May 31, 2026
+Version v0.2.4 — June 4, 2026
 
-## New plugin: Commander Tag Accessibility
+## Plugin update checks actually work now
 
-AxiOM now watches Commander Tag Accessibility (jake-greygoose). If it's installed in your GW2 folder, you'll see it in the arcdps view and it'll get update checks alongside the rest of your plugins.
+Several arcdps plugins were always showing up as "unknown" version with no
+update available, even when a newer build was out. The culprit: AxiOM was
+looking for a download whose filename didn't match what those projects
+actually publish, so it quietly gave up.
+
+Fixed for Unofficial Extras, Squad Roles, Player List, Killproof.me, and Boon
+Table — they now report their installed version and flag updates correctly.
+Also made GW2 Buddy pick the right file so it can't accidentally grab the
+Nexus build.
