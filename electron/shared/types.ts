@@ -1,4 +1,4 @@
-export type AppId = 'axibridge' | 'axiforge' | 'axipulse' | 'axiam' | 'axitools'
+export type AppId = 'axibridge' | 'axiforge' | 'axipulse' | 'axiam' | 'axivale' | 'axitools'
 export type InstallableAppId = Exclude<AppId, 'axitools'>
 
 export interface DownloadProgress {
@@ -26,6 +26,12 @@ export interface AppState {
   downloadProgress?: DownloadProgress
   gearLeverMissing?: boolean
   isRunning?: boolean
+}
+
+export interface GithubAuthState {
+  signedIn: boolean
+  login: string | null
+  unlocked: boolean // login is in the private-tools allowlist
 }
 
 export interface ConfigApp {
@@ -95,6 +101,7 @@ export const DEFAULT_CONFIG: Config = {
     axiforge:  { installedVersion: null, lastChecked: null },
     axipulse:  { installedVersion: null, lastChecked: null },
     axiam:     { installedVersion: null, lastChecked: null },
+    axivale:   { installedVersion: null, lastChecked: null },
   },
   arcdps: {
     gw2PathOverride: null,
