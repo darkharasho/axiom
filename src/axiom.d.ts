@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-import type { AppState, AppId, InstallableAppId, Config, ArcdpsState } from '../electron/shared/types'
+import type { AppState, AppId, InstallableAppId, Config, ArcdpsState, GithubAuthState } from '../electron/shared/types'
 
 declare global {
   interface Window {
@@ -31,6 +31,11 @@ declare global {
       setGw2Path: (p: string | null) => Promise<void>
       pickGw2Folder: () => Promise<string | null>
       onArcdpsStateUpdated: (cb: (state: ArcdpsState) => void) => () => void
+      githubGetStatus: () => Promise<GithubAuthState>
+      githubAuthBegin: () => Promise<{ userCode: string; verificationUri: string; deviceCode: string; interval: number; expiresIn: number }>
+      githubAuthComplete: (deviceCode: string, interval: number, expiresIn: number) => Promise<{ ok: boolean; login?: string; error?: string }>
+      githubSignOut: () => Promise<GithubAuthState>
+      onGithubStatusUpdated: (cb: (state: GithubAuthState) => void) => () => void
     }
   }
 }
