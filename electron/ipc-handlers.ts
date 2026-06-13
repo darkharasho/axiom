@@ -456,7 +456,10 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
       const { execSync, spawn } = await import('child_process')
       try {
         if (await isProcessRunning(meta.name)) {
-          console.log(`[launch] ${meta.name}: already running, focusing window`)
+          console.log(`[launch] ${meta.name}: running — trying to focus an existing window`)
+          // Emit FOCUSED only when we actually find+raise a real window. A headless
+          // instance has no MainWindowHandle, so nothing matches and we fall through
+          // to a normal launch — its single-instance lock then opens a window.
           const focusPs = `
 $sig = '[DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd); [DllImport("user32.dll")] public static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow); [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr hWnd);'
 $api = Add-Type -MemberDefinition $sig -Name WinApi -Namespace Native -PassThru
@@ -465,13 +468,18 @@ if ($proc) {
   $h = $proc.MainWindowHandle
   if ($api::IsIconic($h)) { [void]$api::ShowWindowAsync($h, 9) }
   [void]$api::SetForegroundWindow($h)
+  Write-Output 'FOCUSED'
 }`.replace(/\r?\n/g, '; ')
+          let focused = false
           try {
-            execSync(`powershell -NoProfile -NonInteractive -Command "${focusPs.replace(/"/g, '\\"')}"`, { timeout: 5000 })
+            const out = execSync(`powershell -NoProfile -NonInteractive -Command "${focusPs.replace(/"/g, '\\"')}"`, { timeout: 5000 }).toString()
+            focused = out.includes('FOCUSED')
           } catch (err) {
             console.error(`[launch] ${meta.name}: focus failed:`, err)
           }
-          return
+          if (focused) return
+          console.log(`[launch] ${meta.name}: no focusable window (headless?) — launching one`)
+          // fall through to resolve the install path and spawn a windowed instance
         }
         console.log(`[launch] ${meta.name}: querying registry`)
         const ps = `(Get-ItemProperty 'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', 'HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*' -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like '*${meta.name}*' } | Select-Object -First 1 DisplayName, DisplayVersion, InstallLocation, DisplayIcon, UninstallString | ConvertTo-Json -Compress)`
