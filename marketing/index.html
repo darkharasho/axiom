@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AxiOM — One launcher for every Axi app</title>
+  <meta name="description" content="A tray-resident launcher for the Axi suite. Every app, every version, every update — one click away." />
+
+  <meta property="og:title" content="AxiOM — One launcher for every Axi app" />
+  <meta property="og:description" content="A tray-resident launcher for the Axi suite. Every app, every version, every update — one click away." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://darkharasho.github.io/axiom/" />
+
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- SVG noise grain overlay -->
+<svg class="noise-overlay" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+  <filter id="noise">
+    <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" />
+    <feColorMatrix type="saturate" values="0" />
+  </filter>
+  <rect width="100%" height="100%" filter="url(#noise)" />
+</svg>
+
+<!-- 1. TOP CHROME BAR -->
+<header class="nav" id="site-nav">
+  <a class="nav-brand" href="#top">
+    <img class="nav-logo" src="assets/logo.svg" alt="" width="32" height="32" />
+    <span class="nav-wordmark">AXIOM</span>
+  </a>
+  <nav class="nav-links" aria-label="Site navigation">
+    <a href="#features">FEATURES</a>
+    <a href="#suite">SUITE</a>
+    <a href="#faq">FAQ</a>
+  </nav>
+  <div class="nav-status">
+    <span class="status-dot" aria-hidden="true"></span>
+    <span class="status-label">ORBIT STABLE</span>
+    <span class="status-version" id="nav-version">v0.0.0</span>
+  </div>
+</header>
+
+<main>
+
+  <!-- 2. HERO -->
+  <section class="hero" id="top">
+    <div class="hero-copy">
+      <div class="hero-brand">
+        <div class="hero-orbit" aria-hidden="true">
+          <svg viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+            <g class="orbit-rings">
+              <circle cx="110" cy="110" r="92" fill="none" stroke="currentColor" stroke-width="1" opacity="0.30" />
+              <circle cx="110" cy="110" r="74" fill="none" stroke="currentColor" stroke-width="1" opacity="0.18" stroke-dasharray="3 6" />
+              <circle cx="110" cy="110" r="56" fill="none" stroke="currentColor" stroke-width="1" opacity="0.12" />
+            </g>
+            <g class="orbit-bodies">
+              <g transform="translate(110 18)"><circle r="5" fill="currentColor" /><circle r="9" fill="none" stroke="currentColor" stroke-width="1" opacity="0.5" /></g>
+              <g transform="translate(196.4 76.4)"><circle r="4" fill="currentColor" /><circle r="8" fill="none" stroke="currentColor" stroke-width="1" opacity="0.4" /></g>
+              <g transform="translate(163.5 178.5)"><circle r="4" fill="currentColor" /><circle r="8" fill="none" stroke="currentColor" stroke-width="1" opacity="0.4" /></g>
+              <g transform="translate(56.5 178.5)"><circle r="4" fill="currentColor" /><circle r="8" fill="none" stroke="currentColor" stroke-width="1" opacity="0.4" /></g>
+              <g transform="translate(23.6 76.4)"><circle r="4" fill="currentColor" /><circle r="8" fill="none" stroke="currentColor" stroke-width="1" opacity="0.4" /></g>
+            </g>
+          </svg>
+          <img class="hero-logo" src="assets/logo.svg" alt="" width="96" height="96" />
+        </div>
+        <div class="hero-brand-text">
+          <span class="hero-wordmark">AXIOM</span>
+          <span class="hero-eyebrow"><i data-lucide="orbit"></i>MISSION CONTROL FOR THE AXI SUITE</span>
+        </div>
+      </div>
+      <h1 class="hero-headline">All your <em>Axi apps</em>, one click away.</h1>
+      <p class="hero-lede">AxiOM lives in your system tray. Click the icon, see every app in the suite — installed or not — with their current version and whether an update is waiting. No browser. No release pages. No manual downloads.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" id="dl-win" href="https://github.com/darkharasho/axiom/releases/latest">
+          <i data-lucide="download"></i><span>Windows</span>
+        </a>
+        <a class="btn btn-primary" id="dl-linux" href="https://github.com/darkharasho/axiom/releases/latest">
+          <i data-lucide="download"></i><span>Linux</span>
+        </a>
+        <a class="btn btn-secondary" href="https://github.com/darkharasho/axiom" target="_blank" rel="noopener">
+          <span>View source</span><i data-lucide="github"></i>
+        </a>
+      </div>
+      <p class="release-meta" id="release-meta">Latest release on GitHub</p>
+    </div>
+
+    <button class="hero-shot" type="button" data-full="assets/screenshots/hero-app.png" aria-label="AxiOM tray popup, full size">
+      <img src="assets/screenshots/hero-app.png" alt="AxiOM — tray popup showing the full Axi app suite" loading="eager" />
+    </button>
+  </section>
+
+  <!-- 3. // KEY FEATURES -->
+  <section class="section" id="features">
+    <div class="section-rule">
+      <span class="section-rule-label">// KEY FEATURES</span>
+    </div>
+
+    <div class="feature-grid">
+      <article class="feature-card">
+        <span class="feature-icon"><i data-lucide="layout-grid"></i></span>
+        <h3>Unified app management</h3>
+        <p>Every Axi app in one place. Each card shows installed version, latest release, and a single action button that does the right thing.</p>
+      </article>
+
+      <article class="feature-card">
+        <span class="feature-icon"><i data-lucide="bell-ring"></i></span>
+        <h3>Automatic update detection</h3>
+        <p>On startup, AxiOM checks GitHub for each app and compares against what's installed. A gold badge appears on the tray icon when updates wait.</p>
+      </article>
+
+      <article class="feature-card">
+        <span class="feature-icon"><i data-lucide="package-plus"></i></span>
+        <h3>Native install &amp; update</h3>
+        <p>On Windows, the NSIS installer runs — UAC, install path, shortcuts handled. On Linux, AppImages land in <code>~/Applications/</code> ready to go.</p>
+      </article>
+
+      <article class="feature-card">
+        <span class="feature-icon"><i data-lucide="terminal"></i></span>
+        <h3>Gear Lever integration</h3>
+        <p>On Linux, AxiOM detects Gear Lever and hands off AppImages for full desktop integration. Not installed? It offers Flatpak install inline.</p>
+      </article>
+
+      <article class="feature-card">
+        <span class="feature-icon"><i data-lucide="pin"></i></span>
+        <h3>Tray-first, always there</h3>
+        <p>Close the window — AxiOM keeps running. One tray click and your launcher is back. Set it to start on login and forget it's there.</p>
+      </article>
+
+      <article class="feature-card feature-card--wide">
+        <span class="feature-icon"><i data-lucide="palette"></i></span>
+        <h3>Consistent Axi design</h3>
+        <p>Dark canvas. Gold accents. Cinzel titles. AxiOM matches the look and feel of every app it manages — and stays out of the way the rest of the time.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- 4. // PROCEDURE -->
+  <section class="section" id="how">
+    <div class="section-rule">
+      <span class="section-rule-label">// PROCEDURE</span>
+    </div>
+
+    <ol class="steps" aria-label="How it works">
+      <li class="step-row">
+        <span class="step-num" aria-hidden="true">01</span>
+        <span class="step-divider" aria-hidden="true">│</span>
+        <div class="step-body">
+          <h3>Live in your tray</h3>
+          <p>Install once, set <code>start on login</code>, and AxiOM is always one click away. The window closes, the orbit keeps spinning.</p>
+        </div>
+      </li>
+      <li class="step-row">
+        <span class="step-num" aria-hidden="true">02</span>
+        <span class="step-divider" aria-hidden="true">│</span>
+        <div class="step-body">
+          <h3>Click an app, AxiOM picks the action</h3>
+          <p>Installed? <code>Launch</code>. Update waiting? <code>Update</code>. Not installed? <code>Install</code>. Every button does the right thing.</p>
+        </div>
+      </li>
+      <li class="step-row">
+        <span class="step-num" aria-hidden="true">03</span>
+        <span class="step-divider" aria-hidden="true">│</span>
+        <div class="step-body">
+          <h3>Updates flow in automatically</h3>
+          <p>AxiOM checks GitHub every 30 minutes. When a release lands, the tray icon picks up a gold badge — no popup, no interruption.</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- 5. // THE SUITE -->
+  <section class="section" id="suite">
+    <div class="section-rule">
+      <span class="section-rule-label">// THE SUITE</span>
+    </div>
+
+    <div class="suite-grid">
+      <article class="suite-card">
+        <span class="suite-tag">FIGHTS</span>
+        <h3>AxiBridge</h3>
+        <p>Watches your arcdps logs, posts per-fight Discord embeds and persistent web reports as the squad fights.</p>
+        <a class="suite-link" href="https://github.com/darkharasho/axibridge" target="_blank" rel="noopener">View on GitHub <i data-lucide="arrow-up-right"></i></a>
+      </article>
+
+      <article class="suite-card">
+        <span class="suite-tag">BUILDS</span>
+        <h3>AxiForge</h3>
+        <p>Build and comp manager for GW2 squads. Create, edit, and publish builds to a GitHub Pages site you own.</p>
+        <a class="suite-link" href="https://github.com/darkharasho/axiforge" target="_blank" rel="noopener">View on GitHub <i data-lucide="arrow-up-right"></i></a>
+      </article>
+
+      <article class="suite-card">
+        <span class="suite-tag">VITALS</span>
+        <h3>AxiPulse</h3>
+        <p>Parses arcdps logs locally with Elite Insights and shows your personal combat breakdown — damage, timelines, history.</p>
+        <a class="suite-link" href="https://github.com/darkharasho/axipulse" target="_blank" rel="noopener">View on GitHub <i data-lucide="arrow-up-right"></i></a>
+      </article>
+
+      <article class="suite-card">
+        <span class="suite-tag">VAULT</span>
+        <h3>AxiAM</h3>
+        <p>Encrypted account launcher. Stores GW2 credentials locally and launches them through Steam with custom arguments.</p>
+        <a class="suite-link" href="https://github.com/darkharasho/axiam" target="_blank" rel="noopener">View on GitHub <i data-lucide="arrow-up-right"></i></a>
+      </article>
+
+      <article class="suite-card">
+        <span class="suite-tag">DISCORD</span>
+        <h3>AxiTools</h3>
+        <p>Discord bot for GW2 communities — build sharing, RSS feeds, patch alerts, and squad signups with per-guild storage.</p>
+        <a class="suite-link" href="https://github.com/darkharasho/axitools" target="_blank" rel="noopener">View on GitHub <i data-lucide="arrow-up-right"></i></a>
+      </article>
+    </div>
+  </section>
+
+  <!-- 6. // GALLERY -->
+  <section class="section" id="gallery">
+    <div class="section-rule">
+      <span class="section-rule-label">// GALLERY</span>
+    </div>
+
+    <div class="gallery">
+      <button class="thumb" data-full="assets/screenshots/app-list.png" aria-label="App list, full size">
+        <img src="assets/screenshots/app-list.png" alt="AxiOM popup showing the Axi app list" loading="lazy" />
+        <div class="thumb-body">
+          <span class="thumb-caption">APP LIST</span>
+          <p class="thumb-desc">Every app in the suite, each with its installed version and a single action button — Launch, Update, Install, or Invite.</p>
+        </div>
+      </button>
+      <button class="thumb" data-full="assets/screenshots/update-available.png" aria-label="Update available, full size">
+        <img src="assets/screenshots/update-available.png" alt="AxiOM showing an available update for one of the apps" loading="lazy" />
+        <div class="thumb-body">
+          <span class="thumb-caption">UPDATE WAITING</span>
+          <p class="thumb-desc">When a new release hits GitHub, AxiOM surfaces it inline. One click downloads and runs the installer.</p>
+        </div>
+      </button>
+      <button class="thumb" data-full="assets/screenshots/app-info.png" aria-label="App info detail, full size">
+        <img src="assets/screenshots/app-info.png" alt="Detailed info for a single app" loading="lazy" />
+        <div class="thumb-body">
+          <span class="thumb-caption">APP DETAIL</span>
+          <p class="thumb-desc">Drill into any app to see release notes, download size, and the right action for its current state.</p>
+        </div>
+      </button>
+      <button class="thumb" data-full="assets/screenshots/settings.png" aria-label="Settings panel, full size">
+        <img src="assets/screenshots/settings.png" alt="AxiOM settings panel" loading="lazy" />
+        <div class="thumb-body">
+          <span class="thumb-caption">SETTINGS</span>
+          <p class="thumb-desc">Tray badge toggle, auto-start on login, and a manual check button — everything you need, nothing you don't.</p>
+        </div>
+      </button>
+    </div>
+  </section>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox" hidden>
+    <button class="lightbox-close" id="lightbox-close" aria-label="Close lightbox"><i data-lucide="x"></i></button>
+    <img id="lightbox-img" alt="" />
+  </div>
+
+  <!-- Release modal -->
+  <div class="modal" id="release-modal" hidden>
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <header class="modal-header">
+        <div>
+          <div class="modal-eyebrow" id="modal-eyebrow">// RELEASE</div>
+          <h3 class="modal-title" id="modal-title"></h3>
+          <p class="modal-date" id="modal-date"></p>
+        </div>
+        <button class="modal-close" id="modal-close" aria-label="Close release notes"><i data-lucide="x"></i></button>
+      </header>
+      <div class="modal-body" id="modal-body"></div>
+      <footer class="modal-footer">
+        <a class="btn btn-secondary" id="modal-link" target="_blank" rel="noopener"><i data-lucide="github"></i><span>View on GitHub</span></a>
+      </footer>
+    </div>
+  </div>
+
+  <!-- 7. // FAQ -->
+  <section class="section" id="faq">
+    <div class="section-rule">
+      <span class="section-rule-label">// FAQ</span>
+    </div>
+
+    <div class="faq">
+      <details>
+        <summary>Do I need to install all the apps?<span class="faq-indicator" aria-hidden="true"><i data-lucide="plus"></i></span></summary>
+        <div class="faq-body">
+          <p>No. AxiOM shows every Axi app whether it's installed or not, so you can install just the ones you need. The ones you skip are just one click away if you change your mind.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Does AxiOM run in the background?<span class="faq-indicator" aria-hidden="true"><i data-lucide="plus"></i></span></summary>
+        <div class="faq-body">
+          <p>Yes — it lives in the system tray. Close the popup and AxiOM keeps running so the tray icon stays available. You can enable start-on-login from settings.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Can I use AxiOM on Linux?<span class="faq-indicator" aria-hidden="true"><i data-lucide="plus"></i></span></summary>
+        <div class="faq-body">
+          <p>Yes. Linux installs land as AppImages in <code>~/Applications/</code>. If Gear Lever is installed, AxiOM hands them off for full desktop integration. If not, AxiOM offers to install Gear Lever via Flatpak.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Where do downloads come from?<span class="faq-indicator" aria-hidden="true"><i data-lucide="plus"></i></span></summary>
+        <div class="faq-body">
+          <p>The official GitHub Releases page for each app. AxiOM never proxies or rehosts binaries — it downloads directly from <code>github.com/darkharasho/&lt;app&gt;/releases</code> over HTTPS.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>How often does it check for updates?<span class="faq-indicator" aria-hidden="true"><i data-lucide="plus"></i></span></summary>
+        <div class="faq-body">
+          <p>Every 30 minutes in the background, plus a quick re-check the first time you open the tray after 5 minutes of inactivity. You can also hit <em>Check for updates</em> any time from the popup.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Is it free?<span class="faq-indicator" aria-hidden="true"><i data-lucide="plus"></i></span></summary>
+        <div class="faq-body">
+          <p>Yes. GPL-3.0 licensed. Free forever, no paid tier.</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- 8. // CHANGELOG -->
+  <section class="section" id="changelog">
+    <div class="section-rule">
+      <span class="section-rule-label">// CHANGELOG</span>
+    </div>
+
+    <div class="changelog" id="changelog-list">
+      <p class="muted">Loading recent releases…</p>
+    </div>
+    <div class="changelog-footer">
+      <a class="btn btn-secondary" href="https://github.com/darkharasho/axiom/releases" target="_blank" rel="noopener"><span>View all releases</span><i data-lucide="arrow-right"></i></a>
+    </div>
+  </section>
+
+</main>
+
+<!-- 9. FOOTER -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h4 class="footer-heading">PROJECT</h4>
+        <ul>
+          <li><a href="https://github.com/darkharasho/axiom" target="_blank" rel="noopener">GitHub</a></li>
+          <li><a href="https://github.com/darkharasho/axiom/releases" target="_blank" rel="noopener">Releases</a></li>
+          <li><a href="https://github.com/darkharasho/axiom/blob/master/LICENSE" target="_blank" rel="noopener">License (GPL-3.0)</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4 class="footer-heading">COMMUNITY</h4>
+        <ul>
+          <li><a href="https://discord.gg/UjzMXMGXEg" target="_blank" rel="noopener">Discord</a></li>
+          <li><a href="https://github.com/darkharasho/axiom/issues" target="_blank" rel="noopener">Issues</a></li>
+          <li><a href="https://github.com/darkharasho/axiom/discussions" target="_blank" rel="noopener">Discussions</a></li>
+        </ul>
+      </div>
+      <div class="footer-col footer-col--about">
+        <h4 class="footer-heading">ABOUT</h4>
+        <p class="footer-muted">AxiOM is the tray-resident launcher for the Axi suite — AxiBridge, AxiForge, AxiPulse, AxiAM, and AxiTools — keeping every app installed, current, and one click away.</p>
+        <p class="footer-muted">All downloads come directly from each app's official GitHub Releases page. AxiOM never proxies or rehosts.</p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      © 2026 harasho · Not affiliated with ArenaNet · Guild Wars 2 © ArenaNet, LLC.
+    </div>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script type="module" src="main.js"></script>
+</body>
+</html>
