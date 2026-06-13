@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { ChevronLeft } from 'lucide-react'
 import { useConfig } from '../hooks/useConfig'
 import { Toggle } from './Toggle'
+import { useGithubAuth } from '../hooks/useGithubAuth'
 
 interface Props {
   onBack: () => void
@@ -13,6 +14,7 @@ let _cachedVersion = ''
 
 export function SettingsView({ onBack }: Props) {
   const { config, updateConfig } = useConfig()
+  const github = useGithubAuth()
   const [version, setVersion] = useState(_cachedVersion)
   const [selfUpdate, setSelfUpdate] = useState<{ status: SelfUpdateStatus; version?: string; error?: string }>({ status: 'idle' })
 
@@ -95,6 +97,41 @@ export function SettingsView({ onBack }: Props) {
           onChange={checked => updateConfig({ trayBadge: checked })}
         />
       </div>
+
+      {/* GitHub sign-in */}
+      <div style={row}>
+        <span style={label}>
+          GitHub
+          {github.status.signedIn && (
+            <span style={{ color: 'var(--text-faint)', fontSize: 10, marginLeft: 6 }}>
+              {github.status.login}{github.status.unlocked ? ' · private tools unlocked' : ''}
+            </span>
+          )}
+        </span>
+        {github.status.signedIn ? (
+          <button
+            onClick={() => github.signOut()}
+            style={{ background: 'none', border: 'none', color: 'var(--text-dim)', fontSize: 11, cursor: 'pointer', padding: 0 }}
+          >
+            Sign out
+          </button>
+        ) : (
+          <button
+            onClick={() => github.signIn()}
+            disabled={github.busy}
+            style={{
+              background: 'none', border: 'none',
+              color: github.busy ? 'var(--text-dim)' : 'var(--gold-bright)',
+              fontSize: 11, cursor: github.busy ? 'default' : 'pointer', padding: 0,
+            }}
+          >
+            {github.userCode ? `Enter code: ${github.userCode}` : github.busy ? 'Waiting…' : 'Sign in with GitHub'}
+          </button>
+        )}
+      </div>
+      {github.error && (
+        <div style={{ color: '#e05252', fontSize: 10, padding: '2px 0 8px' }}>{github.error}</div>
+      )}
 
       {/* AxiOM self-update */}
       <div style={{ ...row, borderBottom: 'none', paddingBottom: 0 }}>
