@@ -11,6 +11,7 @@ interface InstallableAppMeta {
   repo: string
   assetPattern: AssetPattern
   configDir: string  // directory name under ~/.config/ where axiom-version is written
+  private?: boolean   // gated behind the GitHub allowlist; hidden from normal users
 }
 
 interface AxiToolsMeta {
@@ -62,6 +63,17 @@ export const APP_META: Record<AppId, AppMeta> = {
       linux: /AxiAM.*\.AppImage$/i,
     },
   },
+  axivale: {
+    id: 'axivale',
+    name: 'AxiVale',
+    repo: 'darkharasho/axivale',
+    configDir: 'axivale',
+    private: true,
+    assetPattern: {
+      win: /AxiVale.*Setup.*\.exe$/i,
+      linux: /AxiVale.*\.AppImage$/i,
+    },
+  },
   axitools: {
     id: 'axitools',
     name: 'AxiTools',
@@ -71,4 +83,9 @@ export const APP_META: Record<AppId, AppMeta> = {
 
 export function isInstallable(meta: AppMeta): meta is InstallableAppMeta {
   return meta.repo !== null
+}
+
+export function isAppVisible(meta: AppMeta, unlocked: boolean): boolean {
+  const isPrivate = 'private' in meta && meta.private === true
+  return !isPrivate || unlocked
 }

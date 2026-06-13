@@ -2,12 +2,24 @@ import * as childProcess from 'child_process'
 import * as fs from 'fs'
 import path from 'path'
 import os from 'os'
+import { INSTALLED_VERSION_UNKNOWN } from './shared/types'
+
+export interface DetectResult {
+  /** A concrete version, the unknown-version sentinel, or null if not installed. */
+  version: string | null
+  /** Absolute path to the installed AppImage, when one was found on Linux. */
+  appImagePath?: string
+}
 
 export async function detectInstalledVersion(appName: string, configDir?: string): Promise<string | null> {
-  if (process.env.AXIOM_FAKE_NO_INSTALLS) return null
-  if (process.platform === 'win32') return detectWindows(appName)
+  return (await detectInstalled(appName, configDir)).version
+}
+
+export async function detectInstalled(appName: string, configDir?: string): Promise<DetectResult> {
+  if (process.env.AXIOM_FAKE_NO_INSTALLS) return { version: null }
+  if (process.platform === 'win32') return { version: detectWindows(appName) }
   if (process.platform === 'linux') return detectLinux(appName, configDir)
-  return null
+  return { version: null }
 }
 
 function detectWindows(appName: string): string | null {
@@ -31,13 +43,13 @@ function detectWindows(appName: string): string | null {
   }
 }
 
-function detectLinux(appName: string, configDir?: string): string | null {
+function detectLinux(appName: string, configDir?: string): DetectResult {
   // Check axiom-version file written by the app on startup
   if (configDir) {
     const versionFile = path.join(os.homedir(), '.config', configDir, 'axiom-version')
     try {
       const version = fs.readFileSync(versionFile, 'utf-8').trim()
-      if (version) return version
+      if (version) return { version }
     } catch { /* not present yet */ }
   }
 
@@ -53,7 +65,7 @@ function detectLinux(appName: string, configDir?: string): string | null {
           const name = (meta.name ?? meta.Name ?? '') as string
           const version = (meta.version ?? meta.Version ?? '') as string
           if (name.toLowerCase().includes(appName.toLowerCase()) && version) {
-            return version
+            return { version }
           }
         }
       }
@@ -74,10 +86,13 @@ function detectLinux(appName: string, configDir?: string): string | null {
         if (!file.toLowerCase().endsWith('.appimage')) continue
         if (!file.toLowerCase().includes(appName.toLowerCase())) continue
         const match = file.match(/(\d+\.\d+\.\d+(?:\.\d+)?)/)
-        return match ? match[1] : 'installed'
+        return {
+          version: match ? match[1] : INSTALLED_VERSION_UNKNOWN,
+          appImagePath: path.join(dir, file),
+        }
       }
     } catch { /* ignore */ }
   }
 
-  return null
+  return { version: null }
 }

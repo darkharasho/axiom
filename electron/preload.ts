@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { AppId, InstallableAppId, Config, AppState, ArcdpsState } from './shared/types'
+import type { AppId, InstallableAppId, Config, AppState, ArcdpsState, GithubAuthState } from './shared/types'
 
 contextBridge.exposeInMainWorld('axiom', {
   getStates: (): Promise<AppState[]> =>
@@ -43,6 +43,9 @@ contextBridge.exposeInMainWorld('axiom', {
 
   openExternal: (url: string): Promise<void> =>
     ipcRenderer.invoke('axiom:open-external', url),
+
+  copyText: (text: string): Promise<void> =>
+    ipcRenderer.invoke('axiom:copy-text', text),
 
   checkSelfUpdate: (): Promise<void> =>
     ipcRenderer.invoke('axiom:check-self-update'),
@@ -90,5 +93,22 @@ contextBridge.exposeInMainWorld('axiom', {
   onArcdpsStateUpdated: (cb: (state: ArcdpsState) => void) => {
     ipcRenderer.on('arcdps:state-updated', (_e, state) => cb(state))
     return () => ipcRenderer.removeAllListeners('arcdps:state-updated')
+  },
+
+  githubGetStatus: (): Promise<GithubAuthState> =>
+    ipcRenderer.invoke('github:status'),
+
+  githubAuthBegin: (): Promise<{ userCode: string; verificationUri: string; deviceCode: string; interval: number; expiresIn: number }> =>
+    ipcRenderer.invoke('github:auth-begin'),
+
+  githubAuthComplete: (deviceCode: string, interval: number, expiresIn: number): Promise<{ ok: boolean; login?: string; error?: string }> =>
+    ipcRenderer.invoke('github:auth-complete', deviceCode, interval, expiresIn),
+
+  githubSignOut: (): Promise<GithubAuthState> =>
+    ipcRenderer.invoke('github:sign-out'),
+
+  onGithubStatusUpdated: (cb: (state: GithubAuthState) => void) => {
+    ipcRenderer.on('github:status-updated', (_e, state) => cb(state))
+    return () => ipcRenderer.removeAllListeners('github:status-updated')
   },
 })

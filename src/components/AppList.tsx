@@ -3,6 +3,7 @@ import type { AppState, AppId, InstallableAppId } from '@shared/types'
 import type { SelfUpdateState } from '../hooks/useSelfUpdate'
 import { AppRow } from './AppRow'
 import { useArcdpsState } from '../hooks/useArcdpsState'
+import { useGithubAuth } from '../hooks/useGithubAuth'
 
 interface Props {
   states: AppState[]
@@ -14,11 +15,13 @@ interface Props {
   onOpenInfo: (appId: AppId) => void
 }
 
-const APP_ORDER: AppId[] = ['axibridge', 'axiforge', 'axipulse', 'axiam', 'axitools']
+const APP_ORDER: AppId[] = ['axibridge', 'axiforge', 'axipulse', 'axiam', 'axivale', 'axitools']
 
 export function AppList({ states, checking, selfUpdate, onOpenSettings, onOpenArcdps, onCheckUpdates, onOpenInfo }: Props) {
   const stateMap = Object.fromEntries(states.map(s => [s.id, s])) as Record<AppId, AppState>
   const { state: arcdpsState } = useArcdpsState()
+  const { status: githubStatus } = useGithubAuth()
+  const visibleOrder = APP_ORDER.filter(id => id !== 'axivale' || githubStatus.unlocked)
   const arcdpsHasUpdate = arcdpsState.plugins.some(p => p.upToDate === false)
 
   const handleAction = (action: string, appId: AppId) => {
@@ -203,7 +206,7 @@ export function AppList({ states, checking, selfUpdate, onOpenSettings, onOpenAr
 
       {/* App rows */}
       <div style={{ flex: 1 }}>
-        {APP_ORDER.map(id => stateMap[id] && (
+        {visibleOrder.map(id => stateMap[id] && (
           <AppRow key={id} state={stateMap[id]} onAction={handleAction} onInfo={onOpenInfo} onRetry={handleRetry} />
         ))}
       </div>

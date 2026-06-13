@@ -56,3 +56,33 @@ describe('fetchLatestRelease', () => {
     expect(result?.version).toBe('1.0.0')
   })
 })
+
+describe('fetchLatestRelease auth', () => {
+  it('sends a bearer header when a token is supplied', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ tag_name: 'v1.0.0', assets: [
+        { name: 'AxiVale-1.0.0.AppImage', browser_download_url: 'https://example.com/a.AppImage' },
+      ] }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const { fetchLatestRelease } = await import('../github')
+    await fetchLatestRelease('darkharasho/axivale', /AxiVale.*\.AppImage$/i, 'gho_tok')
+    const headers = fetchMock.mock.calls[0][1].headers as Record<string, string>
+    expect(headers.Authorization).toBe('Bearer gho_tok')
+  })
+
+  it('omits the bearer header when no token is supplied', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ tag_name: 'v1.0.0', assets: [
+        { name: 'AxiVale-1.0.0.AppImage', browser_download_url: 'https://example.com/a.AppImage' },
+      ] }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const { fetchLatestRelease } = await import('../github')
+    await fetchLatestRelease('darkharasho/axivale', /AxiVale.*\.AppImage$/i)
+    const headers = fetchMock.mock.calls[0][1].headers as Record<string, string>
+    expect(headers.Authorization).toBeUndefined()
+  })
+})

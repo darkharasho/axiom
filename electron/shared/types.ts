@@ -1,5 +1,12 @@
-export type AppId = 'axibridge' | 'axiforge' | 'axipulse' | 'axiam' | 'axitools'
+export type AppId = 'axibridge' | 'axiforge' | 'axipulse' | 'axiam' | 'axivale' | 'axitools'
 export type InstallableAppId = Exclude<AppId, 'axitools'>
+
+/**
+ * Sentinel `installedVersion`: the app is installed but its version could not be
+ * determined (e.g. a manually-installed AppImage whose filename carries no version).
+ * Treated as "installed" by the UI, but never compared against the latest release.
+ */
+export const INSTALLED_VERSION_UNKNOWN = 'installed'
 
 export interface DownloadProgress {
   percent: number
@@ -26,6 +33,12 @@ export interface AppState {
   downloadProgress?: DownloadProgress
   gearLeverMissing?: boolean
   isRunning?: boolean
+}
+
+export interface GithubAuthState {
+  signedIn: boolean
+  login: string | null
+  unlocked: boolean // login is in the private-tools allowlist
 }
 
 export interface ConfigApp {
@@ -95,6 +108,7 @@ export const DEFAULT_CONFIG: Config = {
     axiforge:  { installedVersion: null, lastChecked: null },
     axipulse:  { installedVersion: null, lastChecked: null },
     axiam:     { installedVersion: null, lastChecked: null },
+    axivale:   { installedVersion: null, lastChecked: null },
   },
   arcdps: {
     gw2PathOverride: null,

@@ -5,11 +5,15 @@ const GITHUB_API = 'https://api.github.com'
 export async function fetchLatestRelease(
   repo: string,
   assetPattern: RegExp,
+  token?: string,
 ): Promise<ReleaseInfo | null> {
   try {
-    const res = await fetch(`${GITHUB_API}/repos/${repo}/releases/latest`, {
-      headers: { Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' },
-    })
+    const headers: Record<string, string> = {
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+    }
+    if (token) headers.Authorization = `Bearer ${token}`
+    const res = await fetch(`${GITHUB_API}/repos/${repo}/releases/latest`, { headers })
     if (!res.ok) return null
     const data = await res.json() as {
       tag_name: string

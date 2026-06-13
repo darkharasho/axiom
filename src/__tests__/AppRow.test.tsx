@@ -42,6 +42,21 @@ describe('AppRow', () => {
     expect(screen.getByRole('button', { name: /invite/i })).toBeInTheDocument()
   })
 
+  it('shows Launch (not Install) when installed with an unknown version', () => {
+    const state: AppState = { ...baseState, installedVersion: 'installed', latestVersion: '0.3.1', downloadUrl: 'https://example.com/app.AppImage' }
+    render(<AppRow state={state} onAction={vi.fn()} onInfo={vi.fn()} onRetry={vi.fn()} />)
+    expect(screen.getByRole('button', { name: /launch/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /install/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /update/i })).not.toBeInTheDocument()
+  })
+
+  it('shows "Installed" status (not "vinstalled") for an unknown installed version', () => {
+    const state: AppState = { ...baseState, installedVersion: 'installed', latestVersion: '0.3.1' }
+    render(<AppRow state={state} onAction={vi.fn()} onInfo={vi.fn()} onRetry={vi.fn()} />)
+    expect(screen.getByText('Installed')).toBeInTheDocument()
+    expect(screen.queryByText(/vinstalled/i)).not.toBeInTheDocument()
+  })
+
   it('shows progress bar when downloading', () => {
     const state = {
       ...baseState,
