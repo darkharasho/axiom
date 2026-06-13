@@ -1,6 +1,13 @@
 export type AppId = 'axibridge' | 'axiforge' | 'axipulse' | 'axiam' | 'axivale' | 'axitools'
 export type InstallableAppId = Exclude<AppId, 'axitools'>
 
+/**
+ * Sentinel `installedVersion`: the app is installed but its version could not be
+ * determined (e.g. a manually-installed AppImage whose filename carries no version).
+ * Treated as "installed" by the UI, but never compared against the latest release.
+ */
+export const INSTALLED_VERSION_UNKNOWN = 'installed'
+
 export interface DownloadProgress {
   percent: number
   bytesReceived: number

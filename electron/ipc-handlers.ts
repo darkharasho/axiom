@@ -8,7 +8,10 @@ import { fetchLatestRelease } from './github'
 import { beginDeviceAuth, pollForToken, fetchGithubLogin, GITHUB_DEVICE_CLIENT_ID } from './githubAuth'
 import { IdentityStore, electronCipher } from './secrets'
 import { isPrivateUnlocked } from './privateTools'
-import { detectInstalledVersion } from './detect'
+import { detectInstalled } from './detect'
+import { resolveInstalledVersion } from './installedVersion'
+import { appImageMatchesAsset } from './identifyAppImage'
+import { INSTALLED_VERSION_UNKNOWN } from './shared/types'
 import {
   isGearLeverInstalled,
   installGearLever,
@@ -122,11 +125,27 @@ export async function runCheckUpdates(win: BrowserWindow): Promise<void> {
     const platform = process.platform === 'win32' ? 'win' : 'linux'
     const pattern = meta.assetPattern[platform]
     const release = await fetchLatestRelease(meta.repo, pattern, githubToken ?? undefined)
-    const detected = await detectInstalledVersion(meta.name, meta.configDir)
+    const detected = await detectInstalled(meta.name, meta.configDir)
     const cfg = readConfig()
     const stored = cfg.apps[appId as InstallableAppId]?.installedVersion ?? null
-    const installedVersion = detected === 'installed' ? stored : detected
-    if (detected !== 'installed') setInstalledVersion(appId as InstallableAppId, installedVersion)
+
+    // A generically-named AppImage (e.g. a manual `axivale.appimage`) yields the
+    // unknown-version sentinel. If that exact file is the current release asset,
+    // pin the installed version to the release and persist it so later checks are
+    // instant and the app tracks updates like every other one.
+    let installedVersion = resolveInstalledVersion(detected.version, stored)
+    if (
+      detected.version === INSTALLED_VERSION_UNKNOWN &&
+      detected.appImagePath &&
+      release &&
+      appImageMatchesAsset(detected.appImagePath, release.assetSize, release.assetDigest)
+    ) {
+      installedVersion = release.version
+      setInstalledVersion(appId as InstallableAppId, release.version)
+      writeAxiomVersionFile(meta.configDir, release.version)
+    } else if (detected.version !== INSTALLED_VERSION_UNKNOWN) {
+      setInstalledVersion(appId as InstallableAppId, installedVersion)
+    }
     setState(win, appId, {
       status: 'idle',
       installedVersion,

@@ -55,4 +55,30 @@ describe('detectInstalledVersion', () => {
     const version = await detectInstalledVersion('AxiBridge')
     expect(version).toBe('2.5.11')
   })
+
+  it('returns the unknown-version sentinel for a matching AppImage with no version in its filename', async () => {
+    const fs = await import('fs')
+    vi.mocked(fs.existsSync).mockReturnValue(false)
+    vi.mocked(fs.readdirSync).mockReturnValue(['axivale.appimage'] as any)
+    Object.defineProperty(process, 'platform', { value: 'linux', configurable: true })
+
+    const { detectInstalledVersion } = await import('../detect')
+    const { INSTALLED_VERSION_UNKNOWN } = await import('../shared/types')
+    const version = await detectInstalledVersion('AxiVale')
+    expect(version).toBe(INSTALLED_VERSION_UNKNOWN)
+  })
+
+  it('surfaces the AppImage path so an unversioned install can be identified by digest', async () => {
+    const fs = await import('fs')
+    vi.mocked(fs.existsSync).mockReturnValue(false)
+    vi.mocked(fs.readdirSync).mockImplementation(((dir: string) =>
+      dir.endsWith('AppImages') ? ['axivale.appimage'] : []) as any)
+    Object.defineProperty(process, 'platform', { value: 'linux', configurable: true })
+
+    const { detectInstalled } = await import('../detect')
+    const { INSTALLED_VERSION_UNKNOWN } = await import('../shared/types')
+    const result = await detectInstalled('AxiVale')
+    expect(result.version).toBe(INSTALLED_VERSION_UNKNOWN)
+    expect(result.appImagePath).toMatch(/AppImages[/\\]axivale\.appimage$/)
+  })
 })
