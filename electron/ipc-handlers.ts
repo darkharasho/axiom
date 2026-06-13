@@ -2,9 +2,12 @@ import { ipcMain, shell, app, Notification, dialog } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import type { BrowserWindow } from 'electron'
 import type { AppId, InstallableAppId, AppState, ArcdpsState } from './shared/types'
-import { APP_META, isInstallable } from './apps'
+import { APP_META, isInstallable, isAppVisible } from './apps'
 import { readConfig, patchConfig, setInstalledVersion } from './config'
 import { fetchLatestRelease } from './github'
+import { beginDeviceAuth, pollForToken, fetchGithubLogin, GITHUB_DEVICE_CLIENT_ID } from './githubAuth'
+import { IdentityStore, electronCipher } from './secrets'
+import { isPrivateUnlocked } from './privateTools'
 import { detectInstalledVersion } from './detect'
 import {
   isGearLeverInstalled,
@@ -40,12 +43,41 @@ let appStates: Record<AppId, AppState> = buildInitialStates()
 let lastCheckTime = 0
 let arcdpsState: ArcdpsState = { gw2Path: null, gw2PathSource: 'none', overrideError: null, plugins: [] }
 
+let identityStore: IdentityStore | null = null
+let githubToken: string | null = null
+let githubLogin: string | null = null
+let unlocked = false
+
+function githubStatus(): import('./shared/types').GithubAuthState {
+  return { signedIn: githubToken != null, login: githubLogin, unlocked }
+}
+
+function pushGithubStatus(win: BrowserWindow): void {
+  win.webContents.send('github:status-updated', githubStatus())
+}
+
+async function getIdentityStore(): Promise<IdentityStore> {
+  if (!identityStore) {
+    const cipher = await electronCipher()
+    identityStore = new IdentityStore(pathSync.join(app.getPath('userData'), 'github-identity.json'), cipher)
+  }
+  return identityStore
+}
+
+function applyIdentity(token: string | null, login: string | null): void {
+  githubToken = token
+  githubLogin = login
+  unlocked = isPrivateUnlocked(login)
+}
+
 export function getLastCheckTime(): number { return lastCheckTime }
 
 export function hasAnyUpdates(): boolean {
-  const appsHave = Object.values(appStates).some(s =>
-    s.installedVersion != null && s.latestVersion != null && s.installedVersion !== s.latestVersion
-  )
+  const appsHave = Object.entries(appStates).some(([id, s]) => {
+    const meta = APP_META[id as AppId]
+    if (!isAppVisible(meta, unlocked)) return false
+    return s.installedVersion != null && s.latestVersion != null && s.installedVersion !== s.latestVersion
+  })
   const arcdpsHave = arcdpsState.plugins.some(p => p.upToDate === false)
   return appsHave || arcdpsHave
 }
@@ -74,7 +106,7 @@ async function refreshArcdps(win: BrowserWindow): Promise<void> {
     gw2PathSource: resolved.source,
     overrideError: resolved.overrideError,
     recordedInstalls: cfg.arcdps.plugins,
-    fetchRelease: (repo, pattern) => fetchLatestRelease(repo, pattern),
+    fetchRelease: (repo, pattern) => fetchLatestRelease(repo, pattern, githubToken ?? undefined),
     fetchCoreMd5: (dll) => checkArcdpsCoreUpdate(dll),
   })
   pushArcdps(win)
@@ -85,10 +117,11 @@ export async function runCheckUpdates(win: BrowserWindow): Promise<void> {
   for (const [id, meta] of Object.entries(APP_META)) {
     const appId = id as AppId
     if (!isInstallable(meta)) continue
+    if (!isAppVisible(meta, unlocked)) continue
     setState(win, appId, { status: 'checking' })
     const platform = process.platform === 'win32' ? 'win' : 'linux'
     const pattern = meta.assetPattern[platform]
-    const release = await fetchLatestRelease(meta.repo, pattern)
+    const release = await fetchLatestRelease(meta.repo, pattern, githubToken ?? undefined)
     const detected = await detectInstalledVersion(meta.name, meta.configDir)
     const cfg = readConfig()
     const stored = cfg.apps[appId as InstallableAppId]?.installedVersion ?? null
@@ -152,6 +185,64 @@ function setState(win: BrowserWindow, appId: AppId, patch: Partial<AppState>): v
 }
 
 export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => void): void {
+  void (async () => {
+    try {
+      const store = await getIdentityStore()
+      const saved = store.load()
+      if (saved) {
+        applyIdentity(saved.token, saved.login)
+        pushGithubStatus(win)
+      }
+    } catch { /* no stored identity / safeStorage unavailable */ }
+  })()
+
+  ipcMain.handle('github:status', () => githubStatus())
+
+  ipcMain.handle('github:auth-begin', async () => {
+    const begin = await beginDeviceAuth(GITHUB_DEVICE_CLIENT_ID)
+    await shell.openExternal(begin.verificationUri)
+    return {
+      userCode: begin.userCode,
+      verificationUri: begin.verificationUri,
+      deviceCode: begin.deviceCode,
+      interval: begin.interval,
+      expiresIn: begin.expiresIn,
+    }
+  })
+
+  ipcMain.handle('github:auth-complete', async (_e, deviceCode: string, interval: number, expiresIn: number) => {
+    try {
+      const token = await pollForToken(GITHUB_DEVICE_CLIENT_ID, deviceCode, {
+        intervalSeconds: interval, expiresInSeconds: expiresIn,
+      })
+      const login = await fetchGithubLogin(token)
+      const store = await getIdentityStore()
+      store.save({ token, login })
+      applyIdentity(token, login)
+      pushGithubStatus(win)
+      await runCheckUpdates(win) // populate axivale immediately if now unlocked
+      onCheckComplete?.()
+      return { ok: true, login }
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : String(err) }
+    }
+  })
+
+  ipcMain.handle('github:sign-out', async () => {
+    const store = await getIdentityStore()
+    store.clear()
+    applyIdentity(null, null)
+    // Drop any private app from the visible state so it disappears immediately.
+    for (const [id, meta] of Object.entries(APP_META)) {
+      if (!isAppVisible(meta, unlocked)) {
+        setState(win, id as AppId, { installedVersion: null, latestVersion: null, downloadUrl: null, status: 'idle' })
+      }
+    }
+    pushGithubStatus(win)
+    onCheckComplete?.()
+    return githubStatus()
+  })
+
   ipcMain.handle('axiom:get-states', () => Object.values(appStates))
 
   ipcMain.handle('axiom:get-config', () => readConfig())
