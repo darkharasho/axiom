@@ -1,4 +1,4 @@
-import { ipcMain, shell, app, Notification, dialog } from 'electron'
+import { ipcMain, shell, app, Notification, dialog, clipboard } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import type { BrowserWindow } from 'electron'
 import type { AppId, InstallableAppId, AppState, ArcdpsState } from './shared/types'
@@ -544,6 +544,10 @@ if ($proc) {
 
   ipcMain.handle('axiom:open-external', (_e, url: string) => {
     shell.openExternal(url)
+  })
+
+  ipcMain.handle('axiom:copy-text', (_e, text: string) => {
+    clipboard.writeText(text)
   })
 
   type SelfUpdateStatus = 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'ready' | 'error'

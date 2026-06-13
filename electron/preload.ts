@@ -44,6 +44,9 @@ contextBridge.exposeInMainWorld('axiom', {
   openExternal: (url: string): Promise<void> =>
     ipcRenderer.invoke('axiom:open-external', url),
 
+  copyText: (text: string): Promise<void> =>
+    ipcRenderer.invoke('axiom:copy-text', text),
+
   checkSelfUpdate: (): Promise<void> =>
     ipcRenderer.invoke('axiom:check-self-update'),
 

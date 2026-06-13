@@ -43,4 +43,5 @@ vi.stubGlobal('axiom', {
   githubAuthBegin: vi.fn().mockResolvedValue({ userCode: '', deviceCode: '', interval: 5, expiresIn: 300 }),
   githubAuthComplete: vi.fn().mockResolvedValue({ ok: true }),
   githubSignOut: vi.fn().mockResolvedValue(undefined),
+  copyText: vi.fn().mockResolvedValue(undefined),
 })

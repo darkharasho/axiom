@@ -18,6 +18,7 @@ declare global {
       openGearLeverFlathub: () => Promise<void>
       getVersion: () => Promise<string>
       openExternal: (url: string) => Promise<void>
+      copyText: (text: string) => Promise<void>
       checkSelfUpdate: () => Promise<void>
       installSelfUpdate: () => Promise<void>
       onSelfUpdateStatus: (cb: (data: { status: string; version?: string; error?: string }) => void) => () => void

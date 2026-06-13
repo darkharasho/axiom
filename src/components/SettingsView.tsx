@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, Copy, Check } from 'lucide-react'
 import { useConfig } from '../hooks/useConfig'
 import { Toggle } from './Toggle'
 import { useGithubAuth } from '../hooks/useGithubAuth'
@@ -115,6 +115,20 @@ export function SettingsView({ onBack }: Props) {
           >
             Sign out
           </button>
+        ) : github.userCode ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 700, letterSpacing: '1.5px', color: 'var(--gold-bright)' }}>
+              {github.userCode}
+            </span>
+            <button
+              onClick={() => github.copyCode(github.userCode!)}
+              title="Copy code"
+              className="icon-btn"
+              style={{ background: 'none', border: 'none', color: github.copied ? 'var(--gold-bright)' : 'var(--text-dim)', cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center' }}
+            >
+              {github.copied ? <Check size={13} /> : <Copy size={13} />}
+            </button>
+          </div>
         ) : (
           <button
             onClick={() => github.signIn()}
@@ -125,10 +139,15 @@ export function SettingsView({ onBack }: Props) {
               fontSize: 11, cursor: github.busy ? 'default' : 'pointer', padding: 0,
             }}
           >
-            {github.userCode ? `Enter code: ${github.userCode}` : github.busy ? 'Waiting…' : 'Sign in with GitHub'}
+            {github.busy ? 'Waiting…' : 'Sign in with GitHub'}
           </button>
         )}
       </div>
+      {github.userCode && (
+        <div style={{ color: 'var(--text-faint)', fontSize: 10, padding: '2px 0 8px' }}>
+          {github.copied ? 'Code copied — paste it in the GitHub tab that opened.' : 'Paste this code in the GitHub tab that opened.'}
+        </div>
+      )}
       {github.error && (
         <div style={{ color: '#e05252', fontSize: 10, padding: '2px 0 8px' }}>{github.error}</div>
       )}
