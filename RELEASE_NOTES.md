@@ -1,13 +1,9 @@
 # Release Notes
 
-Version v0.2.5 — June 13, 2026
+Version v0.2.7 — June 16, 2026
 
-## Sign in with GitHub
+## Something's Brewing
+A certain "A." got a new face. That's all we'll say for now.
 
-There's now a GitHub sign-in row in Settings. It uses the normal device-code flow — AxiOM shows you a code (and copies it for you), you paste it into GitHub, and you're in. Your login is stored encrypted on your machine.
-
-Signing in unlocks private tools for approved accounts.
-
-## Fixes
-
-- The copy button on the sign-in code actually copies now.
+## Marketing Site
+There's now a proper landing page for AxiOM on GitHub Pages, with screenshots and download links.
