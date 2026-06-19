@@ -1,9 +1,13 @@
 # Release Notes
 
-Version v0.2.7 — June 16, 2026
+Version v0.2.8 — June 19, 2026
 
-## Something's Brewing
-A certain "A." got a new face. That's all we'll say for now.
+## The "A." got its new face — meet V.
+We teased it last time. Here it is: AxiVale's mark is now a serif **V.** in
+the app list, swapped in everywhere.
 
-## Marketing Site
-There's now a proper landing page for AxiOM on GitHub Pages, with screenshots and download links.
+## AxiVale is generally available
+No more allowlist — AxiVale now shows for everyone in AxiOM. It's a virtual
+officer for your GW2 guild and Discord: chat with an AI agent (Claude,
+ChatGPT, or Gemini) that runs builds, comps, roster, Discord management,
+audits, and announcements. Install it straight from here.
