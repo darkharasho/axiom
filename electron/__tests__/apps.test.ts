@@ -2,10 +2,10 @@ import { describe, it, expect } from 'vitest'
 import { APP_META, isInstallable, isAppVisible } from '../apps'
 
 describe('axivale registry entry', () => {
-  it('is installable and marked private', () => {
+  it('is installable and generally available (not private)', () => {
     const m = APP_META.axivale
     expect(isInstallable(m)).toBe(true)
-    expect('private' in m && m.private).toBe(true)
+    expect('private' in m && m.private).toBeFalsy()
   })
 
   it('asset patterns match real release names', () => {
@@ -17,7 +17,9 @@ describe('axivale registry entry', () => {
 })
 
 describe('isAppVisible', () => {
-  it('hides a private app when locked', () => { expect(isAppVisible(APP_META.axivale, false)).toBe(false) })
-  it('shows a private app when unlocked', () => { expect(isAppVisible(APP_META.axivale, true)).toBe(true) })
-  it('always shows a non-private app', () => { expect(isAppVisible(APP_META.axibridge, false)).toBe(true) })
+  // No app ships private today, so synthesize one to cover the gating logic.
+  const privateApp = { ...APP_META.axivale, private: true } as typeof APP_META.axivale
+  it('hides a private app when locked', () => { expect(isAppVisible(privateApp, false)).toBe(false) })
+  it('shows a private app when unlocked', () => { expect(isAppVisible(privateApp, true)).toBe(true) })
+  it('always shows a non-private app', () => { expect(isAppVisible(APP_META.axivale, false)).toBe(true) })
 })
