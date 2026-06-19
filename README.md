@@ -55,7 +55,7 @@ Discord bot for GW2 communities — build sharing, RSS feeds, patch note alerts,
 ## Features
 
 ### Unified app management
-AxiBridge, AxiForge, AxiPulse, and AxiTools in one place. Each app shows its installed version, the latest available release, and a single action button that does the right thing — Launch, Update, Install, or Invite.
+AxiBridge, AxiForge, AxiPulse, AxiAM, AxiVale, and AxiTools in one place. Each app shows its installed version, the latest available release, and a single action button that does the right thing — Launch, Update, Install, or Invite.
 
 ### Automatic update detection
 On startup, AxiOM checks GitHub releases for each app and compares against what's installed. A gold badge appears on the tray icon whenever updates are waiting. Click "Check for updates" anytime to refresh.
