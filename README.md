@@ -42,6 +42,10 @@ Parses your arcdps logs locally with Elite Insights and shows your personal comb
 
 Secure account launcher. Stores encrypted GW2 credentials, manages multiple accounts, and launches them through Steam with custom arguments.
 
+<h2><img src="https://raw.githubusercontent.com/darkharasho/axivale/main/build/icon.png" width="22" valign="middle" /> <a href="https://github.com/darkharasho/axivale">AxiVale</a><a href="https://github.com/darkharasho/axivale/releases"><img src="https://img.shields.io/github/downloads/darkharasho/axivale/total?style=flat-square&color=c89850&label=downloads" align="right" /></a></h2>
+
+A virtual officer for your GW2 guild and Discord. Chat with a Claude agent that runs the guild — builds, comps, roster, Discord management, audits, and announcements — styled as a dark-newsprint broadsheet.
+
 <h2><img src="https://raw.githubusercontent.com/darkharasho/axitools/main/media/AxiTools-White.png" width="22" valign="middle" /> <a href="https://github.com/darkharasho/axitools">AxiTools</a><a href="https://github.com/darkharasho/axitools"><img src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/darkharasho/cfef38dcbbbce38895e4a8bf3abdfa7e/raw/axitools-guild-count.json" align="right" /></a></h2>
 
 Discord bot for GW2 communities — build sharing, RSS feeds, patch note alerts, and scheduled squad signups with per-guild isolated storage.

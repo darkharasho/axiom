@@ -68,7 +68,6 @@ export const APP_META: Record<AppId, AppMeta> = {
     name: 'AxiVale',
     repo: 'darkharasho/axivale',
     configDir: 'axivale',
-    private: true,
     assetPattern: {
       win: /AxiVale.*Setup.*\.exe$/i,
       linux: /AxiVale.*\.AppImage$/i,

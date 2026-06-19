@@ -3,7 +3,6 @@ import type { AppState, AppId, InstallableAppId } from '@shared/types'
 import type { SelfUpdateState } from '../hooks/useSelfUpdate'
 import { AppRow } from './AppRow'
 import { useArcdpsState } from '../hooks/useArcdpsState'
-import { useGithubAuth } from '../hooks/useGithubAuth'
 
 interface Props {
   states: AppState[]
@@ -20,8 +19,7 @@ const APP_ORDER: AppId[] = ['axibridge', 'axiforge', 'axipulse', 'axiam', 'axiva
 export function AppList({ states, checking, selfUpdate, onOpenSettings, onOpenArcdps, onCheckUpdates, onOpenInfo }: Props) {
   const stateMap = Object.fromEntries(states.map(s => [s.id, s])) as Record<AppId, AppState>
   const { state: arcdpsState } = useArcdpsState()
-  const { status: githubStatus } = useGithubAuth()
-  const visibleOrder = APP_ORDER.filter(id => id !== 'axivale' || githubStatus.unlocked)
+  const visibleOrder = APP_ORDER
   const arcdpsHasUpdate = arcdpsState.plugins.some(p => p.upToDate === false)
 
   const handleAction = (action: string, appId: AppId) => {
