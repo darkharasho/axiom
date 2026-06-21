@@ -1,12 +1,12 @@
 import type { AppId } from '@shared/types'
 
 export const APP_ICONS: Record<AppId, string> = {
-  axibridge: './svg/AxiBridge-white.svg',
-  axiforge:  './svg/axiforge.svg',
-  axipulse:  './svg/axipulse-white.svg',
-  axiam:     './svg/axiam.svg',
-  axivale:   './svg/axivale.svg',
-  axitools:  './svg/axitools-white.svg',
+  axibridge: './svg/axibridge-glyph.svg',
+  axiforge:  './svg/axiforge-glyph.svg',
+  axipulse:  './svg/axipulse-glyph.svg',
+  axiam:     './svg/axiam-glyph.svg',
+  axivale:   './svg/axivale-glyph.svg',
+  axitools:  './svg/axitools-glyph.svg',
 }
 
 export const APP_NAMES: Record<AppId, string> = {

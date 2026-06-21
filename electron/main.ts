@@ -58,7 +58,7 @@ function getIconPath(badge = false): string {
   }
   const name = variant === 'white' ? 'White' : 'Black'
   const suffix = badge ? '-badge' : ''
-  return path.join(__dirname, `../public/AxiOM-${name}${suffix}.png`)
+  return path.join(__dirname, `../public/AxiOM-tb-${name}${suffix}.png`)
 }
 
 function getAppIcon(badge = false) {

@@ -4,7 +4,7 @@ import path from 'path'
 const WINDOW_WIDTH = 320
 
 export function createPopupWindow(): BrowserWindow {
-  const icon = nativeImage.createFromPath(path.join(__dirname, '../public/AxiOM-White.png'))
+  const icon = nativeImage.createFromPath(path.join(__dirname, '../public/AxiOM-tb-White.png'))
 
   const win = new BrowserWindow({
     width: WINDOW_WIDTH,

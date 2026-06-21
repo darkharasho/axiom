@@ -80,7 +80,7 @@ export function AppList({ states, checking, selfUpdate, onOpenSettings, onOpenAr
         paddingBottom: 10,
         borderBottom: '1px solid var(--border)',
       }}>
-        <img src="./AxiOM-White.svg" alt="AxiOM" style={{ width: 20, height: 20, objectFit: 'contain' }} />
+        <img src="./svg/axiom-glyph.svg" alt="AxiOM" style={{ width: 20, height: 20, objectFit: 'contain' }} />
         <span style={{ fontFamily: 'var(--font-title)', fontSize: 13, fontWeight: 700, letterSpacing: '0.5px' }}>
           <span style={{ color: 'var(--text)' }}>Axi</span>
           <span style={{ color: 'var(--gold)' }}>OM</span>
