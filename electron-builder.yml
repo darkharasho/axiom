@@ -14,13 +14,13 @@ publish:
 linux:
   target:
     - AppImage
-  icon: public/AxiOM-White.png
+  icon: build/icon.png
 win:
   target:
     - nsis
-  icon: public/AxiOM.ico
+  icon: build/icon.ico
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
-  installerIcon: public/AxiOM.ico
-  uninstallerIcon: public/AxiOM.ico
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
