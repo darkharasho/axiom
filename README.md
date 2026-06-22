@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/AxiOM-White.png" alt="AxiOM Logo" width="180" />
+  <img src="build/icon.png" alt="AxiOM Logo" width="180" />
 </p>
 
 <h1 align="center">AxiOM</h1>
