@@ -90,9 +90,22 @@
       <p class="release-meta" id="release-meta">Latest release on GitHub</p>
     </div>
 
-    <button class="hero-shot" type="button" data-full="assets/screenshots/hero-app.png" aria-label="AxiOM tray popup, full size">
-      <img src="assets/screenshots/hero-app.png" alt="AxiOM — tray popup showing the full Axi app suite" loading="eager" />
-    </button>
+    <div class="hero-shot om" role="img" aria-label="AxiOM tray popup showing the Axi app suite">
+      <div class="om-head">
+        <img src="assets/axiom-glyph.svg" alt="" />
+        <span class="om-title">AxiOM</span>
+        <span class="om-ver">v0.2.9</span>
+        <i class="om-gear" data-lucide="settings"></i>
+      </div>
+      <div class="om-list">
+        <div class="om-row"><img src="assets/axibridge-glyph.svg" alt="" /><div class="om-meta"><span class="om-name">AxiBridge</span><span class="om-sub">v2.11.3 · installed</span></div><button class="om-btn" type="button">Launch</button></div>
+        <div class="om-row"><img src="assets/axiforge-glyph.svg" alt="" /><div class="om-meta"><span class="om-name">AxiForge</span><span class="om-sub">v0.9.0 → v0.9.1</span></div><button class="om-btn is-update" type="button">Update</button></div>
+        <div class="om-row"><img src="assets/axipulse-glyph.svg" alt="" /><div class="om-meta"><span class="om-name">AxiPulse</span><span class="om-sub">v0.1.19 · installed</span></div><button class="om-btn" type="button">Launch</button></div>
+        <div class="om-row"><img src="assets/axiam-glyph.svg" alt="" /><div class="om-meta"><span class="om-name">AxiAM</span><span class="om-sub">v1.2.6 · installed</span></div><button class="om-btn" type="button">Launch</button></div>
+        <div class="om-row"><img src="assets/axivale-glyph.svg" alt="" /><div class="om-meta"><span class="om-name">AxiVale</span><span class="om-sub">not installed</span></div><button class="om-btn is-primary" type="button">Install</button></div>
+        <div class="om-row"><img src="assets/axitools-glyph.svg" alt="" /><div class="om-meta"><span class="om-name">AxiTools</span><span class="om-sub">Discord bot</span></div><button class="om-btn is-ghost" type="button">Invite</button></div>
+      </div>
+    </div>
   </section>
 
   <!-- 3. // KEY FEATURES -->
@@ -182,7 +195,7 @@
 
     <div class="suite-grid">
       <article class="suite-card">
-        <img class="suite-icon" src="assets/axibridge.svg" alt="" width="46" height="46" style="display:block;border-radius:11px;margin-bottom:14px" />
+        <span class="suite-icon" style="background:radial-gradient(circle at 50% 42%, #4f9ee855 0%, #4f9ee800 68%)"><img src="assets/axibridge-glyph.svg" alt="" /></span>
         <span class="suite-tag">FIGHTS</span>
         <h3>AxiBridge</h3>
         <p>Watches your arcdps logs, posts per-fight Discord embeds and persistent web reports as the squad fights.</p>
@@ -190,7 +203,7 @@
       </article>
 
       <article class="suite-card">
-        <img class="suite-icon" src="assets/axiforge.svg" alt="" width="46" height="46" style="display:block;border-radius:11px;margin-bottom:14px" />
+        <span class="suite-icon" style="background:radial-gradient(circle at 50% 42%, #e8923d55 0%, #e8923d00 68%)"><img src="assets/axiforge-glyph.svg" alt="" /></span>
         <span class="suite-tag">BUILDS</span>
         <h3>AxiForge</h3>
         <p>Build and comp manager for GW2 squads. Create, edit, and publish builds to a GitHub Pages site you own.</p>
@@ -198,7 +211,7 @@
       </article>
 
       <article class="suite-card">
-        <img class="suite-icon" src="assets/axipulse.svg" alt="" width="46" height="46" style="display:block;border-radius:11px;margin-bottom:14px" />
+        <span class="suite-icon" style="background:radial-gradient(circle at 50% 42%, #e0464a55 0%, #e0464a00 68%)"><img src="assets/axipulse-glyph.svg" alt="" /></span>
         <span class="suite-tag">VITALS</span>
         <h3>AxiPulse</h3>
         <p>Parses arcdps logs locally with Elite Insights and shows your personal combat breakdown — damage, timelines, history.</p>
@@ -206,7 +219,7 @@
       </article>
 
       <article class="suite-card">
-        <img class="suite-icon" src="assets/axiam.svg" alt="" width="46" height="46" style="display:block;border-radius:11px;margin-bottom:14px" />
+        <span class="suite-icon" style="background:radial-gradient(circle at 50% 42%, #54b07a55 0%, #54b07a00 68%)"><img src="assets/axiam-glyph.svg" alt="" /></span>
         <span class="suite-tag">VAULT</span>
         <h3>AxiAM</h3>
         <p>Encrypted account launcher. Stores GW2 credentials locally and launches them through Steam with custom arguments.</p>
@@ -214,7 +227,7 @@
       </article>
 
       <article class="suite-card">
-        <img class="suite-icon" src="assets/axivale.svg" alt="" width="46" height="46" style="display:block;border-radius:11px;margin-bottom:14px" />
+        <span class="suite-icon" style="background:radial-gradient(circle at 50% 42%, #e05a5055 0%, #e05a5000 68%)"><img src="assets/axivale-glyph.svg" alt="" /></span>
         <span class="suite-tag">OFFICER</span>
         <h3>AxiVale</h3>
         <p>A virtual officer for your guild — chat with an AI agent (Claude, ChatGPT, or Gemini) that runs builds, comps, roster, and Discord, citing the live GW2 meta.</p>
@@ -222,7 +235,7 @@
       </article>
 
       <article class="suite-card">
-        <img class="suite-icon" src="assets/axitools.svg" alt="" width="46" height="46" style="display:block;border-radius:11px;margin-bottom:14px" />
+        <span class="suite-icon" style="background:radial-gradient(circle at 50% 42%, #2fb6bf55 0%, #2fb6bf00 68%)"><img src="assets/axitools-glyph.svg" alt="" /></span>
         <span class="suite-tag">DISCORD</span>
         <h3>AxiTools</h3>
         <p>Discord bot for GW2 communities — build sharing, RSS feeds, patch alerts, and squad signups with per-guild storage.</p>

@@ -1613,3 +1613,52 @@ main {
 .suite-link:hover svg {
   transform: translate(2px, -2px);
 }
+
+/* ── Suite-card icon: mark on a soft accent dot (no square tile) ── */
+.suite-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  margin-bottom: 0.95rem;
+}
+.suite-icon img {
+  width: 40px;
+  height: 40px;
+  display: block;
+}
+
+/* ── Hero: live AxiOM launcher mock (replaces the screenshot) ── */
+.om { cursor: default; text-align: left; }
+.om img { width: auto; height: auto; }            /* cancel .hero-shot img{width:100%} */
+.om-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent);
+}
+.om-head img { width: 26px; height: 26px; }
+.om-title { font-family: var(--font-display); font-weight: 700; font-size: 0.95rem; letter-spacing: 0.03em; }
+.om-ver {
+  font-family: var(--font-mono); font-size: 0.62rem; color: var(--text-dim);
+  padding: 2px 7px; border: 1px solid var(--border); border-radius: 20px;
+}
+.om-gear { margin-left: auto; width: 16px; height: 16px; color: var(--text-dim); }
+.om-list { padding: 0.45rem; }
+.om-row { display: flex; align-items: center; gap: 0.7rem; padding: 0.55rem 0.6rem; border-radius: 10px; }
+.om-row:hover { background: rgba(255,255,255,0.03); }
+.om-row > img { width: 27px; height: 27px; flex: none; }
+.om-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.om-name { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+.om-sub { font-size: 0.66rem; color: var(--text-muted); font-family: var(--font-mono); }
+.om-btn {
+  font-size: 0.68rem; font-weight: 700; font-family: var(--font-mono); letter-spacing: 0.04em;
+  padding: 5px 13px; border-radius: 7px; border: 1px solid var(--border-bright);
+  background: transparent; color: var(--text); cursor: default; white-space: nowrap;
+}
+.om-btn.is-primary { background: var(--brand-primary); border-color: var(--brand-primary); color: #1a1205; }
+.om-btn.is-update { background: var(--accent-bg); border-color: var(--accent-border); color: var(--brand-secondary); }
+.om-btn.is-ghost { color: var(--text-muted); }
