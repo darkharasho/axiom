@@ -9,9 +9,8 @@ function getLinuxExecPath(): string {
   return process.env.APPIMAGE ?? app.getPath('exe')
 }
 
-function writeLinuxAutostart(): void {
+function writeLinuxAutostart(exec: string = getLinuxExecPath()): void {
   const file = LINUX_AUTOSTART_FILE()
-  const exec = getLinuxExecPath()
   const contents = [
     '[Desktop Entry]',
     'Type=Application',
@@ -41,6 +40,18 @@ export function setAutoStart(enabled: boolean): void {
     return
   }
   app.setLoginItemSettings({ openAtLogin: enabled, openAsHidden: true })
+}
+
+// A self-update deletes the old versioned AppImage and moves the new build to a
+// different path (AxiOM-0.2.8.AppImage -> AxiOM-0.2.9.AppImage). The autostart
+// entry's Exec= still points at the now-deleted file, so the app silently fails
+// to launch on the next boot. electron-updater emits `appimage-filename-updated`
+// with the new path during install — call this with it to heal the entry in
+// place, but only when autostart is actually enabled.
+export function refreshAutoStartExec(execPath: string): void {
+  if (process.platform !== 'linux') return
+  if (!fs.existsSync(LINUX_AUTOSTART_FILE())) return
+  writeLinuxAutostart(execPath)
 }
 
 export function getAutoStart(): boolean {

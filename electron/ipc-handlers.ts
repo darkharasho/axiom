@@ -18,7 +18,7 @@ import {
   openInGearLever,
 } from './gearlever'
 import { installWindows, installLinux, updateLinux, uninstallWindows, uninstallLinux, downloadFile } from './installer'
-import { setAutoStart, getAutoStart } from './autostart'
+import { setAutoStart, getAutoStart, refreshAutoStartExec } from './autostart'
 import { isProcessRunning } from './process-check'
 import * as fsSync from 'fs'
 import * as osSync from 'os'
@@ -587,6 +587,10 @@ if ($proc) {
   autoUpdater.on('download-progress',    ()     => pushSelfUpdate('downloading'))
   autoUpdater.on('update-downloaded',    (info) => pushSelfUpdate('ready',         { version: info.version }))
   autoUpdater.on('error',                (err)  => pushSelfUpdate('error',         { error: err.message }))
+  // The AppImage self-updater moves us to a new versioned path and deletes the
+  // old one. Repoint the Linux autostart entry so the app still launches on the
+  // next boot instead of pointing at the deleted AppImage.
+  autoUpdater.on('appimage-filename-updated', (newPath: string) => refreshAutoStartExec(newPath))
 
   const FAKE_UPDATE = !!process.env.AXIOM_FAKE_UPDATE
   const FAKE_VERSION = '9.9.9'
