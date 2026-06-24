@@ -153,15 +153,25 @@ export interface DetectedPlugin {
   disabled: boolean
 }
 
-// Nexus and ad-hoc disable conventions:
-//   Foo.dll_0       (Nexus numbered disable)
+// Disable conventions (the file is NOT loaded by the game):
 //   Foo.dll.disabled
 //   Foo.dll.old
 //   Foo.dll.bak     (AxiOM's own atomic-install backup)
-const DISABLE_SUFFIX_RE = /(_\d+|\.disabled|\.old|\.bak)$/i
+const DISABLE_SUFFIX_RE = /(\.disabled|\.old|\.bak)$/i
+
+// arcdps hot-swap convention: when it updates a locked extension it writes the
+// new copy as `Foo.dll_<n>` and loads THAT file directly. Such a file is an
+// active install, not a disabled one — so it gets stripped to match the DLL
+// pattern but stays enabled. (Nexus, by contrast, disables via the suffixes
+// above, never a numeric one.)
+const NUMBERED_SUFFIX_RE = /_\d+$/
 
 function stripDisableSuffix(name: string): string {
   return name.replace(DISABLE_SUFFIX_RE, '')
+}
+
+function stripNumberedSuffix(name: string): string {
+  return name.replace(NUMBERED_SUFFIX_RE, '')
 }
 
 function safeReaddir(dir: string): string[] {
@@ -178,8 +188,10 @@ function scanDirForPlugin(
   location: PluginLocation,
   meta: ArcPluginMeta,
 ): DetectedPlugin | null {
-  // Two passes: live matches always win over disabled variants regardless of
-  // readdir order, so a stale .bak alongside a live .dll never wins.
+  // Three passes, most-authoritative first, so readdir order never decides:
+  //   1. a live `Foo.dll`                       -> active
+  //   2. an arcdps hot-swap `Foo.dll_<n>`       -> active (game loads it)
+  //   3. a disabled `Foo.dll.disabled/.old/.bak`-> disabled
   const files = safeReaddir(dir)
   const build = (file: string, disabled: boolean): DetectedPlugin | null => {
     const full = path.join(dir, file)
@@ -198,6 +210,13 @@ function scanDirForPlugin(
       const det = build(file, false)
       if (det) return det
     }
+  }
+  for (const file of files) {
+    const stripped = stripNumberedSuffix(file)
+    if (stripped === file) continue
+    if (!location.dllPattern.test(stripped)) continue
+    const det = build(file, false)
+    if (det) return det
   }
   for (const file of files) {
     const stripped = stripDisableSuffix(file)

@@ -112,6 +112,34 @@ describe('detectInstalledPlugins', () => {
     expect(found.map(p => p.id)).toContain('unofficial_extras')
   })
 
+  it('detects an arcdps hot-swap numbered file (Foo.dll_0) as an active install, not disabled', () => {
+    // arcdps writes an updated extension as `<name>.dll_<n>` while the running
+    // copy is locked, then loads that file directly. It is active, not disabled.
+    fs.mkdirSync(path.join(gw2, 'addons'), { recursive: true })
+    fs.writeFileSync(path.join(gw2, 'addons', 'Unofficial_Extras.dll_0'), 'fake')
+    const found = detectInstalledPlugins(gw2)
+    const ue = found.find(p => p.id === 'unofficial_extras')
+    expect(ue).toBeDefined()
+    expect(ue!.disabled).toBe(false)
+  })
+
+  it('marks a .disabled variant as disabled', () => {
+    fs.mkdirSync(path.join(gw2, 'addons'), { recursive: true })
+    fs.writeFileSync(path.join(gw2, 'addons', 'arcdps_boon_table.dll.disabled'), 'fake')
+    const bt = detectInstalledPlugins(gw2).find(p => p.id === 'boon_table')
+    expect(bt).toBeDefined()
+    expect(bt!.disabled).toBe(true)
+  })
+
+  it('prefers a live .dll over a numbered hot-swap sibling', () => {
+    fs.mkdirSync(path.join(gw2, 'addons'), { recursive: true })
+    fs.writeFileSync(path.join(gw2, 'addons', 'Unofficial_Extras.dll'), 'live')
+    fs.writeFileSync(path.join(gw2, 'addons', 'Unofficial_Extras.dll_0'), 'stale')
+    const ue = detectInstalledPlugins(gw2).find(p => p.id === 'unofficial_extras')!
+    expect(ue.disabled).toBe(false)
+    expect(path.basename(ue.dllPath)).toBe('Unofficial_Extras.dll')
+  })
+
   it('ignores arbitrary DLLs not in the registry', () => {
     fs.writeFileSync(path.join(gw2, 'random_other.dll'), 'fake')
     expect(detectInstalledPlugins(gw2)).toEqual([])
