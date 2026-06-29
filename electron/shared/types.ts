@@ -71,6 +71,14 @@ export interface ArcdpsPluginState {
   downloadProgress?: DownloadProgress
 }
 
+// Single source of truth for "this arcdps plugin should signal an update".
+// A disabled plugin (the user turned it off via a .disabled/.old/.dll_N rename)
+// must NOT light the update dot — otherwise the tray badge shows an "update
+// available" for something the user has deliberately shelved.
+export function arcdpsPluginHasUpdate(p: Pick<ArcdpsPluginState, 'upToDate' | 'disabled'>): boolean {
+  return p.upToDate === false && !p.disabled
+}
+
 export interface ArcdpsState {
   gw2Path: string | null
   gw2PathSource: 'axiam' | 'auto' | 'manual' | 'none'

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Settings, RefreshCw, LogOut, ArrowUp } from 'lucide-react'
 import type { AppState, AppId, InstallableAppId } from '@shared/types'
+import { arcdpsPluginHasUpdate } from '@shared/types'
 import type { SelfUpdateState } from '../hooks/useSelfUpdate'
 import { AppRow } from './AppRow'
 import { useArcdpsState } from '../hooks/useArcdpsState'
@@ -29,7 +30,7 @@ export function AppList({ states, checking, selfUpdate, onOpenSettings, onOpenAr
   const availableIds = presentIds.filter(id => !stateMap[id].installedVersion)
   // Only label the groups when there's actually a mix to disambiguate.
   const showSections = installedIds.length > 0 && availableIds.length > 0
-  const arcdpsHasUpdate = arcdpsState.plugins.some(p => p.upToDate === false)
+  const arcdpsHasUpdate = arcdpsState.plugins.some(arcdpsPluginHasUpdate)
 
   const handleAction = (action: string, appId: AppId) => {
     switch (action) {

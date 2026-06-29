@@ -7,6 +7,7 @@ import path from 'path'
 vi.mock('electron', () => ({ app: { getPath: () => '/tmp/axiom-test-userdata' } }))
 
 import { resolveGw2Path, detectInstalledPlugins, computeFileMd5, checkArcdpsCoreUpdate, buildArcdpsState, installPluginFile } from '../arcdps'
+import { arcdpsPluginHasUpdate } from '../shared/types'
 
 describe('resolveGw2Path', () => {
   const tmpRoot = path.join(os.tmpdir(), `axiom-arcdps-${Date.now()}`)
@@ -343,5 +344,23 @@ describe('installPluginFile', () => {
     })
     await installPluginFile({ targetPath: target, downloadUrl: 'http://x', download })
     expect(fs.readFileSync(target, 'utf-8')).toBe('new')
+  })
+})
+
+describe('arcdpsPluginHasUpdate', () => {
+  const base = { upToDate: false, disabled: false }
+  it('flags an enabled, out-of-date plugin', () => {
+    expect(arcdpsPluginHasUpdate({ ...base })).toBe(true)
+  })
+  it('does NOT flag a disabled plugin even when out of date', () => {
+    // Regression: a disabled plugin (Player_List.dll.disabled) was lighting the
+    // tray update dot, so AxiOM showed a red dot with "no update available".
+    expect(arcdpsPluginHasUpdate({ upToDate: false, disabled: true })).toBe(false)
+  })
+  it('does not flag an up-to-date plugin', () => {
+    expect(arcdpsPluginHasUpdate({ upToDate: true, disabled: false })).toBe(false)
+  })
+  it('treats unknown (null) upToDate as no update', () => {
+    expect(arcdpsPluginHasUpdate({ upToDate: null, disabled: false })).toBe(false)
   })
 })

@@ -11,7 +11,7 @@ import { isPrivateUnlocked } from './privateTools'
 import { detectInstalled } from './detect'
 import { resolveInstalledVersion } from './installedVersion'
 import { appImageMatchesAsset } from './identifyAppImage'
-import { INSTALLED_VERSION_UNKNOWN } from './shared/types'
+import { INSTALLED_VERSION_UNKNOWN, arcdpsPluginHasUpdate } from './shared/types'
 import {
   isGearLeverInstalled,
   installGearLever,
@@ -81,7 +81,7 @@ export function hasAnyUpdates(): boolean {
     if (!isAppVisible(meta, unlocked)) return false
     return s.installedVersion != null && s.latestVersion != null && s.installedVersion !== s.latestVersion
   })
-  const arcdpsHave = arcdpsState.plugins.some(p => p.upToDate === false)
+  const arcdpsHave = arcdpsState.plugins.some(arcdpsPluginHasUpdate)
   return appsHave || arcdpsHave
 }
 

@@ -1,5 +1,6 @@
 import { Download, ArrowUp } from 'lucide-react'
 import type { ArcdpsPluginState } from '@shared/types'
+import { arcdpsPluginHasUpdate } from '@shared/types'
 import { ProgressBar } from './ProgressBar'
 
 interface Props {
@@ -37,7 +38,7 @@ export function ArcdpsRow({ plugin, onInstall }: Props) {
     return 'Up to date'
   }
 
-  const hasUpdate = installed && upToDate === false
+  const hasUpdate = arcdpsPluginHasUpdate(plugin)
   const hasBorder = hasUpdate
     ? 'var(--gold-border-bright)'
     : errorMessage
