@@ -1,22 +1,6 @@
 # Release Notes
 
-Version v0.3.2 — June 29, 2026
-
-## Fix: AxiRoster now shows in the list
-- AxiRoster was registered but never appeared in the launcher (it was filtered out by the app-list's display order). It now shows under **Available** like every other app. Added a guard so a newly registered app can't silently go missing again.
-
-Version v0.3.1 — June 29, 2026
-
-## App list: scrolls + installed-first
-- The app list now **scrolls** when the suite outgrows the window, so every app stays reachable as more get added.
-- **Installed apps are pinned to the top**, grouped under "Installed" with everything else under "Available" — your apps are always right where you expect them.
-
-Version v0.3.0 — June 29, 2026
-
-## New app: AxiRoster
-- **AxiRoster** now appears in the launcher. It's a WvW guild roster manager for Guild Wars 2 leadership — pull your roster from the GW2 API and Discord, track who's active, and share a live audit log and retention history across your officer team. Install, launch, and keep it updated from AxiOM like every other Axi app.
-
-Version v0.2.12 — June 23, 2026
+Version v0.3.3 — June 29, 2026
 
 ## Fixes
-- Fixed arcdps plugins showing as "Disabled" when they were actually active. When arcdps updates an extension (like Unofficial Extras), it leaves the new copy under a name like `Unofficial_Extras.dll_0` and loads it directly. Axiom mistook that for a disabled file. It now reads those as the live, up-to-date install — so a plugin that's current no longer looks turned off.
+- No more phantom update dot. A disabled arcdps plugin was still being checked for updates, so AxiOM lit the red "update available" dot even when nothing in the launcher actually needed updating. Disabled plugins are now left alone.
