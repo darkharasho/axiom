@@ -73,6 +73,18 @@ export const APP_META: Record<AppId, AppMeta> = {
       linux: /AxiVale.*\.AppImage$/i,
     },
   },
+  axiroster: {
+    id: 'axiroster',
+    name: 'AxiRoster',
+    repo: 'darkharasho/axiroster',
+    configDir: 'axiroster',
+    // artifactName is "AxiRoster-${version}-${os}-${arch}.${ext}" for every
+    // target, so the Windows asset has no "Setup" in its name.
+    assetPattern: {
+      win: /AxiRoster.*\.exe$/i,
+      linux: /AxiRoster.*\.AppImage$/i,
+    },
+  },
   axitools: {
     id: 'axitools',
     name: 'AxiTools',

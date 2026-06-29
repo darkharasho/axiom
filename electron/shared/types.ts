@@ -1,4 +1,4 @@
-export type AppId = 'axibridge' | 'axiforge' | 'axipulse' | 'axiam' | 'axivale' | 'axitools'
+export type AppId = 'axibridge' | 'axiforge' | 'axipulse' | 'axiam' | 'axivale' | 'axiroster' | 'axitools'
 export type InstallableAppId = Exclude<AppId, 'axitools'>
 
 /**
@@ -109,6 +109,7 @@ export const DEFAULT_CONFIG: Config = {
     axipulse:  { installedVersion: null, lastChecked: null },
     axiam:     { installedVersion: null, lastChecked: null },
     axivale:   { installedVersion: null, lastChecked: null },
+    axiroster: { installedVersion: null, lastChecked: null },
   },
   arcdps: {
     gw2PathOverride: null,
