@@ -1,5 +1,10 @@
 # Release Notes
 
+Version v0.3.2 — June 29, 2026
+
+## Fix: AxiRoster now shows in the list
+- AxiRoster was registered but never appeared in the launcher (it was filtered out by the app-list's display order). It now shows under **Available** like every other app. Added a guard so a newly registered app can't silently go missing again.
+
 Version v0.3.1 — June 29, 2026
 
 ## App list: scrolls + installed-first

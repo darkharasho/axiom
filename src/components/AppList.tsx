@@ -15,7 +15,9 @@ interface Props {
   onOpenInfo: (appId: AppId) => void
 }
 
-const APP_ORDER: AppId[] = ['axibridge', 'axiforge', 'axipulse', 'axiam', 'axivale', 'axitools']
+// Display order. MUST list every id in APP_META or the missing app silently
+// never renders (presentIds filters by this array). Guarded by AppList.test.
+export const APP_ORDER: AppId[] = ['axibridge', 'axiforge', 'axipulse', 'axiam', 'axivale', 'axiroster', 'axitools']
 
 export function AppList({ states, checking, selfUpdate, onOpenSettings, onOpenArcdps, onCheckUpdates, onOpenInfo }: Props) {
   const stateMap = Object.fromEntries(states.map(s => [s.id, s])) as Record<AppId, AppState>

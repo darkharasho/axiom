@@ -1,7 +1,15 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { AppList } from '../components/AppList'
+import { AppList, APP_ORDER } from '../components/AppList'
+import { APP_META } from '../../electron/apps'
 import type { AppState } from '@shared/types'
+
+describe('APP_ORDER registry coverage', () => {
+  it('lists every app in APP_META (else the missing app never renders)', () => {
+    const missing = Object.keys(APP_META).filter(id => !APP_ORDER.includes(id as AppState['id']))
+    expect(missing).toEqual([])
+  })
+})
 
 const makeState = (id: AppState['id'], overrides: Partial<AppState> = {}): AppState => ({
   id,
