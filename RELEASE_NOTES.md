@@ -1,5 +1,11 @@
 # Release Notes
 
+Version v0.3.1 — June 29, 2026
+
+## App list: scrolls + installed-first
+- The app list now **scrolls** when the suite outgrows the window, so every app stays reachable as more get added.
+- **Installed apps are pinned to the top**, grouped under "Installed" with everything else under "Available" — your apps are always right where you expect them.
+
 Version v0.3.0 — June 29, 2026
 
 ## New app: AxiRoster

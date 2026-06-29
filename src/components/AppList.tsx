@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Settings, RefreshCw, LogOut, ArrowUp } from 'lucide-react'
 import type { AppState, AppId, InstallableAppId } from '@shared/types'
 import type { SelfUpdateState } from '../hooks/useSelfUpdate'
@@ -19,7 +20,13 @@ const APP_ORDER: AppId[] = ['axibridge', 'axiforge', 'axipulse', 'axiam', 'axiva
 export function AppList({ states, checking, selfUpdate, onOpenSettings, onOpenArcdps, onCheckUpdates, onOpenInfo }: Props) {
   const stateMap = Object.fromEntries(states.map(s => [s.id, s])) as Record<AppId, AppState>
   const { state: arcdpsState } = useArcdpsState()
-  const visibleOrder = APP_ORDER
+  // Installed apps float to the top. Within each group the canonical APP_ORDER
+  // is preserved. axitools has no installedVersion, so it sorts as not-installed.
+  const presentIds = APP_ORDER.filter(id => stateMap[id])
+  const installedIds = presentIds.filter(id => stateMap[id].installedVersion)
+  const availableIds = presentIds.filter(id => !stateMap[id].installedVersion)
+  // Only label the groups when there's actually a mix to disambiguate.
+  const showSections = installedIds.length > 0 && availableIds.length > 0
   const arcdpsHasUpdate = arcdpsState.plugins.some(p => p.upToDate === false)
 
   const handleAction = (action: string, appId: AppId) => {
@@ -202,9 +209,14 @@ export function AppList({ states, checking, selfUpdate, onOpenSettings, onOpenAr
         </button>
       </div>
 
-      {/* App rows */}
-      <div style={{ flex: 1 }}>
-        {visibleOrder.map(id => stateMap[id] && (
+      {/* App rows — scrolls when the suite outgrows the window; header/footer stay put */}
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', marginRight: -4, paddingRight: 4 }}>
+        {showSections && <SectionLabel>Installed</SectionLabel>}
+        {installedIds.map(id => (
+          <AppRow key={id} state={stateMap[id]} onAction={handleAction} onInfo={onOpenInfo} onRetry={handleRetry} />
+        ))}
+        {showSections && <SectionLabel>Available</SectionLabel>}
+        {availableIds.map(id => (
           <AppRow key={id} state={stateMap[id]} onAction={handleAction} onInfo={onOpenInfo} onRetry={handleRetry} />
         ))}
       </div>
@@ -280,6 +292,21 @@ export function AppList({ states, checking, selfUpdate, onOpenSettings, onOpenAr
           </button>
         </div>
       </div>
+    </div>
+  )
+}
+
+function SectionLabel({ children }: { children: ReactNode }) {
+  return (
+    <div style={{
+      fontSize: 9,
+      fontWeight: 600,
+      letterSpacing: '0.6px',
+      textTransform: 'uppercase',
+      color: 'var(--text-faint)',
+      margin: '6px 2px 2px',
+    }}>
+      {children}
     </div>
   )
 }
