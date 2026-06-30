@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Play, Download, ArrowUp, ExternalLink, Loader2, HelpCircle, RefreshCw, MoreHorizontal, Info, FolderOpen, Trash2, Maximize2 } from 'lucide-react'
 import type { AppState, AppId, InstallableAppId } from '@shared/types'
-import { INSTALLED_VERSION_UNKNOWN } from '@shared/types'
+import { INSTALLED_VERSION_UNKNOWN, appHasUpdate } from '@shared/types'
 import { APP_ICONS, APP_NAMES } from '../lib/appMeta'
 import { ProgressBar } from './ProgressBar'
 import { GearLeverPrompt } from './GearLeverPrompt'
@@ -33,7 +33,7 @@ export function AppRow({ state, onAction, onInfo, onRetry }: Props) {
   // The version is only meaningful for comparison when we actually know it; a
   // manually-installed app reports the unknown-version sentinel instead.
   const versionKnown = !!installedVersion && installedVersion !== INSTALLED_VERSION_UNKNOWN
-  const hasUpdate = versionKnown && latestVersion && installedVersion !== latestVersion
+  const hasUpdate = appHasUpdate(installedVersion, latestVersion)
   const notInstalled = !installedVersion
   const hasUpdateBorder = !!hasUpdate
 

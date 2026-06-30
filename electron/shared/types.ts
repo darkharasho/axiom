@@ -8,6 +8,24 @@ export type InstallableAppId = Exclude<AppId, 'axitools'>
  */
 export const INSTALLED_VERSION_UNKNOWN = 'installed'
 
+/**
+ * Single source of truth for "this app should signal an update available".
+ * The unknown-version sentinel must NOT count as an update — otherwise a
+ * manually-installed app (whose version we can't read) lights the tray dot
+ * forever, since `'installed' !== '<latest>'` is always true.
+ */
+export function appHasUpdate(
+  installedVersion: string | null | undefined,
+  latestVersion: string | null | undefined,
+): boolean {
+  return (
+    !!installedVersion &&
+    installedVersion !== INSTALLED_VERSION_UNKNOWN &&
+    !!latestVersion &&
+    installedVersion !== latestVersion
+  )
+}
+
 export interface DownloadProgress {
   percent: number
   bytesReceived: number

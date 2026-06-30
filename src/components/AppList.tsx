@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Settings, RefreshCw, LogOut, ArrowUp } from 'lucide-react'
 import type { AppState, AppId, InstallableAppId } from '@shared/types'
-import { arcdpsPluginHasUpdate } from '@shared/types'
+import { arcdpsPluginHasUpdate, appHasUpdate } from '@shared/types'
 import type { SelfUpdateState } from '../hooks/useSelfUpdate'
 import { AppRow } from './AppRow'
 import { useArcdpsState } from '../hooks/useArcdpsState'
@@ -70,9 +70,9 @@ export function AppList({ states, checking, selfUpdate, onOpenSettings, onOpenAr
 
   const appsWithUpdates = states.filter((s): s is AppState & { id: InstallableAppId } => {
     if (s.id === 'axitools') return false
-    const hasUpdate = s.installedVersion && s.latestVersion && s.installedVersion !== s.latestVersion
+    const hasUpdate = appHasUpdate(s.installedVersion, s.latestVersion)
     const isBusy = s.status === 'downloading' || s.status === 'installing' || s.status === 'deleting'
-    return !!(hasUpdate && !isBusy)
+    return hasUpdate && !isBusy
   })
 
   const handleUpdateAll = () => {

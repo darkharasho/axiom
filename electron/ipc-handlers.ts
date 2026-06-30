@@ -11,7 +11,7 @@ import { isPrivateUnlocked } from './privateTools'
 import { detectInstalled } from './detect'
 import { resolveInstalledVersion } from './installedVersion'
 import { appImageMatchesAsset } from './identifyAppImage'
-import { INSTALLED_VERSION_UNKNOWN, arcdpsPluginHasUpdate } from './shared/types'
+import { INSTALLED_VERSION_UNKNOWN, arcdpsPluginHasUpdate, appHasUpdate } from './shared/types'
 import {
   isGearLeverInstalled,
   installGearLever,
@@ -79,7 +79,7 @@ export function hasAnyUpdates(): boolean {
   const appsHave = Object.entries(appStates).some(([id, s]) => {
     const meta = APP_META[id as AppId]
     if (!isAppVisible(meta, unlocked)) return false
-    return s.installedVersion != null && s.latestVersion != null && s.installedVersion !== s.latestVersion
+    return appHasUpdate(s.installedVersion, s.latestVersion)
   })
   const arcdpsHave = arcdpsState.plugins.some(arcdpsPluginHasUpdate)
   return appsHave || arcdpsHave
@@ -163,8 +163,8 @@ export async function runCheckUpdates(win: BrowserWindow): Promise<void> {
       const appId = id as AppId
       const prev = before[appId]
       const curr = appStates[appId]
-      const hadUpdate = prev?.installedVersion && prev?.latestVersion && prev.installedVersion !== prev.latestVersion
-      const hasUpdate = curr?.installedVersion && curr?.latestVersion && curr.installedVersion !== curr.latestVersion
+      const hadUpdate = appHasUpdate(prev?.installedVersion, prev?.latestVersion)
+      const hasUpdate = appHasUpdate(curr?.installedVersion, curr?.latestVersion)
       if (!hadUpdate && hasUpdate) {
         new Notification({
           title: 'AxiOM — Update Available',
