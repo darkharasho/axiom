@@ -1,4 +1,4 @@
-import { app, Tray, nativeImage, nativeTheme, Menu, screen } from 'electron'
+import { app, Tray, nativeImage, nativeTheme, Menu, screen, powerMonitor } from 'electron'
 import type { KeyboardEvent, Rectangle, Point } from 'electron'
 import path from 'path'
 import { execSync } from 'child_process'
@@ -130,6 +130,15 @@ app.whenReady().then(() => {
   })
 
   setInterval(() => { if (win) runCheckUpdates(win).then(updateTrayIcon) }, CHECK_INTERVAL_MS)
+
+  // The 30-minute interval doesn't fire while the machine sleeps, so a
+  // suspend spanning a release (e.g. an arcdps drop on patch day) leaves the
+  // badge stale until the next tick. Recheck on wake instead of waiting.
+  powerMonitor.on('resume', () => {
+    if (win && Date.now() - getLastCheckTime() > TRAY_RECHECK_MS) {
+      runCheckUpdates(win).then(updateTrayIcon)
+    }
+  })
 
   nativeTheme.on('updated', updateTrayIcon)
 

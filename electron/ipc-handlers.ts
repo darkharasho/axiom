@@ -1,5 +1,6 @@
 import { ipcMain, shell, app, Notification, dialog, clipboard } from 'electron'
 import { autoUpdater } from 'electron-updater'
+import log from 'electron-log'
 import type { BrowserWindow } from 'electron'
 import type { AppId, InstallableAppId, AppState, ArcdpsState } from './shared/types'
 import { APP_META, isInstallable, isAppVisible } from './apps'
@@ -110,13 +111,26 @@ async function refreshArcdps(win: BrowserWindow): Promise<void> {
     overrideError: resolved.overrideError,
     recordedInstalls: cfg.arcdps.plugins,
     fetchRelease: (repo, pattern) => fetchLatestRelease(repo, pattern, githubToken ?? undefined),
-    fetchCoreMd5: (dll) => checkArcdpsCoreUpdate(dll),
+    fetchCoreMd5: async (dll) => {
+      const r = await checkArcdpsCoreUpdate(dll)
+      // null = fetch/hash failed; upToDate stays unknown and the update dot
+      // can't light, so make the silence diagnosable.
+      if (!r) log.warn(`[arcdps] core md5 check failed for ${dll}`)
+      return r
+    },
   })
+  log.info(`[arcdps] refreshed gw2=${resolved.path ?? 'none'} (${resolved.source}) ` +
+    arcdpsState.plugins.map(p => `${p.id}=${p.upToDate === null ? '?' : p.upToDate ? 'ok' : 'UPDATE'}${p.disabled ? '(disabled)' : ''}`).join(' '))
   pushArcdps(win)
 }
 
 export async function runCheckUpdates(win: BrowserWindow): Promise<void> {
   const before = { ...appStates }
+  // arcdps first: its core check is a single cheap md5 fetch, while the app
+  // loop below is seven sequential GitHub round-trips. Checking arcdps last
+  // meant the update dot could lag the window by many seconds at startup —
+  // long enough to read "no updates" and move on.
+  await refreshArcdps(win)
   for (const [id, meta] of Object.entries(APP_META)) {
     const appId = id as AppId
     if (!isInstallable(meta)) continue
@@ -153,7 +167,6 @@ export async function runCheckUpdates(win: BrowserWindow): Promise<void> {
       downloadUrl: release?.downloadUrl ?? null,
     })
   }
-  await refreshArcdps(win)
   lastCheckTime = Date.now()
 
   // Send notifications for newly discovered updates
