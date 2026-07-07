@@ -294,6 +294,7 @@ export async function buildArcdpsState(opts: BuildStateOpts): Promise<ArcdpsStat
       latestTag: null,
       downloadUrl: null,
       upToDate: null,
+      localBuild: false,
       status: 'idle',
     }
 
@@ -324,10 +325,19 @@ export async function buildArcdpsState(opts: BuildStateOpts): Promise<ArcdpsStat
             try {
               const localHex = computeFileDigest(det.dllPath, parsed.algo)
               const matches = localHex === parsed.hex
-              base.upToDate = matches
-              base.installedTag = matches
-                ? rel.version
-                : (recorded?.installedTag ?? det.mtime.toISOString().slice(0, 10))
+              // A mismatched DLL that postdates the newest release can't be a
+              // stale old version — it's a locally built one. Flagging it
+              // "UPDATE" would offer a downgrade to the release.
+              if (!matches && rel.publishedAt && det.mtime > new Date(rel.publishedAt)) {
+                base.localBuild = true
+                base.upToDate = null
+                base.installedTag = recorded?.installedTag ?? det.mtime.toISOString().slice(0, 10)
+              } else {
+                base.upToDate = matches
+                base.installedTag = matches
+                  ? rel.version
+                  : (recorded?.installedTag ?? det.mtime.toISOString().slice(0, 10))
+              }
               resolved = true
             } catch { /* fall through to other signals */ }
           }

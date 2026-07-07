@@ -120,7 +120,7 @@ async function refreshArcdps(win: BrowserWindow): Promise<void> {
     },
   })
   log.info(`[arcdps] refreshed gw2=${resolved.path ?? 'none'} (${resolved.source}) ` +
-    arcdpsState.plugins.map(p => `${p.id}=${p.upToDate === null ? '?' : p.upToDate ? 'ok' : 'UPDATE'}${p.disabled ? '(disabled)' : ''}`).join(' '))
+    arcdpsState.plugins.map(p => `${p.id}=${p.localBuild ? 'local' : p.upToDate === null ? '?' : p.upToDate ? 'ok' : 'UPDATE'}${p.disabled ? '(disabled)' : ''}`).join(' '))
   pushArcdps(win)
 }
 
@@ -368,6 +368,7 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
         installedTag: newTag,
         installedAt: new Date().toISOString(),
         upToDate: true,
+        localBuild: false,
         downloadProgress: undefined,
       })
       onCheckComplete?.()

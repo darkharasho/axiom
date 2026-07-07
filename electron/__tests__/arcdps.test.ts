@@ -289,6 +289,59 @@ describe('buildArcdpsState', () => {
     expect(p.installedTag).toBe('0.2.0')
   })
 
+  it('flags a digest mismatch as a local build when the DLL is newer than the release', async () => {
+    // A locally built DLL never hashes like any release asset. If its mtime
+    // postdates the latest release's publish time, it cannot be a stale old
+    // version — don't offer a "downgrade" update for it.
+    const gw2 = path.join(os.tmpdir(), `arcdps-state-localbuild-${Date.now()}`)
+    fs.mkdirSync(path.join(gw2, 'bin64'), { recursive: true })
+    fs.writeFileSync(path.join(gw2, 'bin64', 'Gw2-64.exe'), 'x')
+    const dll = path.join(gw2, 'bin64', 'arcdps_axipulse.dll')
+    fs.writeFileSync(dll, 'freshly-built-local-bytes') // mtime = now
+    const state = await buildArcdpsState({
+      gw2Path: gw2,
+      gw2PathSource: 'manual',
+      recordedInstalls: {},
+      fetchRelease: async () => ({
+        version: '0.3.1',
+        downloadUrl: 'https://example.test/arcdps_axipulse.dll',
+        assetDigest: `sha256:${'a'.repeat(64)}`,
+        publishedAt: new Date(Date.now() - 24 * 3600 * 1000).toISOString(), // released yesterday
+      }),
+      fetchCoreMd5: async () => null,
+    })
+    const p = state.plugins.find(x => x.id === 'arcdps_axipulse')!
+    expect(p.localBuild).toBe(true)
+    expect(p.upToDate).toBeNull()
+    expect(arcdpsPluginHasUpdate(p)).toBe(false)
+  })
+
+  it('still flags an update when the mismatched DLL predates the release', async () => {
+    const gw2 = path.join(os.tmpdir(), `arcdps-state-stale-${Date.now()}`)
+    fs.mkdirSync(path.join(gw2, 'bin64'), { recursive: true })
+    fs.writeFileSync(path.join(gw2, 'bin64', 'Gw2-64.exe'), 'x')
+    const dll = path.join(gw2, 'bin64', 'arcdps_axipulse.dll')
+    fs.writeFileSync(dll, 'old-release-bytes')
+    const old = new Date(Date.now() - 30 * 24 * 3600 * 1000)
+    fs.utimesSync(dll, old, old) // installed a month ago
+    const state = await buildArcdpsState({
+      gw2Path: gw2,
+      gw2PathSource: 'manual',
+      recordedInstalls: {},
+      fetchRelease: async () => ({
+        version: '0.3.1',
+        downloadUrl: 'https://example.test/arcdps_axipulse.dll',
+        assetDigest: `sha256:${'a'.repeat(64)}`,
+        publishedAt: new Date(Date.now() - 24 * 3600 * 1000).toISOString(),
+      }),
+      fetchCoreMd5: async () => null,
+    })
+    const p = state.plugins.find(x => x.id === 'arcdps_axipulse')!
+    expect(p.localBuild).toBe(false)
+    expect(p.upToDate).toBe(false)
+    expect(arcdpsPluginHasUpdate(p)).toBe(true)
+  })
+
   it('returns empty plugins list when no gw2Path', async () => {
     const state = await buildArcdpsState({
       gw2Path: null,

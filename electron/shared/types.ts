@@ -84,6 +84,7 @@ export interface ArcdpsPluginState {
   latestTag: string | null            // 'latest' arcdps for the core; semver tag for github
   downloadUrl: string | null
   upToDate: boolean | null            // null = unknown
+  localBuild: boolean                 // digest mismatch but DLL newer than the latest release — a dev build, not a stale install
   status: ArcdpsPluginStatus
   errorMessage?: string
   downloadProgress?: DownloadProgress
