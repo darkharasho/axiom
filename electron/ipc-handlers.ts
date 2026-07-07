@@ -623,8 +623,17 @@ if ($proc) {
   })
 
   type SelfUpdateStatus = 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'ready' | 'error'
-  const pushSelfUpdate = (status: SelfUpdateStatus, extra?: { version?: string; error?: string }) =>
-    win.webContents.send('axiom:self-update-status', { status, ...extra })
+  type SelfUpdatePayload = { status: SelfUpdateStatus; version?: string; error?: string }
+  // Keep the latest status so a freshly-mounted renderer can pull it. The
+  // startup check emits available/ready within ~1s of launch — before React has
+  // subscribed — and electron-updater won't re-emit update-downloaded once the
+  // update is cached, so a purely event-driven UI would miss the badge until a
+  // manual check. Cache + replay closes that gap.
+  let lastSelfUpdate: SelfUpdatePayload = { status: 'idle' }
+  const pushSelfUpdate = (status: SelfUpdateStatus, extra?: { version?: string; error?: string }) => {
+    lastSelfUpdate = { status, ...extra }
+    win.webContents.send('axiom:self-update-status', lastSelfUpdate)
+  }
 
   autoUpdater.on('checking-for-update',  ()     => pushSelfUpdate('checking'))
   autoUpdater.on('update-available',     (info) => pushSelfUpdate('available',     { version: info.version }))
@@ -649,6 +658,8 @@ if ($proc) {
     console.log('[fake-update] AXIOM_FAKE_UPDATE=1 — will simulate self-update sequence')
     win.webContents.once('did-finish-load', runFakeSelfUpdate)
   }
+
+  ipcMain.handle('axiom:get-self-update-status', () => lastSelfUpdate)
 
   ipcMain.handle('axiom:check-self-update', () => {
     if (FAKE_UPDATE) { runFakeSelfUpdate(); return }

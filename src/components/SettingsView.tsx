@@ -3,12 +3,11 @@ import { ChevronLeft, Copy, Check } from 'lucide-react'
 import { useConfig } from '../hooks/useConfig'
 import { Toggle } from './Toggle'
 import { useGithubAuth } from '../hooks/useGithubAuth'
+import { useSelfUpdate } from '../hooks/useSelfUpdate'
 
 interface Props {
   onBack: () => void
 }
-
-type SelfUpdateStatus = 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'ready' | 'error'
 
 let _cachedVersion = ''
 
@@ -16,12 +15,10 @@ export function SettingsView({ onBack }: Props) {
   const { config, updateConfig } = useConfig()
   const github = useGithubAuth()
   const [version, setVersion] = useState(_cachedVersion)
-  const [selfUpdate, setSelfUpdate] = useState<{ status: SelfUpdateStatus; version?: string; error?: string }>({ status: 'idle' })
+  const selfUpdate = useSelfUpdate()
 
   useEffect(() => {
     window.axiom.getVersion().then(v => { _cachedVersion = v; setVersion(v) })
-    const unsub = window.axiom.onSelfUpdateStatus(data => setSelfUpdate(data as { status: SelfUpdateStatus; version?: string; error?: string }))
-    return unsub
   }, [])
 
   const row: React.CSSProperties = {

@@ -318,6 +318,26 @@ describe('buildArcdpsState', () => {
     expect(bt.upToDate).toBe(false)
   })
 
+  it('flags an errorMessage (not a phantom update) when the core md5 check fails', async () => {
+    const gw2 = path.join(os.tmpdir(), `arcdps-core-fail-${Date.now()}`)
+    fs.mkdirSync(path.join(gw2, 'addons'), { recursive: true })
+    fs.mkdirSync(path.join(gw2, 'bin64'), { recursive: true })
+    fs.writeFileSync(path.join(gw2, 'bin64', 'Gw2-64.exe'), 'x')
+    fs.writeFileSync(path.join(gw2, 'addons', 'ArcDPS.dll'), 'fake')
+    const state = await buildArcdpsState({
+      gw2Path: gw2,
+      gw2PathSource: 'manual',
+      recordedInstalls: {},
+      fetchRelease: async () => null,
+      fetchCoreMd5: async () => null, // simulate deltaconnected.com being unreachable
+    })
+    const core = state.plugins.find(p => p.id === 'arcdps')!
+    expect(core.installed).toBe(true)
+    expect(core.upToDate).toBeNull()
+    expect(core.downloadUrl).toBeNull()
+    expect(core.errorMessage).toMatch(/couldn.t reach deltaconnected/i)
+  })
+
   it('uses asset digest (not size) to decide up-to-date when sizes collide', async () => {
     // Regression: AxiPulse v0.1.8 and v0.2.0 shipped DLLs with identical
     // byte sizes. Size-only equivalence falsely reported "up to date".

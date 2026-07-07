@@ -19,6 +19,7 @@ declare global {
       getVersion: () => Promise<string>
       openExternal: (url: string) => Promise<void>
       copyText: (text: string) => Promise<void>
+      getSelfUpdateStatus: () => Promise<{ status: string; version?: string; error?: string }>
       checkSelfUpdate: () => Promise<void>
       installSelfUpdate: () => Promise<void>
       onSelfUpdateStatus: (cb: (data: { status: string; version?: string; error?: string }) => void) => () => void

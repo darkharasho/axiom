@@ -305,6 +305,12 @@ export async function buildArcdpsState(opts: BuildStateOpts): Promise<ArcdpsStat
         base.latestTag = r.remoteMd5.slice(0, 7)
         base.downloadUrl = ARCDPS_CORE_URL
         base.upToDate = r.upToDate
+      } else {
+        // The md5 comparison against deltaconnected.com failed (network, or the
+        // DLL was momentarily unreadable). Without it we can't tell current from
+        // stale, and there's no downloadUrl to act on — so say so plainly rather
+        // than leave a phantom disabled "Update to latest" / "Unknown" row.
+        base.errorMessage = "Couldn't reach deltaconnected.com to check the arcdps version."
       }
     } else if (meta.source.kind === 'deltaconnected' && !det) {
       base.downloadUrl = ARCDPS_CORE_URL
