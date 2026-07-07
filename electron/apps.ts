@@ -85,6 +85,18 @@ export const APP_META: Record<AppId, AppMeta> = {
       linux: /AxiRoster.*\.AppImage$/i,
     },
   },
+  axistream: {
+    id: 'axistream',
+    name: 'AxiStream',
+    repo: 'darkharasho/axistream',
+    // configDir is the Electron userData dirname on Linux, which equals the npm package name
+    configDir: '@axistream/app',
+    private: true,
+    assetPattern: {
+      win: /AxiStream.*\.exe$/i,
+      linux: /AxiStream.*\.AppImage$/i,
+    },
+  },
   axitools: {
     id: 'axitools',
     name: 'AxiTools',
