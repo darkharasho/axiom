@@ -1,4 +1,4 @@
-import { Download, ArrowUp, Power, PowerOff } from 'lucide-react'
+import { Download, ArrowUp, Power } from 'lucide-react'
 import type { ArcdpsPluginState } from '@shared/types'
 import { arcdpsPluginHasUpdate } from '@shared/types'
 import { ProgressBar } from './ProgressBar'
@@ -104,22 +104,24 @@ export function ArcdpsRow({ plugin, onInstall, onSetDisabled }: Props) {
                 disabled={isBusy}
                 title={disabled ? 'Enable this plugin' : 'Disable this plugin'}
                 aria-label={disabled ? 'Enable plugin' : 'Disable plugin'}
+                aria-pressed={!disabled}
                 style={toggleStyle(disabled, isBusy)}
               >
-                {disabled ? <PowerOff size={11} /> : <Power size={11} />}
-                {disabled ? 'Enable' : 'Disable'}
+                <Power size={13} />
               </button>
             )}
-            <button
-              onClick={() => onInstall(id)}
-              disabled={isDisabled}
-              className={hasUpdate ? 'btn-gold' : undefined}
-              style={btnStyle(hasUpdate ? 'update' : installed ? 'disabled' : 'install', isDisabled)}
-            >
-              {!installed && <Download size={11} />}
-              {hasUpdate && <ArrowUp size={11} />}
-              {buttonLabel()}
-            </button>
+            {!disabled && (
+              <button
+                onClick={() => onInstall(id)}
+                disabled={isDisabled}
+                className={hasUpdate ? 'btn-gold' : undefined}
+                style={btnStyle(hasUpdate ? 'update' : installed ? 'disabled' : 'install', isDisabled)}
+              >
+                {!installed && <Download size={11} />}
+                {hasUpdate && <ArrowUp size={11} />}
+                {buttonLabel()}
+              </button>
+            )}
           </>
         )}
       </div>
@@ -131,17 +133,15 @@ function toggleStyle(pluginDisabled: boolean, busy: boolean): React.CSSPropertie
   return {
     display: 'flex',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'center',
+    padding: 4,
     borderRadius: 4,
-    padding: '4px 10px',
-    fontSize: 10,
-    fontWeight: 400,
-    whiteSpace: 'nowrap',
     background: 'transparent',
-    border: '1px solid var(--border)',
-    color: pluginDisabled ? 'var(--text-dim)' : 'var(--text-faint)',
+    border: 'none',
+    color: pluginDisabled ? 'var(--text-faint)' : '#5faa7a',
     cursor: busy ? 'default' : 'pointer',
     opacity: busy ? 0.5 : 1,
+    transition: 'color 0.1s',
   }
 }
 
