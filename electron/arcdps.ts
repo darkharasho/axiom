@@ -366,29 +366,45 @@ export async function buildArcdpsState(opts: BuildStateOpts): Promise<ArcdpsStat
   return { gw2Path: opts.gw2Path, gw2PathSource: opts.gw2PathSource, overrideError: opts.overrideError ?? null, plugins }
 }
 
-// Enable/disable a detected plugin by renaming its DLL on disk. Disabling
-// appends `.disabled` (the convention detectInstalledPlugins reads back);
-// enabling strips whichever disable suffix is present. No-op if already in the
-// requested state. Returns the new path.
+// Enable/disable a detected plugin by consolidating every on-disk variant of
+// its DLL down to a single correctly-named file. Disabling leaves exactly
+// `Foo.dll.disabled`; enabling leaves exactly `Foo.dll`. Redundant copies — a
+// stale `.disabled` from an earlier toggle, an install `.bak`, an arcdps
+// hot-swap `Foo.dll_<n>` — are removed so a later toggle can't collide with a
+// leftover (which used to strand a `.disabled` beside a live DLL). Returns the
+// resulting path.
 export function setPluginDisabled(det: DetectedPlugin, disabled: boolean): string {
-  if (det.disabled === disabled) return det.dllPath
   const dir = path.dirname(det.dllPath)
-  const base = path.basename(det.dllPath)
-  let target: string
-  if (disabled) {
-    // Normalise an arcdps hot-swap `Foo.dll_0` back to `Foo.dll` first so the
-    // disabled name round-trips cleanly on re-enable.
-    target = path.join(dir, stripNumberedSuffix(base) + '.disabled')
-  } else {
-    target = path.join(dir, stripNumberedSuffix(stripDisableSuffix(base)))
+  const liveName = stripNumberedSuffix(stripDisableSuffix(path.basename(det.dllPath)))
+  const target = disabled ? liveName + '.disabled' : liveName
+
+  // Rank each on-disk variant of this DLL most- to least-authoritative: a live
+  // copy, then an arcdps hot-swap copy, then the disable suffixes (a user
+  // `.disabled`/`.old` outranks an install `.bak`, which is an old version).
+  const rank = (f: string): number => {
+    if (f === liveName) return 0
+    if (NUMBERED_SUFFIX_RE.test(f)) return 1
+    const m = DISABLE_SUFFIX_RE.exec(f)
+    const i = m ? ['.disabled', '.old', '.bak'].indexOf(m[1].toLowerCase()) : -1
+    return i >= 0 ? 2 + i : Number.MAX_SAFE_INTEGER
   }
-  if (target === det.dllPath) return det.dllPath
-  // Don't clobber a file that's already sitting at the destination name.
-  if (fs.existsSync(target)) {
-    throw new Error(`Cannot ${disabled ? 'disable' : 'enable'}: ${path.basename(target)} already exists`)
+  const variants = safeReaddir(dir)
+    .filter(f => stripNumberedSuffix(stripDisableSuffix(f)) === liveName && rank(f) !== Number.MAX_SAFE_INTEGER)
+    .sort((a, b) => rank(a) - rank(b))
+  if (variants.length === 0) return det.dllPath
+
+  // The top-ranked variant supplies the bytes; every other copy is redundant.
+  const [primary, ...redundant] = variants
+  const targetPath = path.join(dir, target)
+  for (const f of redundant) {
+    if (f === target) continue // a stale file at the destination — cleared below
+    try { fs.rmSync(path.join(dir, f)) } catch { /* best-effort cleanup */ }
   }
-  fs.renameSync(det.dllPath, target)
-  return target
+  if (primary !== target) {
+    try { fs.rmSync(targetPath) } catch { /* nothing there, or already gone */ }
+    fs.renameSync(path.join(dir, primary), targetPath)
+  }
+  return targetPath
 }
 
 export interface InstallPluginOpts {

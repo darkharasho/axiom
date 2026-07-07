@@ -210,11 +210,32 @@ describe('setPluginDisabled', () => {
     expect(newPath.endsWith('Unofficial_Extras.dll.disabled')).toBe(true)
   })
 
-  it('throws rather than clobbering an existing destination file', () => {
+  it('disabling clears a stale .disabled and keeps only the live copy as .disabled', () => {
     fs.writeFileSync(path.join(addons, 'arcdps_boon_table.dll'), 'live')
     fs.writeFileSync(path.join(addons, 'arcdps_boon_table.dll.disabled'), 'stale')
     const det = detectInstalledPlugins(gw2).find(p => p.id === 'boon_table')!
-    expect(() => setPluginDisabled(det, true)).toThrow(/already exists/)
+    const newPath = setPluginDisabled(det, true)
+    expect(newPath.endsWith('arcdps_boon_table.dll.disabled')).toBe(true)
+    expect(fs.existsSync(path.join(addons, 'arcdps_boon_table.dll'))).toBe(false)
+    expect(fs.readFileSync(path.join(addons, 'arcdps_boon_table.dll.disabled'), 'utf-8')).toBe('live')
+  })
+
+  it('re-enabling cleans up a leftover .disabled left beside an install .bak', () => {
+    // Regression: a plugin installed via the app leaves a `.bak`; disabling then
+    // re-enabling used to strip the `.bak` and strand the real `.disabled`,
+    // wedging the next disable on "already exists".
+    fs.writeFileSync(path.join(addons, 'arcdps_boon_table.dll.disabled'), 'current')
+    fs.writeFileSync(path.join(addons, 'arcdps_boon_table.dll.bak'), 'old')
+    const det = detectInstalledPlugins(gw2).find(p => p.id === 'boon_table')!
+    expect(det.disabled).toBe(true)
+    setPluginDisabled(det, false)
+    // Exactly one file remains: the live DLL with the current bytes.
+    expect(fs.readdirSync(addons).sort()).toEqual(['arcdps_boon_table.dll'])
+    expect(fs.readFileSync(path.join(addons, 'arcdps_boon_table.dll'), 'utf-8')).toBe('current')
+    // And a subsequent disable no longer collides.
+    const again = detectInstalledPlugins(gw2).find(p => p.id === 'boon_table')!
+    expect(() => setPluginDisabled(again, true)).not.toThrow()
+    expect(fs.readdirSync(addons).sort()).toEqual(['arcdps_boon_table.dll.disabled'])
   })
 })
 
