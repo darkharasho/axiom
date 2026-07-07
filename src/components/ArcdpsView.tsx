@@ -8,7 +8,7 @@ interface Props {
 }
 
 export function ArcdpsView({ onBack }: Props) {
-  const { state, checking, check, install, setGw2Path } = useArcdpsState()
+  const { state, checking, check, install, setDisabled, setGw2Path } = useArcdpsState()
   const { gw2Path, gw2PathSource, overrideError, plugins } = state
 
   const didInitialCheck = useRef(false)
@@ -163,7 +163,7 @@ export function ArcdpsView({ onBack }: Props) {
           </div>
         ) : (
           plugins.map(plugin => (
-            <ArcdpsRow key={plugin.id} plugin={plugin} onInstall={install} />
+            <ArcdpsRow key={plugin.id} plugin={plugin} onInstall={install} onSetDisabled={setDisabled} />
           ))
         )}
       </div>

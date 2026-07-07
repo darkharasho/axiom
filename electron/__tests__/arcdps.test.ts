@@ -6,7 +6,7 @@ import path from 'path'
 
 vi.mock('electron', () => ({ app: { getPath: () => '/tmp/axiom-test-userdata' } }))
 
-import { resolveGw2Path, detectInstalledPlugins, computeFileMd5, checkArcdpsCoreUpdate, buildArcdpsState, installPluginFile } from '../arcdps'
+import { resolveGw2Path, detectInstalledPlugins, computeFileMd5, checkArcdpsCoreUpdate, buildArcdpsState, installPluginFile, setPluginDisabled } from '../arcdps'
 import { arcdpsPluginHasUpdate } from '../shared/types'
 
 describe('resolveGw2Path', () => {
@@ -154,6 +154,67 @@ describe('detectInstalledPlugins', () => {
     const found = detectInstalledPlugins(gw2)
     const arcCount = found.filter(p => p.id === 'arcdps').length
     expect(arcCount).toBe(1)
+  })
+})
+
+describe('setPluginDisabled', () => {
+  const tmpRoot = path.join(os.tmpdir(), `axiom-arcdps-toggle-${Date.now()}`)
+  const gw2 = path.join(tmpRoot, 'GW2')
+  const addons = path.join(gw2, 'addons')
+
+  beforeEach(() => {
+    fs.rmSync(tmpRoot, { recursive: true, force: true })
+    fs.mkdirSync(addons, { recursive: true })
+  })
+
+  it('disables an active plugin by renaming to .disabled', () => {
+    fs.writeFileSync(path.join(addons, 'arcdps_boon_table.dll'), 'dll')
+    const det = detectInstalledPlugins(gw2).find(p => p.id === 'boon_table')!
+    expect(det.disabled).toBe(false)
+    const newPath = setPluginDisabled(det, true)
+    expect(newPath.endsWith('arcdps_boon_table.dll.disabled')).toBe(true)
+    expect(fs.existsSync(path.join(addons, 'arcdps_boon_table.dll'))).toBe(false)
+    expect(detectInstalledPlugins(gw2).find(p => p.id === 'boon_table')!.disabled).toBe(true)
+  })
+
+  it('re-enables a disabled plugin by stripping the suffix', () => {
+    fs.writeFileSync(path.join(addons, 'arcdps_boon_table.dll.disabled'), 'dll')
+    const det = detectInstalledPlugins(gw2).find(p => p.id === 'boon_table')!
+    expect(det.disabled).toBe(true)
+    const newPath = setPluginDisabled(det, false)
+    expect(newPath.endsWith('arcdps_boon_table.dll')).toBe(true)
+    expect(detectInstalledPlugins(gw2).find(p => p.id === 'boon_table')!.disabled).toBe(false)
+  })
+
+  it('round-trips: disable then enable restores the original file', () => {
+    const orig = path.join(addons, 'arcdps_boon_table.dll')
+    fs.writeFileSync(orig, 'dll')
+    let det = detectInstalledPlugins(gw2).find(p => p.id === 'boon_table')!
+    setPluginDisabled(det, true)
+    det = detectInstalledPlugins(gw2).find(p => p.id === 'boon_table')!
+    setPluginDisabled(det, false)
+    expect(fs.existsSync(orig)).toBe(true)
+  })
+
+  it('is a no-op when already in the requested state', () => {
+    fs.writeFileSync(path.join(addons, 'arcdps_boon_table.dll'), 'dll')
+    const det = detectInstalledPlugins(gw2).find(p => p.id === 'boon_table')!
+    expect(setPluginDisabled(det, false)).toBe(det.dllPath)
+  })
+
+  it('normalises an arcdps hot-swap numbered file when disabling', () => {
+    fs.writeFileSync(path.join(addons, 'Unofficial_Extras.dll_0'), 'dll')
+    const det = detectInstalledPlugins(gw2).find(p => p.id === 'unofficial_extras')!
+    expect(det.disabled).toBe(false)
+    const newPath = setPluginDisabled(det, true)
+    expect(newPath.endsWith('Unofficial_Extras.dll.disabled')).toBe(true)
+  })
+
+  it('throws rather than clobbering an existing destination file', () => {
+    fs.writeFileSync(path.join(addons, 'arcdps_boon_table.dll'), 'live')
+    fs.writeFileSync(path.join(addons, 'arcdps_boon_table.dll.disabled'), 'stale')
+    const det = detectInstalledPlugins(gw2).find(p => p.id === 'boon_table')!
+    expect(() => setPluginDisabled(det, true)).toThrow(/already exists/)
   })
 })
 

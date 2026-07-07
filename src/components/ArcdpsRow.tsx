@@ -1,4 +1,4 @@
-import { Download, ArrowUp } from 'lucide-react'
+import { Download, ArrowUp, Power, PowerOff } from 'lucide-react'
 import type { ArcdpsPluginState } from '@shared/types'
 import { arcdpsPluginHasUpdate } from '@shared/types'
 import { ProgressBar } from './ProgressBar'
@@ -6,9 +6,10 @@ import { ProgressBar } from './ProgressBar'
 interface Props {
   plugin: ArcdpsPluginState
   onInstall: (id: string) => void
+  onSetDisabled: (id: string, disabled: boolean) => void
 }
 
-export function ArcdpsRow({ plugin, onInstall }: Props) {
+export function ArcdpsRow({ plugin, onInstall, onSetDisabled }: Props) {
   const { id, name, description, installed, disabled, installedTag, latestTag, upToDate, localBuild, downloadUrl, status, errorMessage, downloadProgress } = plugin
 
   const isBusy = status === 'downloading' || status === 'installing'
@@ -92,24 +93,56 @@ export function ArcdpsRow({ plugin, onInstall }: Props) {
       </div>
 
       {/* Action area */}
-      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
         {isBusy && downloadProgress ? (
           <ProgressBar progress={downloadProgress} />
         ) : (
-          <button
-            onClick={() => onInstall(id)}
-            disabled={isDisabled}
-            className={hasUpdate ? 'btn-gold' : undefined}
-            style={btnStyle(hasUpdate ? 'update' : installed ? 'disabled' : 'install', isDisabled)}
-          >
-            {!installed && <Download size={11} />}
-            {hasUpdate && <ArrowUp size={11} />}
-            {buttonLabel()}
-          </button>
+          <>
+            {installed && (
+              <button
+                onClick={() => onSetDisabled(id, !disabled)}
+                disabled={isBusy}
+                title={disabled ? 'Enable this plugin' : 'Disable this plugin'}
+                aria-label={disabled ? 'Enable plugin' : 'Disable plugin'}
+                style={toggleStyle(disabled, isBusy)}
+              >
+                {disabled ? <PowerOff size={11} /> : <Power size={11} />}
+                {disabled ? 'Enable' : 'Disable'}
+              </button>
+            )}
+            <button
+              onClick={() => onInstall(id)}
+              disabled={isDisabled}
+              className={hasUpdate ? 'btn-gold' : undefined}
+              style={btnStyle(hasUpdate ? 'update' : installed ? 'disabled' : 'install', isDisabled)}
+            >
+              {!installed && <Download size={11} />}
+              {hasUpdate && <ArrowUp size={11} />}
+              {buttonLabel()}
+            </button>
+          </>
         )}
       </div>
     </div>
   )
+}
+
+function toggleStyle(pluginDisabled: boolean, busy: boolean): React.CSSProperties {
+  return {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+    borderRadius: 4,
+    padding: '4px 10px',
+    fontSize: 10,
+    fontWeight: 400,
+    whiteSpace: 'nowrap',
+    background: 'transparent',
+    border: '1px solid var(--border)',
+    color: pluginDisabled ? 'var(--text-dim)' : 'var(--text-faint)',
+    cursor: busy ? 'default' : 'pointer',
+    opacity: busy ? 0.5 : 1,
+  }
 }
 
 function btnStyle(variant: 'install' | 'update' | 'disabled', disabled: boolean): React.CSSProperties {

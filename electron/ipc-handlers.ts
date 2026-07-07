@@ -31,6 +31,8 @@ import {
   buildArcdpsState,
   installPluginFile,
   checkArcdpsCoreUpdate,
+  detectInstalledPlugins,
+  setPluginDisabled,
 } from './arcdps'
 import { getPluginMeta } from './arcdpsRegistry'
 
@@ -374,6 +376,35 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
       onCheckComplete?.()
     } catch (err) {
       setArcdpsPlugin(win, id, { status: 'error', errorMessage: String(err), downloadProgress: undefined })
+    }
+  })
+
+  ipcMain.handle('arcdps:set-disabled', async (_e, id: string, disabled: boolean) => {
+    const current = arcdpsState
+    if (!current.gw2Path) return
+    const plugin = current.plugins.find(p => p.id === id)
+    if (!plugin?.installed) return
+    if (plugin.status === 'downloading' || plugin.status === 'installing') return
+
+    if (await isProcessRunning('Gw2-64')) {
+      setArcdpsPlugin(win, id, { status: 'error', errorMessage: 'Close Guild Wars 2 before enabling or disabling arcdps plugins.' })
+      return
+    }
+
+    // Re-detect so we act on the real file on disk (path, current suffix)
+    // rather than trusting possibly-stale state.
+    const det = detectInstalledPlugins(current.gw2Path).find(d => d.id === id)
+    if (!det) {
+      setArcdpsPlugin(win, id, { status: 'error', errorMessage: 'Plugin file not found on disk.' })
+      return
+    }
+    try {
+      setPluginDisabled(det, disabled)
+      setArcdpsPlugin(win, id, { status: 'idle', errorMessage: undefined })
+      await refreshArcdps(win)
+      onCheckComplete?.()
+    } catch (err) {
+      setArcdpsPlugin(win, id, { status: 'error', errorMessage: String(err) })
     }
   })
 

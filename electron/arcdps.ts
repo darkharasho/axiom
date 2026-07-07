@@ -366,6 +366,31 @@ export async function buildArcdpsState(opts: BuildStateOpts): Promise<ArcdpsStat
   return { gw2Path: opts.gw2Path, gw2PathSource: opts.gw2PathSource, overrideError: opts.overrideError ?? null, plugins }
 }
 
+// Enable/disable a detected plugin by renaming its DLL on disk. Disabling
+// appends `.disabled` (the convention detectInstalledPlugins reads back);
+// enabling strips whichever disable suffix is present. No-op if already in the
+// requested state. Returns the new path.
+export function setPluginDisabled(det: DetectedPlugin, disabled: boolean): string {
+  if (det.disabled === disabled) return det.dllPath
+  const dir = path.dirname(det.dllPath)
+  const base = path.basename(det.dllPath)
+  let target: string
+  if (disabled) {
+    // Normalise an arcdps hot-swap `Foo.dll_0` back to `Foo.dll` first so the
+    // disabled name round-trips cleanly on re-enable.
+    target = path.join(dir, stripNumberedSuffix(base) + '.disabled')
+  } else {
+    target = path.join(dir, stripNumberedSuffix(stripDisableSuffix(base)))
+  }
+  if (target === det.dllPath) return det.dllPath
+  // Don't clobber a file that's already sitting at the destination name.
+  if (fs.existsSync(target)) {
+    throw new Error(`Cannot ${disabled ? 'disable' : 'enable'}: ${path.basename(target)} already exists`)
+  }
+  fs.renameSync(det.dllPath, target)
+  return target
+}
+
 export interface InstallPluginOpts {
   targetPath: string
   downloadUrl: string

@@ -20,7 +20,8 @@ export function useArcdpsState() {
   }, [])
 
   const install = useCallback((id: string) => window.axiom.installArcdpsPlugin(id), [])
+  const setDisabled = useCallback((id: string, disabled: boolean) => window.axiom.setArcdpsPluginDisabled(id, disabled), [])
   const setGw2Path = useCallback((p: string | null) => window.axiom.setGw2Path(p), [])
 
-  return { state, checking, check, install, setGw2Path }
+  return { state, checking, check, install, setDisabled, setGw2Path }
 }

@@ -84,6 +84,9 @@ contextBridge.exposeInMainWorld('axiom', {
   installArcdpsPlugin: (id: string): Promise<void> =>
     ipcRenderer.invoke('arcdps:install', id),
 
+  setArcdpsPluginDisabled: (id: string, disabled: boolean): Promise<void> =>
+    ipcRenderer.invoke('arcdps:set-disabled', id, disabled),
+
   setGw2Path: (p: string | null): Promise<void> =>
     ipcRenderer.invoke('arcdps:set-gw2-path', p),
 
