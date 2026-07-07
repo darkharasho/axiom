@@ -14,10 +14,14 @@ export function ArcdpsRow({ plugin, onInstall, onSetDisabled }: Props) {
 
   const isBusy = status === 'downloading' || status === 'installing'
   const isDisabled = isBusy || (installed && upToDate === true) || !downloadUrl
+  // An update check that failed leaves us with no version info and no URL to act
+  // on. Surface that instead of a phantom disabled "Update to latest" button.
+  const checkFailed = installed && upToDate === null && !downloadUrl && !!errorMessage
 
   const statusText = () => {
     if (!installed) return 'Not installed'
     if (disabled) return 'Disabled'
+    if (checkFailed) return "Couldn't check for updates"
     if (localBuild) return 'Local build (newer than latest release)'
     if (upToDate === true) return 'Up to date'
     if (upToDate === false) return 'Update available'
@@ -110,7 +114,7 @@ export function ArcdpsRow({ plugin, onInstall, onSetDisabled }: Props) {
                 <Power size={13} />
               </button>
             )}
-            {!disabled && (
+            {!disabled && !checkFailed && (
               <button
                 onClick={() => onInstall(id)}
                 disabled={isDisabled}

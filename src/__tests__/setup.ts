@@ -29,6 +29,7 @@ vi.stubGlobal('axiom', {
   quit: vi.fn(),
   browseFiles: vi.fn().mockResolvedValue(undefined),
   openExternal: vi.fn().mockResolvedValue(undefined),
+  getSelfUpdateStatus: vi.fn().mockResolvedValue({ status: 'idle' }),
   checkSelfUpdate: vi.fn().mockResolvedValue(undefined),
   installSelfUpdate: vi.fn().mockResolvedValue(undefined),
   onSelfUpdateStatus: vi.fn().mockReturnValue(() => {}),

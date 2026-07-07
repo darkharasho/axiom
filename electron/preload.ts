@@ -47,6 +47,9 @@ contextBridge.exposeInMainWorld('axiom', {
   copyText: (text: string): Promise<void> =>
     ipcRenderer.invoke('axiom:copy-text', text),
 
+  getSelfUpdateStatus: (): Promise<{ status: string; version?: string; error?: string }> =>
+    ipcRenderer.invoke('axiom:get-self-update-status'),
+
   checkSelfUpdate: (): Promise<void> =>
     ipcRenderer.invoke('axiom:check-self-update'),
 
