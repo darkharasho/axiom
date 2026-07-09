@@ -9,17 +9,63 @@ const APPIMAGE_SEARCH_DIRS = [
   os.homedir(),
 ]
 
-export function findInstalledAppImage(appName: string): string | null {
-  for (const dir of APPIMAGE_SEARCH_DIRS) {
-    try {
-      const files = fs.readdirSync(dir)
-      const match = files.find(
-        (f) => f.toLowerCase().endsWith('.appimage') && f.toLowerCase().includes(appName.toLowerCase()),
-      )
-      if (match) return path.join(dir, match)
-    } catch { /* ignore */ }
+// Extract a comparable version tuple from an AppImage filename, e.g.
+// "AxiBridge-2.13.5.AppImage" -> [2, 13, 5]. Returns null when the filename
+// carries no version (e.g. a manually-installed "axiam.AppImage").
+export function parseVersionFromName(filename: string): number[] | null {
+  const m = filename.match(/(\d+(?:\.\d+)+)/)
+  return m ? m[1].split('.').map((n) => parseInt(n, 10)) : null
+}
+
+// Numeric version compare. A versioned name always outranks an unversioned one.
+function compareVersions(a: number[] | null, b: number[] | null): number {
+  if (a && b) {
+    const len = Math.max(a.length, b.length)
+    for (let i = 0; i < len; i++) {
+      const d = (a[i] ?? 0) - (b[i] ?? 0)
+      if (d !== 0) return d
+    }
+    return 0
   }
-  return null
+  if (a) return 1
+  if (b) return -1
+  return 0
+}
+
+// Find the installed AppImage for an app, preferring the NEWEST version when
+// several coexist (e.g. AxiBridge 2.5.9, 2.5.12 and 2.13.5 side by side).
+// readdir order is arbitrary, so returning the first match could downgrade the
+// launcher to an old build — compare versions numerically, breaking ties by
+// most-recently-modified file.
+export function findInstalledAppImage(
+  appName: string,
+  dirs: string[] = APPIMAGE_SEARCH_DIRS,
+): string | null {
+  const needle = appName.toLowerCase()
+  let best: { path: string; version: number[] | null; mtimeMs: number } | null = null
+  for (const dir of dirs) {
+    let entries: string[]
+    try {
+      entries = fs.readdirSync(dir)
+    } catch {
+      continue
+    }
+    for (const f of entries) {
+      const lower = f.toLowerCase()
+      if (!lower.endsWith('.appimage') || !lower.includes(needle)) continue
+      const full = path.join(dir, f)
+      let mtimeMs = 0
+      try {
+        mtimeMs = fs.statSync(full).mtimeMs
+      } catch { /* treat unreadable as oldest */ }
+      const version = parseVersionFromName(f)
+      const cmp = best ? compareVersions(version, best.version) : 1
+      if (!best || cmp > 0 || (cmp === 0 && mtimeMs > best.mtimeMs)) {
+        best = { path: full, version, mtimeMs }
+      }
+    }
+  }
+  return best ? best.path : null
 }
 
 // Idempotently write ~/.local/share/applications/${appId}.desktop pointing at
