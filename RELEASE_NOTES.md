@@ -1,5 +1,11 @@
 # Release Notes
 
+Version v0.3.9 — July 8, 2026
+
+## Fixes
+
+- Fixed AxiOM sometimes repointing an app's desktop shortcut at an older installed version. If you had more than one version of an app's AppImage sitting on disk, the launcher repair could grab whichever it happened to find first instead of the newest one. It now always picks the latest version.
+
 Version v0.3.8 — July 7, 2026
 
 ## AxiStream in the app list
