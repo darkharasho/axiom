@@ -1,5 +1,11 @@
 # Release Notes
 
+Version v0.3.10 — July 22, 2026
+
+## New arcdps plugin: Player Outline
+
+Player Outline (self-marker) now appears in the arcdps plugins list — install and update it straight from AxiOM. It draws an always-on-top marker on your own character (ground ring, glow, chevron, beam, and more) so you can find yourself in a zerg. Works on Windows and Linux/Proton.
+
 Version v0.3.9 — July 8, 2026
 
 ## Fixes
