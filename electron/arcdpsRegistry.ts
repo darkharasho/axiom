@@ -184,6 +184,15 @@ export const ARCDPS_REGISTRY: ArcPluginMeta[] = [
     alwaysShow: false,
   },
   {
+    id: 'player_outline',
+    name: 'Player Outline (self-marker)',
+    description: 'Draws an always-on-top marker on your own character (ground ring, glow, chevron, beam…) so you can find yourself in a zerg.',
+    source: { kind: 'github', repo: 'darkharasho/arcdps-player-outline' },
+    locations: arcOrNexus('arcdps_player_outline.dll'),
+    assetPattern: /^arcdps_player_outline\.dll$/i,
+    alwaysShow: false,
+  },
+  {
     id: 'unofficial_extras',
     name: 'Unofficial Extras',
     description: 'Extra arcdps callbacks (squad chat, ready check) required by several other plugins.',

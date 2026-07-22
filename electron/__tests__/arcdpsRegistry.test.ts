@@ -67,6 +67,7 @@ describe('ARCDPS_REGISTRY', () => {
     boon_table: 'd3d9_arcdps_table.dll',
     bhud: 'arcdps_bhud.dll',
     commander_tag_accessibility: 'CommanderTagAccessibility.dll',
+    player_outline: 'arcdps_player_outline.dll',
     unofficial_extras: 'arcdps_unofficial_extras.dll',
   }
 
