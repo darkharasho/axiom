@@ -444,6 +444,29 @@ describe('buildArcdpsState', () => {
     expect(arcdpsPluginHasUpdate(p)).toBe(true)
   })
 
+  it('captures the real detected filename so an update overwrites it, not a canonical duplicate', async () => {
+    // Unofficial Extras ships as arcdps_unofficial_extras.dll but installs
+    // canonically as Unofficial_Extras.dll. If an update wrote the canonical
+    // name beside the detected one, the stale copy would re-trigger "update
+    // available" forever. installedFilename must reflect the detected name.
+    const gw2 = path.join(os.tmpdir(), `arcdps-state-ue-${Date.now()}`)
+    fs.mkdirSync(path.join(gw2, 'addons'), { recursive: true })
+    fs.mkdirSync(path.join(gw2, 'bin64'), { recursive: true })
+    fs.writeFileSync(path.join(gw2, 'bin64', 'Gw2-64.exe'), 'x')
+    fs.writeFileSync(path.join(gw2, 'addons', 'arcdps_unofficial_extras.dll'), 'ue-bytes')
+    const state = await buildArcdpsState({
+      gw2Path: gw2,
+      gw2PathSource: 'manual',
+      recordedInstalls: {},
+      fetchRelease: async () => ({ version: '2.4.1', downloadUrl: 'https://x/arcdps_unofficial_extras.dll' }),
+      fetchCoreMd5: async () => null,
+    })
+    const ue = state.plugins.find(p => p.id === 'unofficial_extras')!
+    expect(ue.installed).toBe(true)
+    expect(ue.installedDir).toBe('addons')
+    expect(ue.installedFilename).toBe('arcdps_unofficial_extras.dll')
+  })
+
   it('returns empty plugins list when no gw2Path', async () => {
     const state = await buildArcdpsState({
       gw2Path: null,

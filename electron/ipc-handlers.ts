@@ -340,7 +340,13 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
       ? meta.locations.find(l => l.dir === plugin.installedDir)
       : undefined) ?? meta.locations[0]
     const installDirAbs = location.dir === '' ? current.gw2Path : pathSync.join(current.gw2Path, ...location.dir.split('/'))
-    const targetPath = pathSync.join(installDirAbs, location.installFilename)
+    // Overwrite the exact file we detected (its real name may differ from the
+    // location's canonical installFilename — e.g. Unofficial Extras ships as
+    // arcdps_unofficial_extras.dll but installs canonically as Unofficial_Extras.dll).
+    // Writing the canonical name beside the detected one stranded the old copy,
+    // so detection kept finding a stale DLL and re-reported "update available".
+    const targetName = (plugin.installed && plugin.installedFilename) || location.installFilename
+    const targetPath = pathSync.join(installDirAbs, targetName)
 
     setArcdpsPlugin(win, id, {
       status: 'downloading',
@@ -353,6 +359,18 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
         downloadUrl: plugin.downloadUrl,
         download: (url, dest) => downloadFile(url, dest, (p) => setArcdpsPlugin(win, id, { downloadProgress: p })),
       })
+      // Collapse redundant copies of this same plugin left in the folder under a
+      // different accepted name (e.g. an old arcdps_unofficial_extras.dll beside
+      // the file we just wrote). Otherwise detection can keep picking the stale
+      // one. Scoped to this location's own dllPattern, so only same-plugin copies
+      // are touched — best-effort.
+      let siblings: string[] = []
+      try { siblings = fsSync.readdirSync(installDirAbs) } catch { /* dir just written, but be safe */ }
+      for (const file of siblings) {
+        if (file === targetName) continue
+        if (!location.dllPattern.test(file)) continue
+        try { fsSync.rmSync(pathSync.join(installDirAbs, file)) } catch { /* best-effort */ }
+      }
       const cfg = readConfig()
       const newTag = plugin.latestTag
       patchConfig({
@@ -367,6 +385,8 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
       setArcdpsPlugin(win, id, {
         status: 'idle',
         installed: true,
+        installedDir: location.dir,
+        installedFilename: targetName,
         installedTag: newTag,
         installedAt: new Date().toISOString(),
         upToDate: true,

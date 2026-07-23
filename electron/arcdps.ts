@@ -289,6 +289,11 @@ export async function buildArcdpsState(opts: BuildStateOpts): Promise<ArcdpsStat
       installed: !!det,
       disabled: !!det?.disabled,
       installedDir: det ? det.location.dir : null,
+      // The real on-disk name (normalized to its live form), so an update
+      // overwrites the exact file we detected instead of writing the location's
+      // canonical installFilename beside it — which for multi-name plugins like
+      // Unofficial Extras stranded the old copy and re-triggered "update available".
+      installedFilename: det ? stripNumberedSuffix(stripDisableSuffix(path.basename(det.dllPath))) : null,
       installedTag: recorded?.installedTag ?? null,
       installedAt: recorded?.installedAt ?? null,
       latestTag: null,

@@ -79,6 +79,7 @@ export interface ArcdpsPluginState {
   installed: boolean
   disabled: boolean                   // matched a .dll_N / .disabled / .old variant
   installedDir: string | null         // relative dir under the GW2 root where the DLL was found (e.g. '', 'bin64', 'addons')
+  installedFilename: string | null    // the actual on-disk DLL filename detected (may differ from the location's canonical installFilename)
   installedTag: string | null         // recorded by AxiOM on install; null if unknown/manual
   installedAt: string | null          // ISO timestamp from AxiOM install
   latestTag: string | null            // 'latest' arcdps for the core; semver tag for github
