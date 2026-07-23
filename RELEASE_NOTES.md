@@ -1,24 +1,7 @@
 # Release Notes
 
-Version v0.3.10 — July 22, 2026
+Version v0.3.11 — July 22, 2026
 
-## New arcdps plugin: Player Outline
+## Under the Hood
 
-Player Outline (self-marker) now appears in the arcdps plugins list — install and update it straight from AxiOM. It draws an always-on-top marker on your own character (ground ring, glow, chevron, beam, and more) so you can find yourself in a zerg. Works on Windows and Linux/Proton.
-
-Version v0.3.9 — July 8, 2026
-
-## Fixes
-
-- Fixed AxiOM sometimes repointing an app's desktop shortcut at an older installed version. If you had more than one version of an app's AppImage sitting on disk, the launcher repair could grab whichever it happened to find first instead of the newest one. It now always picks the latest version.
-
-Version v0.3.8 — July 7, 2026
-
-## AxiStream in the app list
-
-AxiStream now shows up alongside the other Axi apps so you can install and update it from here. It's a private tool, so you'll need to be signed in with access to see it.
-
-## Fixes
-
-- The "update available" indicator now shows up on its own again. It was quietly downloading new versions in the background but not always lighting up the titlebar, so you had to open Settings and hit "Check" to make it appear. No more — it surfaces the moment an update is ready.
-- When AxiOM can't reach the arcdps server to check its version, the arcdps row now says "Couldn't check for updates" instead of showing a grayed-out "Update to latest" that looked broken. Hit "Check for updates" to retry.
+Access to gated apps (like AxiStream) is now handled per-app instead of one shared list, so each private tool can have its own set of allowed GitHub accounts. Nothing changes for most of you — but if you were just granted access to AxiStream, sign in with GitHub and it'll show up.
