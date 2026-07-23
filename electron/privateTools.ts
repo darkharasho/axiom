@@ -1,7 +1,12 @@
-// Single source of truth for which GitHub accounts may see `private` registry
-// entries. Code-defined on purpose — there is intentionally no UI to edit it.
-export const PRIVATE_TOOL_ALLOWLIST = ['darkharasho']
+// Whether a GitHub login unlocks any gated (allowlisted) registry entry. The
+// per-app allowlists live on each APP_META entry (see apps.ts) — this only
+// aggregates them for the signed-in status shown in Settings. There is
+// intentionally no UI to edit the allowlists; they are code-defined.
+import { APP_META } from './apps'
 
 export function isPrivateUnlocked(login: string | null): boolean {
-  return login != null && PRIVATE_TOOL_ALLOWLIST.includes(login)
+  if (login == null) return false
+  return Object.values(APP_META).some(
+    meta => 'allowlist' in meta && meta.allowlist != null && meta.allowlist.includes(login),
+  )
 }

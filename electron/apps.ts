@@ -11,7 +11,7 @@ interface InstallableAppMeta {
   repo: string
   assetPattern: AssetPattern
   configDir: string  // directory name under ~/.config/ where axiom-version is written
-  private?: boolean   // gated behind the GitHub allowlist; hidden from normal users
+  allowlist?: readonly string[]  // GitHub logins gated to this app; hidden from everyone else. Absent = public.
 }
 
 interface AxiToolsMeta {
@@ -91,7 +91,7 @@ export const APP_META: Record<AppId, AppMeta> = {
     repo: 'darkharasho/axistream',
     // configDir is the Electron userData dirname on Linux, which equals the npm package name
     configDir: '@axistream/app',
-    private: true,
+    allowlist: ['darkharasho', 'gw2dui'],
     assetPattern: {
       win: /AxiStream.*\.exe$/i,
       linux: /AxiStream.*\.AppImage$/i,
@@ -108,7 +108,8 @@ export function isInstallable(meta: AppMeta): meta is InstallableAppMeta {
   return meta.repo !== null
 }
 
-export function isAppVisible(meta: AppMeta, unlocked: boolean): boolean {
-  const isPrivate = 'private' in meta && meta.private === true
-  return !isPrivate || unlocked
+export function isAppVisible(meta: AppMeta, login: string | null): boolean {
+  const allowlist = 'allowlist' in meta ? meta.allowlist : undefined
+  if (!allowlist) return true
+  return login != null && allowlist.includes(login)
 }

@@ -5,7 +5,7 @@ describe('axivale registry entry', () => {
   it('is installable and generally available (not private)', () => {
     const m = APP_META.axivale
     expect(isInstallable(m)).toBe(true)
-    expect('private' in m && m.private).toBeFalsy()
+    expect('allowlist' in m && m.allowlist).toBeFalsy()
   })
 
   it('asset patterns match real release names', () => {
@@ -20,7 +20,7 @@ describe('axiroster registry entry', () => {
   it('is installable and generally available (not private)', () => {
     const m = APP_META.axiroster
     expect(isInstallable(m)).toBe(true)
-    expect('private' in m && m.private).toBeFalsy()
+    expect('allowlist' in m && m.allowlist).toBeFalsy()
   })
 
   it('asset patterns match real release names', () => {
@@ -33,9 +33,15 @@ describe('axiroster registry entry', () => {
 })
 
 describe('isAppVisible', () => {
-  // No app ships private today, so synthesize one to cover the gating logic.
-  const privateApp = { ...APP_META.axivale, private: true } as typeof APP_META.axivale
-  it('hides a private app when locked', () => { expect(isAppVisible(privateApp, false)).toBe(false) })
-  it('shows a private app when unlocked', () => { expect(isAppVisible(privateApp, true)).toBe(true) })
-  it('always shows a non-private app', () => { expect(isAppVisible(APP_META.axivale, false)).toBe(true) })
+  const gatedApp = { ...APP_META.axivale, allowlist: ['darkharasho', 'gw2dui'] } as typeof APP_META.axivale
+  it('hides a gated app from a login not on its allowlist', () => { expect(isAppVisible(gatedApp, 'randomuser')).toBe(false) })
+  it('hides a gated app when signed out (null)', () => { expect(isAppVisible(gatedApp, null)).toBe(false) })
+  it('shows a gated app to an allowlisted login', () => { expect(isAppVisible(gatedApp, 'gw2dui')).toBe(true) })
+  it('always shows a public (no-allowlist) app, even signed out', () => { expect(isAppVisible(APP_META.axivale, null)).toBe(true) })
+
+  it('gates axistream to its allowlist', () => {
+    expect(isAppVisible(APP_META.axistream, 'gw2dui')).toBe(true)
+    expect(isAppVisible(APP_META.axistream, 'randomuser')).toBe(false)
+    expect(isAppVisible(APP_META.axistream, null)).toBe(false)
+  })
 })

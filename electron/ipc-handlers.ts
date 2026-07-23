@@ -81,7 +81,7 @@ export function getLastCheckTime(): number { return lastCheckTime }
 export function hasAnyUpdates(): boolean {
   const appsHave = Object.entries(appStates).some(([id, s]) => {
     const meta = APP_META[id as AppId]
-    if (!isAppVisible(meta, unlocked)) return false
+    if (!isAppVisible(meta, githubLogin)) return false
     return appHasUpdate(s.installedVersion, s.latestVersion)
   })
   const arcdpsHave = arcdpsState.plugins.some(arcdpsPluginHasUpdate)
@@ -136,7 +136,7 @@ export async function runCheckUpdates(win: BrowserWindow): Promise<void> {
   for (const [id, meta] of Object.entries(APP_META)) {
     const appId = id as AppId
     if (!isInstallable(meta)) continue
-    if (!isAppVisible(meta, unlocked)) continue
+    if (!isAppVisible(meta, githubLogin)) continue
     setState(win, appId, { status: 'checking' })
     const platform = process.platform === 'win32' ? 'win' : 'linux'
     const pattern = meta.assetPattern[platform]
@@ -268,7 +268,7 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
     applyIdentity(null, null)
     // Drop any private app from the visible state so it disappears immediately.
     for (const [id, meta] of Object.entries(APP_META)) {
-      if (!isAppVisible(meta, unlocked)) {
+      if (!isAppVisible(meta, githubLogin)) {
         setState(win, id as AppId, { installedVersion: null, latestVersion: null, downloadUrl: null, status: 'idle' })
       }
     }
