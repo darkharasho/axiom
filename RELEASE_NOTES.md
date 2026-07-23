@@ -1,7 +1,7 @@
 # Release Notes
 
-Version v0.3.11 — July 22, 2026
+Version v0.3.12 — July 22, 2026
 
-## Under the Hood
+## Fixes
 
-Access to gated apps (like AxiStream) is now handled per-app instead of one shared list, so each private tool can have its own set of allowed GitHub accounts. Nothing changes for most of you — but if you were just granted access to AxiStream, sign in with GitHub and it'll show up.
+- Player Outline now shows up in the arcdps plugins list even if you don't already have it installed, so you can add it straight from AxiOM. Before, the row only appeared once the DLL was already on disk — which meant most people (especially fresh Windows installs) never saw it at all.
