@@ -2,15 +2,16 @@ import { describe, it, expect } from 'vitest'
 import { ARCDPS_REGISTRY, getPluginMeta } from '../arcdpsRegistry'
 
 describe('ARCDPS_REGISTRY', () => {
-  it('contains arcdps and arcdps_axipulse as always-shown', () => {
-    const arc = getPluginMeta('arcdps')
-    const axip = getPluginMeta('arcdps_axipulse')
-    expect(arc?.alwaysShow).toBe(true)
-    expect(axip?.alwaysShow).toBe(true)
+  // First-party plugins are shown even when not installed, so users can
+  // install them straight from AxiOM. Third-party plugins are detect-only.
+  const ALWAYS_SHOWN = ['arcdps', 'arcdps_axipulse', 'player_outline']
+
+  it('marks the first-party plugins as always-shown', () => {
+    for (const id of ALWAYS_SHOWN) expect(getPluginMeta(id)?.alwaysShow).toBe(true)
   })
 
   it('marks all other registered plugins as detect-only', () => {
-    const detectOnly = ARCDPS_REGISTRY.filter(p => !p.alwaysShow)
+    const detectOnly = ARCDPS_REGISTRY.filter(p => !ALWAYS_SHOWN.includes(p.id))
     expect(detectOnly.length).toBeGreaterThan(0)
     for (const p of detectOnly) expect(p.alwaysShow).toBe(false)
   })

@@ -190,7 +190,10 @@ export const ARCDPS_REGISTRY: ArcPluginMeta[] = [
     source: { kind: 'github', repo: 'darkharasho/arcdps-player-outline' },
     locations: arcOrNexus('arcdps_player_outline.dll'),
     assetPattern: /^arcdps_player_outline\.dll$/i,
-    alwaysShow: false,
+    // First-party plugin: show it even when not yet installed, so users can
+    // install it straight from AxiOM (like arcdps and AxiPulse). With
+    // alwaysShow:false it only appeared once the DLL was already on disk.
+    alwaysShow: true,
   },
   {
     id: 'unofficial_extras',
