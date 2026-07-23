@@ -1,7 +1,7 @@
 # Release Notes
 
-Version v0.3.12 — July 22, 2026
+Version v0.3.13 — July 22, 2026
 
 ## Fixes
 
-- Player Outline now shows up in the arcdps plugins list even if you don't already have it installed, so you can add it straight from AxiOM. Before, the row only appeared once the DLL was already on disk — which meant most people (especially fresh Windows installs) never saw it at all.
+- Unofficial Extras no longer nags about an update that never goes away. If your copy was named differently from the one AxiOM installs, updating used to drop a second file next to it and leave the old one behind — so the arcdps tab kept showing "update available" no matter how many times you hit update. AxiOM now updates the exact file the game loads and clears out any leftover duplicate.
