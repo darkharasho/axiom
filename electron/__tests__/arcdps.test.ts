@@ -249,6 +249,8 @@ describe('computeFileMd5', () => {
 })
 
 describe('checkArcdpsCoreUpdate', () => {
+  const noRetry = { retries: 0 }
+
   it('reports up-to-date when hashes match', async () => {
     const dll = path.join(os.tmpdir(), `arc-${Date.now()}.dll`)
     fs.writeFileSync(dll, 'hello')
@@ -256,8 +258,8 @@ describe('checkArcdpsCoreUpdate', () => {
       ok: true,
       text: async () => '5d41402abc4b2a76b9719d911017c592 *d3d11.dll\n',
     } as any)
-    const r = await checkArcdpsCoreUpdate(dll, fetchImpl)
-    expect(r).toEqual({ upToDate: true, remoteMd5: '5d41402abc4b2a76b9719d911017c592', localMd5: '5d41402abc4b2a76b9719d911017c592' })
+    const r = await checkArcdpsCoreUpdate(dll, fetchImpl, noRetry)
+    expect(r).toEqual({ ok: true, upToDate: true, remoteMd5: '5d41402abc4b2a76b9719d911017c592', localMd5: '5d41402abc4b2a76b9719d911017c592' })
     fs.unlinkSync(dll)
   })
 
@@ -268,16 +270,59 @@ describe('checkArcdpsCoreUpdate', () => {
       ok: true,
       text: async () => '5d41402abc4b2a76b9719d911017c592 *d3d11.dll\n',
     } as any)
-    const r = await checkArcdpsCoreUpdate(dll, fetchImpl)
-    expect(r?.upToDate).toBe(false)
+    const r = await checkArcdpsCoreUpdate(dll, fetchImpl, noRetry)
+    expect(r.ok && r.upToDate).toBe(false)
     fs.unlinkSync(dll)
   })
 
-  it('returns null when fetch fails', async () => {
+  it('reports a network failure (with a status detail) when the response is not ok', async () => {
     const dll = path.join(os.tmpdir(), `arc-${Date.now()}.dll`)
     fs.writeFileSync(dll, 'hello')
-    const fetchImpl = vi.fn().mockResolvedValue({ ok: false } as any)
-    expect(await checkArcdpsCoreUpdate(dll, fetchImpl)).toBeNull()
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: false, status: 403 } as any)
+    const r = await checkArcdpsCoreUpdate(dll, fetchImpl, noRetry)
+    expect(r.ok).toBe(false)
+    if (!r.ok) {
+      expect(r.reason).toBe('network')
+      expect(r.detail).toContain('403')
+    }
+    fs.unlinkSync(dll)
+  })
+
+  it('reports a network failure (with the error message) when fetch throws', async () => {
+    const dll = path.join(os.tmpdir(), `arc-${Date.now()}.dll`)
+    fs.writeFileSync(dll, 'hello')
+    const fetchImpl = vi.fn().mockRejectedValue(new Error('getaddrinfo ENOTFOUND'))
+    const r = await checkArcdpsCoreUpdate(dll, fetchImpl, noRetry)
+    expect(r.ok).toBe(false)
+    if (!r.ok) {
+      expect(r.reason).toBe('network')
+      expect(r.detail).toContain('ENOTFOUND')
+    }
+    fs.unlinkSync(dll)
+  })
+
+  it('reports a LOCAL failure when the remote md5 is fetched but the DLL cannot be read', async () => {
+    // The network half succeeded; the failure is a local read (e.g. the DLL
+    // locked by a running GW2). It must NOT be blamed on the network.
+    const missing = path.join(os.tmpdir(), `arc-missing-${Date.now()}.dll`)
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: true,
+      text: async () => '5d41402abc4b2a76b9719d911017c592 *d3d11.dll\n',
+    } as any)
+    const r = await checkArcdpsCoreUpdate(missing, fetchImpl, noRetry)
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.reason).toBe('local')
+  })
+
+  it('retries a transient failure before giving up', async () => {
+    const dll = path.join(os.tmpdir(), `arc-${Date.now()}.dll`)
+    fs.writeFileSync(dll, 'hello')
+    const fetchImpl = vi.fn()
+      .mockRejectedValueOnce(new Error('ECONNRESET'))
+      .mockResolvedValueOnce({ ok: true, text: async () => '5d41402abc4b2a76b9719d911017c592 *d3d11.dll\n' } as any)
+    const r = await checkArcdpsCoreUpdate(dll, fetchImpl, { retries: 1, sleep: async () => {} })
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    expect(r.ok && r.upToDate).toBe(true)
     fs.unlinkSync(dll)
   })
 })
@@ -336,6 +381,45 @@ describe('buildArcdpsState', () => {
     expect(core.upToDate).toBeNull()
     expect(core.downloadUrl).toBeNull()
     expect(core.errorMessage).toMatch(/couldn.t reach deltaconnected/i)
+  })
+
+  it('surfaces a distinct message when the core check fails on a LOCAL read', async () => {
+    const gw2 = path.join(os.tmpdir(), `arcdps-core-localfail-${Date.now()}`)
+    fs.mkdirSync(path.join(gw2, 'addons'), { recursive: true })
+    fs.mkdirSync(path.join(gw2, 'bin64'), { recursive: true })
+    fs.writeFileSync(path.join(gw2, 'bin64', 'Gw2-64.exe'), 'x')
+    fs.writeFileSync(path.join(gw2, 'addons', 'ArcDPS.dll'), 'fake')
+    const state = await buildArcdpsState({
+      gw2Path: gw2,
+      gw2PathSource: 'manual',
+      recordedInstalls: {},
+      fetchRelease: async () => null,
+      fetchCoreMd5: async () => ({ ok: false, reason: 'local', detail: 'EBUSY' }),
+    })
+    const core = state.plugins.find(p => p.id === 'arcdps')!
+    expect(core.upToDate).toBeNull()
+    expect(core.downloadUrl).toBeNull()
+    expect(core.errorMessage).toMatch(/read the local arcdps dll/i)
+    expect(core.errorMessage).not.toMatch(/deltaconnected/i)
+  })
+
+  it('reports up-to-date for the core when the md5 check succeeds', async () => {
+    const gw2 = path.join(os.tmpdir(), `arcdps-core-ok-${Date.now()}`)
+    fs.mkdirSync(path.join(gw2, 'addons'), { recursive: true })
+    fs.mkdirSync(path.join(gw2, 'bin64'), { recursive: true })
+    fs.writeFileSync(path.join(gw2, 'bin64', 'Gw2-64.exe'), 'x')
+    fs.writeFileSync(path.join(gw2, 'addons', 'ArcDPS.dll'), 'fake')
+    const state = await buildArcdpsState({
+      gw2Path: gw2,
+      gw2PathSource: 'manual',
+      recordedInstalls: {},
+      fetchRelease: async () => null,
+      fetchCoreMd5: async () => ({ ok: true, upToDate: true, remoteMd5: 'a'.repeat(32), localMd5: 'a'.repeat(32) }),
+    })
+    const core = state.plugins.find(p => p.id === 'arcdps')!
+    expect(core.upToDate).toBe(true)
+    expect(core.errorMessage).toBeUndefined()
+    expect(core.installedTag).toBe('aaaaaaa')
   })
 
   it('uses asset digest (not size) to decide up-to-date when sizes collide', async () => {

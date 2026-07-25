@@ -115,9 +115,9 @@ async function refreshArcdps(win: BrowserWindow): Promise<void> {
     fetchRelease: (repo, pattern) => fetchLatestRelease(repo, pattern, githubToken ?? undefined),
     fetchCoreMd5: async (dll) => {
       const r = await checkArcdpsCoreUpdate(dll)
-      // null = fetch/hash failed; upToDate stays unknown and the update dot
-      // can't light, so make the silence diagnosable.
-      if (!r) log.warn(`[arcdps] core md5 check failed for ${dll}`)
+      // Failure leaves upToDate unknown and the update dot dark, so record WHY
+      // (network vs local, plus the underlying detail) to make it diagnosable.
+      if (!r.ok) log.warn(`[arcdps] core md5 check failed (${r.reason}) for ${dll}: ${r.detail}`)
       return r
     },
   })

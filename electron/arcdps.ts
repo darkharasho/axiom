@@ -120,23 +120,74 @@ export function computeFileDigest(file: string, algo: 'sha256' | 'sha1' | 'md5')
   return hash.digest('hex')
 }
 
-type FetchLike = (url: string) => Promise<{ ok: boolean; text(): Promise<string> }>
+interface FetchInit { signal?: AbortSignal; headers?: Record<string, string> }
+type FetchLike = (url: string, init?: FetchInit) => Promise<{ ok: boolean; status?: number; text(): Promise<string> }>
+
+// A core check either succeeds, or fails in one of two distinguishable ways:
+//   'network' — couldn't get the remote md5 from deltaconnected.com
+//   'local'   — got the remote md5, but couldn't read/hash the on-disk DLL
+// The caller needs the distinction to show an honest message (and `detail` to
+// log so the *next* failure report is diagnosable rather than a black box).
+export type CoreCheckResult =
+  | { ok: true; upToDate: boolean; remoteMd5: string; localMd5: string }
+  | { ok: false; reason: 'network' | 'local'; detail: string }
+
+export interface CoreCheckOpts {
+  retries?: number   // extra attempts after the first (default 1)
+  timeoutMs?: number // per-attempt timeout (default 8000)
+  sleep?: (ms: number) => Promise<void>
+}
+
+// deltaconnected.com sits behind Cloudflare, which occasionally answers a bare
+// programmatic request with a bot challenge or a transient 5xx. A browser-ish
+// Accept/User-Agent makes a challenge less likely, and a short retry rides out
+// the transient ones.
+const DELTA_HEADERS: Record<string, string> = {
+  'User-Agent': 'AxiOM-arcdps-updater (+https://github.com/darkharasho/axiom)',
+  Accept: 'text/plain, */*',
+}
 
 export async function checkArcdpsCoreUpdate(
   dllPath: string,
   fetchImpl: FetchLike = fetch as unknown as FetchLike,
-): Promise<{ upToDate: boolean; remoteMd5: string; localMd5: string } | null> {
+  opts: CoreCheckOpts = {},
+): Promise<CoreCheckResult> {
+  const retries = opts.retries ?? 1
+  const timeoutMs = opts.timeoutMs ?? 8000
+  const sleep = opts.sleep ?? ((ms: number) => new Promise<void>(r => setTimeout(r, ms)))
+
+  let lastDetail = 'unknown error'
+  let remoteMd5: string | null = null
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    if (attempt > 0) await sleep(500 * attempt)
+    try {
+      const res = await fetchImpl(ARCDPS_CORE_MD5_URL, {
+        signal: AbortSignal.timeout(timeoutMs),
+        headers: DELTA_HEADERS,
+      })
+      if (!res.ok) { lastDetail = `HTTP ${res.status ?? '?'}`; continue }
+      const body = await res.text()
+      // md5sum format: "<hex>  filename" or "<hex> *filename"
+      const hex = body.trim().split(/\s+/)[0]?.toLowerCase()
+      if (!hex || !/^[a-f0-9]{32}$/.test(hex)) {
+        lastDetail = `unexpected body: ${body.trim().slice(0, 60)}`
+        continue
+      }
+      remoteMd5 = hex
+      break
+    } catch (err) {
+      lastDetail = err instanceof Error ? err.message : String(err)
+    }
+  }
+  if (!remoteMd5) return { ok: false, reason: 'network', detail: lastDetail }
+
+  // Remote md5 in hand — a failure now is a local read/hash problem (e.g. the
+  // DLL momentarily locked by a running GW2), NOT a network one.
   try {
-    const res = await fetchImpl(ARCDPS_CORE_MD5_URL)
-    if (!res.ok) return null
-    const body = await res.text()
-    // md5sum format: "<hex>  filename" or "<hex> *filename"
-    const remoteMd5 = body.trim().split(/\s+/)[0]?.toLowerCase()
-    if (!remoteMd5 || !/^[a-f0-9]{32}$/.test(remoteMd5)) return null
     const localMd5 = computeFileMd5(dllPath).toLowerCase()
-    return { upToDate: localMd5 === remoteMd5, remoteMd5, localMd5 }
-  } catch {
-    return null
+    return { ok: true, upToDate: localMd5 === remoteMd5, remoteMd5, localMd5 }
+  } catch (err) {
+    return { ok: false, reason: 'local', detail: err instanceof Error ? err.message : String(err) }
   }
 }
 
@@ -266,7 +317,7 @@ export interface BuildStateOpts {
   overrideError?: string | null
   recordedInstalls: Record<string, { installedTag: string | null; installedAt: string | null }>
   fetchRelease: (repo: string, assetPattern: RegExp) => Promise<{ version: string; downloadUrl: string; assetSize?: number; assetDigest?: string; publishedAt?: string } | null>
-  fetchCoreMd5: (dllPath: string) => Promise<{ upToDate: boolean; remoteMd5: string; localMd5: string } | null>
+  fetchCoreMd5: (dllPath: string) => Promise<CoreCheckResult | null>
 }
 
 export async function buildArcdpsState(opts: BuildStateOpts): Promise<ArcdpsState> {
@@ -305,17 +356,21 @@ export async function buildArcdpsState(opts: BuildStateOpts): Promise<ArcdpsStat
 
     if (meta.source.kind === 'deltaconnected' && det) {
       const r = await opts.fetchCoreMd5(det.dllPath)
-      if (r) {
+      if (r && r.ok) {
         base.installedTag = r.localMd5.slice(0, 7)
         base.latestTag = r.remoteMd5.slice(0, 7)
         base.downloadUrl = ARCDPS_CORE_URL
         base.upToDate = r.upToDate
       } else {
-        // The md5 comparison against deltaconnected.com failed (network, or the
-        // DLL was momentarily unreadable). Without it we can't tell current from
-        // stale, and there's no downloadUrl to act on — so say so plainly rather
-        // than leave a phantom disabled "Update to latest" / "Unknown" row.
-        base.errorMessage = "Couldn't reach deltaconnected.com to check the arcdps version."
+        // The md5 comparison failed. Without it we can't tell current from stale,
+        // and there's no downloadUrl to act on — so say so plainly rather than
+        // leave a phantom disabled "Update to latest" / "Unknown" row. A 'local'
+        // failure means we DID reach deltaconnected.com but couldn't read the
+        // on-disk DLL (e.g. locked by a running GW2) — don't misblame the network.
+        // A null result (legacy/unknown) is treated as a network failure.
+        base.errorMessage = r && !r.ok && r.reason === 'local'
+          ? "Couldn't read the local arcdps DLL to check its version."
+          : "Couldn't reach deltaconnected.com to check the arcdps version."
       }
     } else if (meta.source.kind === 'deltaconnected' && !det) {
       base.downloadUrl = ARCDPS_CORE_URL
