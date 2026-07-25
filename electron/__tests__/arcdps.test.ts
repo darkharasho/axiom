@@ -314,6 +314,42 @@ describe('checkArcdpsCoreUpdate', () => {
     if (!r.ok) expect(r.reason).toBe('local')
   })
 
+  it('unwraps undici err.cause + code into the failure detail (fetch failed is not enough)', async () => {
+    const dll = path.join(os.tmpdir(), `arc-${Date.now()}.dll`)
+    fs.writeFileSync(dll, 'hello')
+    // Shape of a real undici failure: TypeError('fetch failed') whose .cause
+    // carries the actual TLS/DNS error + code.
+    const cause = Object.assign(new Error('unable to verify the first certificate'), {
+      code: 'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
+    })
+    const err = new TypeError('fetch failed', { cause })
+    const fetchImpl = vi.fn().mockRejectedValue(err)
+    const r = await checkArcdpsCoreUpdate(dll, fetchImpl, noRetry)
+    expect(r.ok).toBe(false)
+    if (!r.ok) {
+      expect(r.reason).toBe('network')
+      expect(r.detail).toContain('fetch failed')
+      expect(r.detail).toContain('UNABLE_TO_VERIFY_LEAF_SIGNATURE')
+      expect(r.detail).toContain('unable to verify the first certificate')
+    }
+    fs.unlinkSync(dll)
+  })
+
+  it('surfaces the inner errors of an AggregateError cause', async () => {
+    const dll = path.join(os.tmpdir(), `arc-${Date.now()}.dll`)
+    fs.writeFileSync(dll, 'hello')
+    const agg = new AggregateError(
+      [Object.assign(new Error('connect ECONNREFUSED 104.21.75.126:443'), { code: 'ECONNREFUSED' })],
+      'all attempts failed',
+    )
+    const err = new TypeError('fetch failed', { cause: agg })
+    const fetchImpl = vi.fn().mockRejectedValue(err)
+    const r = await checkArcdpsCoreUpdate(dll, fetchImpl, noRetry)
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.detail).toContain('ECONNREFUSED')
+    fs.unlinkSync(dll)
+  })
+
   it('retries a transient failure before giving up', async () => {
     const dll = path.join(os.tmpdir(), `arc-${Date.now()}.dll`)
     fs.writeFileSync(dll, 'hello')

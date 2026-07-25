@@ -1,4 +1,4 @@
-import { ipcMain, shell, app, Notification, dialog, clipboard } from 'electron'
+import { ipcMain, shell, app, Notification, dialog, clipboard, net } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import log from 'electron-log'
 import type { BrowserWindow } from 'electron'
@@ -114,7 +114,13 @@ async function refreshArcdps(win: BrowserWindow): Promise<void> {
     recordedInstalls: cfg.arcdps.plugins,
     fetchRelease: (repo, pattern) => fetchLatestRelease(repo, pattern, githubToken ?? undefined),
     fetchCoreMd5: async (dll) => {
-      const r = await checkArcdpsCoreUpdate(dll)
+      // Use Electron's net.fetch (Chromium stack) rather than undici: it honors
+      // the system proxy and OS trust store, and soft-fails cert revocation like
+      // Chrome does. deltaconnected.com sits behind Cloudflare, and undici was
+      // hard-failing the TLS handshake on machines that can't reach the cert's
+      // OCSP/CRL endpoint (e.g. a Pi-hole in the DNS path) — where a browser
+      // connects fine.
+      const r = await checkArcdpsCoreUpdate(dll, (url, init) => net.fetch(url, init))
       // Failure leaves upToDate unknown and the update dot dark, so record WHY
       // (network vs local, plus the underlying detail) to make it diagnosable.
       if (!r.ok) log.warn(`[arcdps] core md5 check failed (${r.reason}) for ${dll}: ${r.detail}`)

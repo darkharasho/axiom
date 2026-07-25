@@ -147,6 +147,26 @@ const DELTA_HEADERS: Record<string, string> = {
   Accept: 'text/plain, */*',
 }
 
+// undici collapses every transport failure to `TypeError: fetch failed` and
+// stashes the real reason (a TLS/DNS/socket error, often an AggregateError of
+// per-address attempts) in `.cause`. Flatten that chain — with each error's
+// `.code` — so a logged detail actually names the cause instead of "fetch
+// failed".
+export function describeError(err: unknown, depth = 0): string {
+  if (!(err instanceof Error)) return String(err)
+  const code = (err as { code?: unknown }).code
+  const head = typeof code === 'string' ? `${code}: ${err.message}` : err.message
+  if (depth >= 4) return head
+  const parts = [head]
+  const inner = (err as { errors?: unknown }).errors
+  if (Array.isArray(inner) && inner.length) {
+    parts.push(`[${inner.map(e => describeError(e, depth + 1)).join('; ')}]`)
+  }
+  const cause = (err as { cause?: unknown }).cause
+  if (cause != null) parts.push(`(${describeError(cause, depth + 1)})`)
+  return parts.join(' ')
+}
+
 export async function checkArcdpsCoreUpdate(
   dllPath: string,
   fetchImpl: FetchLike = fetch as unknown as FetchLike,
@@ -176,7 +196,7 @@ export async function checkArcdpsCoreUpdate(
       remoteMd5 = hex
       break
     } catch (err) {
-      lastDetail = err instanceof Error ? err.message : String(err)
+      lastDetail = describeError(err)
     }
   }
   if (!remoteMd5) return { ok: false, reason: 'network', detail: lastDetail }
@@ -187,7 +207,7 @@ export async function checkArcdpsCoreUpdate(
     const localMd5 = computeFileMd5(dllPath).toLowerCase()
     return { ok: true, upToDate: localMd5 === remoteMd5, remoteMd5, localMd5 }
   } catch (err) {
-    return { ok: false, reason: 'local', detail: err instanceof Error ? err.message : String(err) }
+    return { ok: false, reason: 'local', detail: describeError(err) }
   }
 }
 
