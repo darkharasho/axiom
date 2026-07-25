@@ -322,7 +322,9 @@ describe('checkArcdpsCoreUpdate', () => {
     const cause = Object.assign(new Error('unable to verify the first certificate'), {
       code: 'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
     })
-    const err = new TypeError('fetch failed', { cause })
+    // Built with Object.assign rather than `new TypeError(msg, { cause })` so the
+    // test doesn't require an ES2022 lib target (CI typechecks tsconfig.node.json).
+    const err = Object.assign(new TypeError('fetch failed'), { cause })
     const fetchImpl = vi.fn().mockRejectedValue(err)
     const r = await checkArcdpsCoreUpdate(dll, fetchImpl, noRetry)
     expect(r.ok).toBe(false)
@@ -338,11 +340,12 @@ describe('checkArcdpsCoreUpdate', () => {
   it('surfaces the inner errors of an AggregateError cause', async () => {
     const dll = path.join(os.tmpdir(), `arc-${Date.now()}.dll`)
     fs.writeFileSync(dll, 'hello')
-    const agg = new AggregateError(
-      [Object.assign(new Error('connect ECONNREFUSED 104.21.75.126:443'), { code: 'ECONNREFUSED' })],
-      'all attempts failed',
-    )
-    const err = new TypeError('fetch failed', { cause: agg })
+    // AggregateError shape (a `.errors` array) built by hand to avoid depending
+    // on the ES2021 AggregateError type under tsconfig.node.json.
+    const agg = Object.assign(new Error('all attempts failed'), {
+      errors: [Object.assign(new Error('connect ECONNREFUSED 104.21.75.126:443'), { code: 'ECONNREFUSED' })],
+    })
+    const err = Object.assign(new TypeError('fetch failed'), { cause: agg })
     const fetchImpl = vi.fn().mockRejectedValue(err)
     const r = await checkArcdpsCoreUpdate(dll, fetchImpl, noRetry)
     expect(r.ok).toBe(false)
