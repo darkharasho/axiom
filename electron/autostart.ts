@@ -5,8 +5,25 @@ import * as path from 'path'
 
 const LINUX_AUTOSTART_FILE = () => path.join(os.homedir(), '.config', 'autostart', 'axiom.desktop')
 
+// $APPIMAGE and $APPDIR are ordinary environment variables, so every child
+// process of an AppImage inherits them — including a dev run of this app
+// started from a terminal inside another AppImage. Trusting an inherited
+// $APPIMAGE writes an autostart entry that boots *that* app at login. We are
+// only really the AppImage when our own executable lives inside the mounted
+// $APPDIR; a nested packaged AppImage gets its own values from its AppRun.
+export function resolveOwnAppImage(
+  env: Record<string, string | undefined>,
+  execPath: string,
+): string | undefined {
+  if (!env.APPIMAGE || !env.APPDIR) return undefined
+  const appDir = path.resolve(env.APPDIR)
+  const exe = path.resolve(execPath)
+  if (exe !== appDir && !exe.startsWith(appDir + path.sep)) return undefined
+  return env.APPIMAGE
+}
+
 function getLinuxExecPath(): string {
-  return process.env.APPIMAGE ?? app.getPath('exe')
+  return resolveOwnAppImage(process.env, process.execPath) ?? app.getPath('exe')
 }
 
 function writeLinuxAutostart(exec: string = getLinuxExecPath()): void {
@@ -33,8 +50,8 @@ export function setAutoStart(enabled: boolean): void {
   if (process.platform === 'linux') {
     // In dev, app.getPath('exe') points at the Electron binary in node_modules,
     // which would write a broken autostart entry. Only touch the file when
-    // packaged or when running from an AppImage.
-    if (!app.isPackaged && !process.env.APPIMAGE) return
+    // packaged or when running from an AppImage that is actually ours.
+    if (!app.isPackaged && !resolveOwnAppImage(process.env, process.execPath)) return
     if (enabled) writeLinuxAutostart()
     else removeLinuxAutostart()
     return

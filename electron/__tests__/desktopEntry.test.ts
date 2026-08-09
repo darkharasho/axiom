@@ -2,7 +2,12 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
-import { findInstalledAppImage, parseVersionFromName } from '../desktopEntry'
+import {
+  findInstalledAppImage,
+  parseVersionFromName,
+  refreshOrphanedDesktopEntries,
+  writeLinuxDesktopEntry,
+} from '../desktopEntry'
 
 let tmp: string
 const touch = (dir: string, name: string, mtimeMs?: number) => {
@@ -12,12 +17,18 @@ const touch = (dir: string, name: string, mtimeMs?: number) => {
   return p
 }
 
+const ORIGINAL_HOME = process.env.HOME
+
 beforeEach(() => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'axiom-desktopentry-'))
 })
 afterEach(() => {
   fs.rmSync(tmp, { recursive: true, force: true })
+  process.env.HOME = ORIGINAL_HOME
 })
+
+const entryPath = (appId: string) =>
+  path.join(tmp, '.local', 'share', 'applications', `${appId}.desktop`)
 
 describe('parseVersionFromName', () => {
   it('extracts a dotted version tuple', () => {
@@ -61,5 +72,63 @@ describe('findInstalledAppImage', () => {
     touch(a, 'AxiBridge-2.13.4.AppImage')
     touch(b, 'AxiBridge-2.13.5.AppImage')
     expect(findInstalledAppImage('AxiBridge', [a, b])).toBe(path.join(b, 'AxiBridge-2.13.5.AppImage'))
+  })
+})
+
+describe('writeLinuxDesktopEntry', () => {
+  // AxiBridge calls app.setAsDefaultProtocolClient('axibridge'), which xdg
+  // resolves through this desktop entry. Omitting the line silently dropped the
+  // axibridge:// registration every time either writer refreshed the file.
+  it('declares the scheme handler for an app that registers one', () => {
+    process.env.HOME = tmp
+    writeLinuxDesktopEntry('axibridge', 'AxiBridge', '/apps/AxiBridge-2.18.0.AppImage')
+    expect(fs.readFileSync(entryPath('axibridge'), 'utf8'))
+      .toContain('MimeType=x-scheme-handler/axibridge;')
+  })
+
+  it('emits no MimeType line for an app with no scheme handler', () => {
+    process.env.HOME = tmp
+    writeLinuxDesktopEntry('axiforge', 'AxiForge', '/apps/AxiForge-1.0.0.AppImage')
+    expect(fs.readFileSync(entryPath('axiforge'), 'utf8')).not.toContain('MimeType=')
+  })
+
+  it('reports no change when the entry already matches', () => {
+    process.env.HOME = tmp
+    expect(writeLinuxDesktopEntry('axibridge', 'AxiBridge', '/apps/AxiBridge-2.18.0.AppImage')).toBe(true)
+    expect(writeLinuxDesktopEntry('axibridge', 'AxiBridge', '/apps/AxiBridge-2.18.0.AppImage')).toBe(false)
+  })
+})
+
+describe('refreshOrphanedDesktopEntries', () => {
+  const seedAppImage = () => {
+    const dir = path.join(tmp, 'AppImages')
+    fs.mkdirSync(dir, { recursive: true })
+    return touch(dir, 'AxiBridge-2.18.0.AppImage')
+  }
+
+  // Regression: the old TryExec-only staleness check treated an entry whose
+  // Exec pointed at the right file as healthy, so content drift (a dropped
+  // MimeType, a name written by AxiBridge's own writer) was never repaired.
+  it('repairs content drift even when TryExec already points at the right file', () => {
+    process.env.HOME = tmp
+    const installed = seedAppImage()
+    fs.mkdirSync(path.dirname(entryPath('axibridge')), { recursive: true })
+    fs.writeFileSync(
+      entryPath('axibridge'),
+      `[Desktop Entry]\nType=Application\nName=axibridge\nIcon=axibridge\nTryExec=${installed}\nExec=env DESKTOPINTEGRATION=1 ${installed} --no-sandbox %U\nTerminal=false\nCategories=Utility;\nStartupWMClass=axibridge\nX-AppImage-Name=axibridge\n`,
+    )
+
+    refreshOrphanedDesktopEntries([{ id: 'axibridge', name: 'AxiBridge' }])
+
+    const content = fs.readFileSync(entryPath('axibridge'), 'utf8')
+    expect(content).toContain('Name=AxiBridge')
+    expect(content).toContain('MimeType=x-scheme-handler/axibridge;')
+  })
+
+  it('leaves apps with no entry file alone', () => {
+    process.env.HOME = tmp
+    seedAppImage()
+    refreshOrphanedDesktopEntries([{ id: 'axibridge', name: 'AxiBridge' }])
+    expect(fs.existsSync(entryPath('axibridge'))).toBe(false)
   })
 })

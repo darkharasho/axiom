@@ -2,12 +2,23 @@ import fs from 'fs'
 import path from 'path'
 import os from 'os'
 
-const APPIMAGE_SEARCH_DIRS = [
+// Resolved per call rather than at module load so the home directory is read
+// when it's actually needed (module-load capture also made this untestable).
+const appImageSearchDirs = (): string[] => [
   path.join(os.homedir(), 'AppImages'),
   path.join(os.homedir(), 'Applications'),
   path.join(os.homedir(), '.local', 'bin'),
   os.homedir(),
 ]
+
+// Schemes an app registers at runtime via app.setAsDefaultProtocolClient. xdg
+// resolves a handler through the desktop entry, so the entry must declare them
+// or every rewrite of this file silently drops the registration.
+//
+// Kept in sync with AxiBridge's own writer (../../axibridge/src/main/integration.ts).
+const APP_MIME_TYPES: Record<string, readonly string[]> = {
+  axibridge: ['x-scheme-handler/axibridge'],
+}
 
 // Extract a comparable version tuple from an AppImage filename, e.g.
 // "AxiBridge-2.13.5.AppImage" -> [2, 13, 5]. Returns null when the filename
@@ -39,7 +50,7 @@ function compareVersions(a: number[] | null, b: number[] | null): number {
 // most-recently-modified file.
 export function findInstalledAppImage(
   appName: string,
-  dirs: string[] = APPIMAGE_SEARCH_DIRS,
+  dirs: string[] = appImageSearchDirs(),
 ): string | null {
   const needle = appName.toLowerCase()
   let best: { path: string; version: number[] | null; mtimeMs: number } | null = null
@@ -92,6 +103,9 @@ export function writeLinuxDesktopEntry(appId: string, name: string, appImagePath
     } catch { /* fall through */ }
   }
 
+  const mimeTypes = APP_MIME_TYPES[appId] ?? []
+  const mimeLine = mimeTypes.length ? `MimeType=${mimeTypes.map((m) => `${m};`).join('')}\n` : ''
+
   const contents =
     `[Desktop Entry]
 Type=Application
@@ -103,7 +117,7 @@ Terminal=false
 Categories=Utility;
 StartupWMClass=${name}
 X-AppImage-Name=${name}
-`
+${mimeLine}`
 
   try {
     fs.mkdirSync(appsDir, { recursive: true })
@@ -116,9 +130,15 @@ X-AppImage-Name=${name}
   }
 }
 
-// Repair stale ${appId}.desktop entries left behind by previous updates.
-// For each app, if an AppImage exists on disk but the desktop entry's Exec
-// points at a missing or different file, rewrite it.
+// Repair ${appId}.desktop entries left stale or malformed by previous updates.
+// For each app with an AppImage on disk and an existing entry, rewrite the file
+// to the canonical template.
+//
+// This deliberately does not pre-check whether the entry looks healthy. The old
+// TryExec-only check passed any entry whose Exec pointed at the right file, so
+// other drift was never repaired — notably a MimeType line dropped by an older
+// template, or a Name written by AxiBridge's own integration writer.
+// writeLinuxDesktopEntry is a no-op when the content already matches.
 export function refreshOrphanedDesktopEntries(apps: Array<{ id: string; name: string }>): void {
   if (process.platform !== 'linux') return
   for (const app of apps) {
@@ -126,12 +146,6 @@ export function refreshOrphanedDesktopEntries(apps: Array<{ id: string; name: st
     if (!installed) continue
     const desktopPath = path.join(os.homedir(), '.local', 'share', 'applications', `${app.id}.desktop`)
     if (!fs.existsSync(desktopPath)) continue
-    let needsRefresh = true
-    try {
-      const content = fs.readFileSync(desktopPath, 'utf8')
-      const tryExec = content.match(/^TryExec=(.+)$/m)?.[1]?.trim()
-      if (tryExec === installed && fs.existsSync(tryExec)) needsRefresh = false
-    } catch { /* fall through to refresh */ }
-    if (needsRefresh) writeLinuxDesktopEntry(app.id, app.name, installed)
+    writeLinuxDesktopEntry(app.id, app.name, installed)
   }
 }
