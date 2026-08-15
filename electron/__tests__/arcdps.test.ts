@@ -489,6 +489,57 @@ describe('buildArcdpsState', () => {
     expect(p.latestTag).toBe('0.2.0')
   })
 
+  it('drops a recorded tag the digest has disproved', async () => {
+    // Regression: a user hand-installed Unofficial Extras 2.5 over AxiOM's
+    // 2.4.1 while 2.4.1 was still the newest release AxiOM could see. The
+    // digest proved the file was not 2.4.1, yet "installed: 2.4.1" was still
+    // reported (next to "Local build") from the stale record.
+    const gw2 = path.join(os.tmpdir(), `arcdps-state-stale-record-${Date.now()}`)
+    fs.mkdirSync(path.join(gw2, 'bin64'), { recursive: true })
+    fs.writeFileSync(path.join(gw2, 'bin64', 'Gw2-64.exe'), 'x')
+    fs.writeFileSync(path.join(gw2, 'bin64', 'arcdps_axipulse.dll'), 'hand-installed-bytes') // mtime = now
+    const state = await buildArcdpsState({
+      gw2Path: gw2,
+      gw2PathSource: 'manual',
+      recordedInstalls: { arcdps_axipulse: { installedTag: '0.1.8', installedAt: '2026-07-15T00:00:00Z' } },
+      fetchRelease: async () => ({
+        version: '0.1.8',                        // the record names THIS release…
+        downloadUrl: 'https://example.test/arcdps_axipulse.dll',
+        assetDigest: `sha256:${'a'.repeat(64)}`, // …and the digest says the file isn't it
+        publishedAt: '2026-08-01T00:00:00Z',
+      }),
+      fetchCoreMd5: async () => null,
+    })
+    const p = state.plugins.find(x => x.id === 'arcdps_axipulse')!
+    expect(p.localBuild).toBe(true)
+    expect(p.installedTag).not.toBe('0.1.8')
+    expect(p.installedTag).toBe(new Date().toISOString().slice(0, 10))
+  })
+
+  it('keeps a recorded tag the digest has not disproved', async () => {
+    // Record says 0.1.8, newest release is 0.2.0, digest mismatches: that is
+    // exactly what a genuinely outdated 0.1.8 install looks like.
+    const gw2 = path.join(os.tmpdir(), `arcdps-state-record-kept-${Date.now()}`)
+    fs.mkdirSync(path.join(gw2, 'bin64'), { recursive: true })
+    fs.writeFileSync(path.join(gw2, 'bin64', 'Gw2-64.exe'), 'x')
+    fs.writeFileSync(path.join(gw2, 'bin64', 'arcdps_axipulse.dll'), 'installed-by-axiom')
+    const state = await buildArcdpsState({
+      gw2Path: gw2,
+      gw2PathSource: 'manual',
+      recordedInstalls: { arcdps_axipulse: { installedTag: '0.1.8', installedAt: '2026-07-15T00:00:00Z' } },
+      fetchRelease: async () => ({
+        version: '0.2.0',
+        downloadUrl: 'https://example.test/arcdps_axipulse.dll',
+        assetDigest: `sha256:${'a'.repeat(64)}`,
+        publishedAt: new Date(Date.now() + 3600_000).toISOString(), // newer than the DLL
+      }),
+      fetchCoreMd5: async () => null,
+    })
+    const p = state.plugins.find(x => x.id === 'arcdps_axipulse')!
+    expect(p.installedTag).toBe('0.1.8')
+    expect(p.upToDate).toBe(false)
+  })
+
   it('reports up-to-date when local digest matches the asset digest', async () => {
     const gw2 = path.join(os.tmpdir(), `arcdps-state-digest-match-${Date.now()}`)
     fs.mkdirSync(path.join(gw2, 'bin64'), { recursive: true })
