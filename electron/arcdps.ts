@@ -331,6 +331,21 @@ export function detectInstalledPlugins(gw2Path: string): DetectedPlugin[] {
   return out
 }
 
+// A recorded tag is AxiOM's memory of what it last installed. When a digest
+// check proves the DLL on disk is NOT the latest release, a record naming that
+// very version is provably stale — the file was replaced outside AxiOM — and
+// echoing it states a version we know is wrong. That is how a hand-updated
+// Unofficial Extras 2.5 kept reading "installed: 2.4.1".
+// (File mtime is deliberately NOT used to judge staleness: copying a GW2
+// install to another drive rewrites every mtime without changing a byte.)
+function recordedTagFor(
+  recorded: { installedTag: string | null; installedAt: string | null } | undefined,
+  disprovedVersion: string | null,
+): string | null {
+  const tag = recorded?.installedTag ?? null
+  return tag !== null && tag === disprovedVersion ? null : tag
+}
+
 export interface BuildStateOpts {
   gw2Path: string | null
   gw2PathSource: ArcdpsState['gw2PathSource']
@@ -406,30 +421,34 @@ export async function buildArcdpsState(opts: BuildStateOpts): Promise<ArcdpsStat
           // check — AxiPulse v0.1.8 and v0.2.0 are both 44452864 bytes.
           // Fall back to recorded tag, then size, then unknown.
           const parsed = parseAssetDigest(rel.assetDigest)
+          let recordedTag = recorded?.installedTag ?? null
           let resolved = false
           if (parsed) {
             try {
               const localHex = computeFileDigest(det.dllPath, parsed.algo)
               const matches = localHex === parsed.hex
+              // The digest just disproved rel.version for this file, so a record
+              // claiming it can no longer be trusted to name what's on disk.
+              if (!matches) recordedTag = recordedTagFor(recorded, rel.version)
               // A mismatched DLL that postdates the newest release can't be a
               // stale old version — it's a locally built one. Flagging it
               // "UPDATE" would offer a downgrade to the release.
               if (!matches && rel.publishedAt && det.mtime > new Date(rel.publishedAt)) {
                 base.localBuild = true
                 base.upToDate = null
-                base.installedTag = recorded?.installedTag ?? det.mtime.toISOString().slice(0, 10)
+                base.installedTag = recordedTag ?? det.mtime.toISOString().slice(0, 10)
               } else {
                 base.upToDate = matches
                 base.installedTag = matches
                   ? rel.version
-                  : (recorded?.installedTag ?? det.mtime.toISOString().slice(0, 10))
+                  : (recordedTag ?? det.mtime.toISOString().slice(0, 10))
               }
               resolved = true
             } catch { /* fall through to other signals */ }
           }
-          if (!resolved && recorded?.installedTag) {
-            base.upToDate = recorded.installedTag === rel.version
-            base.installedTag = recorded.installedTag
+          if (!resolved && recordedTag) {
+            base.upToDate = recordedTag === rel.version
+            base.installedTag = recordedTag
             resolved = true
           }
           if (!resolved && rel.assetSize != null) {
