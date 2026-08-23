@@ -1,13 +1,14 @@
 # Release Notes
 
-Version v0.3.17 — August 14, 2026
+Version v0.3.18 — August 22, 2026
 
-## AxiOM sees new plugin releases right away
+## One click on Update is enough
 
-AxiOM could keep showing an old version for hours after a new one shipped — Unofficial Extras 2.5 was the case that surfaced this. The cause was on GitHub's side of the conversation: the endpoint AxiOM asked isn't simply "the newest release," it follows the *tag* date and a flag the publisher sets. A release tagged weeks before it's published, which is exactly how Unofficial Extras 2.5.1 shipped, could be left out entirely.
+Clicking **Update** could look like it did nothing, so you'd click it again. The download had in fact started — AxiOM just lost track of it. AxiOM checks for new versions on its own, when you open the tray popup and again every half hour, and those checks were allowed to overwrite whatever an install was in the middle of doing. The progress bar vanished, the Update button came back, and the only sign anything was happening was that the second click eventually finished.
 
-AxiOM now looks at the release list and takes the newest one that was actually published and actually ships a plugin file it can use. As a side effect, a release that doesn't include a file for your platform no longer hides the update entirely — AxiOM falls back to the most recent release that does.
+Update checks now leave a download alone while it's running. The arcdps view had its own version of this — a refresh rescans the folder, and mid-download that scan still sees the old file, so it would report the update as still available. It now keeps whatever is in flight and picks up the new version once the install lands.
 
 ## Fixes
 
-- A hand-installed plugin no longer reports the version it replaced. AxiOM checksums the file on disk, and when that proved the file wasn't the version it had on record, it displayed the recorded version anyway — showing "installed: 2.4.1" next to "Local build (newer than latest release)". It now trusts the checksum over its own notes.
+- Clicking **Update** twice in quick succession no longer starts two downloads of the same file.
+- The update badge in the title bar stays live after you visit Settings. Opening Settings and going back used to silently disconnect it, so AxiOM would stop telling you about its own updates until you restarted it.
