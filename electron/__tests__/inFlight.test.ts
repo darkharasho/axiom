@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isAppBusy, isArcdpsPluginBusy, preserveInFlightPlugins } from '../inFlight'
+import { WriteLog, isAppBusy, isArcdpsPluginBusy, mergeRefreshedPlugins } from '../inFlight'
 import type { ArcdpsPluginState, ArcdpsState } from '../shared/types'
 
 function plugin(over: Partial<ArcdpsPluginState> = {}): ArcdpsPluginState {
@@ -47,45 +47,115 @@ describe('isArcdpsPluginBusy', () => {
   })
 })
 
-describe('preserveInFlightPlugins', () => {
-  it('keeps a downloading plugin instead of the freshly-scanned one', () => {
+// A check reads config and scans disk up front, then spends seconds on the
+// network before writing its result back. Anything the user did in that window
+// is newer than the check's snapshot, even if it has already finished and left
+// no 'downloading' status behind to notice.
+describe('WriteLog', () => {
+  it('reports nothing touched when no writes happened', () => {
+    const log = new WriteLog()
+    const token = log.begin()
+
+    expect(log.touchedSince(token)('axipulse')).toBe(false)
+  })
+
+  it('reports a write that landed after the snapshot', () => {
+    const log = new WriteLog()
+    const token = log.begin()
+    log.record('axipulse')
+
+    expect(log.touchedSince(token)('axipulse')).toBe(true)
+  })
+
+  it('ignores writes that landed before the snapshot', () => {
+    const log = new WriteLog()
+    log.record('axipulse')
+    const token = log.begin()
+
+    expect(log.touchedSince(token)('axipulse')).toBe(false)
+  })
+
+  it('scopes writes to their own id', () => {
+    const log = new WriteLog()
+    const token = log.begin()
+    log.record('axipulse')
+
+    expect(log.touchedSince(token)('healing_stats')).toBe(false)
+  })
+
+  it('keeps two overlapping checks independent', () => {
+    const log = new WriteLog()
+    const older = log.begin()
+    log.record('axipulse')
+    const newer = log.begin()
+
+    expect(log.touchedSince(older)('axipulse')).toBe(true)
+    expect(log.touchedSince(newer)('axipulse')).toBe(false)
+  })
+
+  it('keeps a repeated write visible to the older snapshot', () => {
+    const log = new WriteLog()
+    const token = log.begin()
+    log.record('axipulse')
+    log.record('axipulse')
+
+    expect(log.touchedSince(token)('axipulse')).toBe(true)
+  })
+})
+
+describe('mergeRefreshedPlugins', () => {
+  const untouched = () => false
+
+  it('keeps an install that completed while the check was still running', () => {
+    // The whole point: the install is over, status is back to idle, and the only
+    // thing marking it is that its write is newer than the check's snapshot.
+    const prev = state([plugin({ status: 'idle', installedTag: 'v1.1.0', upToDate: true })])
+    const next = state([plugin({ status: 'idle', installedTag: 'v1.0.0', upToDate: false })])
+
+    const merged = mergeRefreshedPlugins(prev, next, id => id === 'arcdps_axipulse')
+
+    expect(merged.plugins[0].upToDate).toBe(true)
+    expect(merged.plugins[0].installedTag).toBe('v1.1.0')
+  })
+
+  it('keeps a plugin that is still downloading even if nothing was recorded', () => {
     const prev = state([plugin({ status: 'downloading', downloadProgress: { percent: 40, bytesReceived: 4, totalBytes: 10 } })])
-    // A refresh mid-download rescans disk and sees the old, still-stale DLL.
     const next = state([plugin({ status: 'idle', upToDate: false })])
 
-    const merged = preserveInFlightPlugins(prev, next)
+    const merged = mergeRefreshedPlugins(prev, next, untouched)
 
     expect(merged.plugins[0].status).toBe('downloading')
     expect(merged.plugins[0].downloadProgress).toEqual({ percent: 40, bytesReceived: 4, totalBytes: 10 })
   })
 
-  it('takes the fresh entry for plugins that are not busy', () => {
-    const prev = state([plugin({ status: 'idle', latestTag: 'v1.0.0', upToDate: true })])
-    const next = state([plugin({ status: 'idle', latestTag: 'v1.1.0', upToDate: false })])
+  it('takes the fresh entry for plugins the user did not touch', () => {
+    const prev = state([plugin({ latestTag: 'v1.0.0', upToDate: true })])
+    const next = state([plugin({ latestTag: 'v1.1.0', upToDate: false })])
 
-    expect(preserveInFlightPlugins(prev, next).plugins[0]).toEqual(next.plugins[0])
+    expect(mergeRefreshedPlugins(prev, next, untouched).plugins[0]).toEqual(next.plugins[0])
   })
 
-  it('only preserves the busy plugin, not its siblings', () => {
-    const busy = plugin({ id: 'arcdps_axipulse', status: 'installing' })
-    const idle = plugin({ id: 'healing_stats', status: 'idle', latestTag: 'old' })
-    const prev = state([busy, idle])
+  it('only preserves the touched plugin, not its siblings', () => {
+    const prev = state([
+      plugin({ id: 'arcdps_axipulse', upToDate: true }),
+      plugin({ id: 'healing_stats', latestTag: 'old' }),
+    ])
     const next = state([
-      plugin({ id: 'arcdps_axipulse', status: 'idle' }),
-      plugin({ id: 'healing_stats', status: 'idle', latestTag: 'new' }),
+      plugin({ id: 'arcdps_axipulse', upToDate: false }),
+      plugin({ id: 'healing_stats', latestTag: 'new' }),
     ])
 
-    const merged = preserveInFlightPlugins(prev, next)
+    const merged = mergeRefreshedPlugins(prev, next, id => id === 'arcdps_axipulse')
 
-    expect(merged.plugins[0].status).toBe('installing')
+    expect(merged.plugins[0].upToDate).toBe(true)
     expect(merged.plugins[1].latestTag).toBe('new')
   })
 
-  it('returns the fresh state untouched when nothing is in flight', () => {
-    const prev = state([plugin({ status: 'idle' })])
-    const next = state([plugin({ status: 'idle', latestTag: 'v2' })])
+  it('returns the fresh state untouched when nothing is busy or recorded', () => {
+    const prev = state([plugin()])
+    const next = state([plugin({ latestTag: 'v2' })])
 
-    expect(preserveInFlightPlugins(prev, next)).toBe(next)
+    expect(mergeRefreshedPlugins(prev, next, untouched)).toBe(next)
   })
 
   it('carries top-level fields (gw2Path, plugin list) from the fresh state', () => {
@@ -97,17 +167,17 @@ describe('preserveInFlightPlugins', () => {
       plugins: [plugin(), plugin({ id: 'player_outline' })],
     }
 
-    const merged = preserveInFlightPlugins(prev, next)
+    const merged = mergeRefreshedPlugins(prev, next, untouched)
 
     expect(merged.gw2Path).toBe('/new/gw2')
     expect(merged.gw2PathSource).toBe('manual')
     expect(merged.plugins).toHaveLength(2)
   })
 
-  it('drops a busy plugin that no longer exists in the fresh scan', () => {
-    const prev = state([plugin({ id: 'gone', status: 'downloading' })])
+  it('drops a touched plugin that no longer exists in the fresh scan', () => {
+    const prev = state([plugin({ id: 'gone' })])
     const next = state([plugin({ id: 'still_here' })])
 
-    expect(preserveInFlightPlugins(prev, next).plugins.map(p => p.id)).toEqual(['still_here'])
+    expect(mergeRefreshedPlugins(prev, next, () => true).plugins.map(p => p.id)).toEqual(['still_here'])
   })
 })

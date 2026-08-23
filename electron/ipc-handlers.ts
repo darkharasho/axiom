@@ -11,7 +11,7 @@ import { IdentityStore, electronCipher } from './secrets'
 import { isPrivateUnlocked } from './privateTools'
 import { detectInstalled } from './detect'
 import { resolveInstalledVersion } from './installedVersion'
-import { isAppBusy, preserveInFlightPlugins } from './inFlight'
+import { WriteLog, isAppBusy, mergeRefreshedPlugins } from './inFlight'
 import { appImageMatchesAsset } from './identifyAppImage'
 import { INSTALLED_VERSION_UNKNOWN, arcdpsPluginHasUpdate, appHasUpdate } from './shared/types'
 import {
@@ -49,6 +49,11 @@ function writeAxiomVersionFile(configDir: string | undefined, version: string | 
 let appStates: Record<AppId, AppState> = buildInitialStates()
 let lastCheckTime = 0
 let arcdpsState: ArcdpsState = { gw2Path: null, gw2PathSource: 'none', overrideError: null, plugins: [] }
+
+// Ordering between user-initiated writes and the slow read-then-write of an
+// update check. See electron/inFlight.ts.
+const appWrites = new WriteLog()
+const arcdpsWrites = new WriteLog()
 
 let identityStore: IdentityStore | null = null
 let githubToken: string | null = null
@@ -94,6 +99,7 @@ function pushArcdps(win: BrowserWindow): void {
 }
 
 function setArcdpsPlugin(win: BrowserWindow, id: string, patch: Partial<ArcdpsState['plugins'][number]>): void {
+  arcdpsWrites.record(id)
   arcdpsState = {
     ...arcdpsState,
     plugins: arcdpsState.plugins.map(p => p.id === id ? { ...p, ...patch } : p),
@@ -102,6 +108,9 @@ function setArcdpsPlugin(win: BrowserWindow, id: string, patch: Partial<ArcdpsSt
 }
 
 async function refreshArcdps(win: BrowserWindow): Promise<void> {
+  // Snapshot before the first read: everything below (config, disk scan, the
+  // GitHub round-trips) describes the world as of this moment.
+  const token = arcdpsWrites.begin()
   const cfg = readConfig()
   const resolved = resolveGw2Path({
     override: cfg.arcdps.gw2PathOverride,
@@ -128,9 +137,10 @@ async function refreshArcdps(win: BrowserWindow): Promise<void> {
       return r
     },
   })
-  // A refresh can land while an install is downloading — keep the in-flight
-  // plugins rather than replacing them with the (still stale) disk scan.
-  arcdpsState = preserveInFlightPlugins(arcdpsState, rebuilt)
+  // Seconds have passed. Anything the user installed in the meantime is newer
+  // than this scan, even if it already finished — don't write it back to the
+  // pre-install state the scan saw.
+  arcdpsState = mergeRefreshedPlugins(arcdpsState, rebuilt, arcdpsWrites.touchedSince(token))
   log.info(`[arcdps] refreshed gw2=${resolved.path ?? 'none'} (${resolved.source}) ` +
     arcdpsState.plugins.map(p => `${p.id}=${p.localBuild ? 'local' : p.upToDate === null ? '?' : p.upToDate ? 'ok' : 'UPDATE'}${p.disabled ? '(disabled)' : ''}`).join(' '))
   pushArcdps(win)
@@ -150,11 +160,16 @@ export async function runCheckUpdates(win: BrowserWindow): Promise<void> {
     // Don't touch an app that's mid-install: overwriting its status with
     // 'checking'/'idle' hides the progress bar and re-shows the Update button.
     if (isAppBusy(appStates[appId].status)) continue
-    setState(win, appId, { status: 'checking' })
+    const token = appWrites.begin()
+    setState(win, appId, { status: 'checking' }, true)
     const platform = process.platform === 'win32' ? 'win' : 'linux'
     const pattern = meta.assetPattern[platform]
     const release = await fetchLatestRelease(meta.repo, pattern, githubToken ?? undefined)
     const detected = await detectInstalled(meta.name, meta.configDir)
+    // The fetches above took seconds. If the user hit Install or Update in that
+    // window this whole result is stale — bail before it can write the version
+    // it saw back over the one the install just recorded.
+    if (appWrites.touchedSince(token)(appId)) continue
     const cfg = readConfig()
     const stored = cfg.apps[appId as InstallableAppId]?.installedVersion ?? null
 
@@ -180,7 +195,7 @@ export async function runCheckUpdates(win: BrowserWindow): Promise<void> {
       installedVersion,
       latestVersion: release?.version ?? null,
       downloadUrl: release?.downloadUrl ?? null,
-    })
+    }, true)
   }
   lastCheckTime = Date.now()
 
@@ -226,7 +241,11 @@ function pushStates(win: BrowserWindow): void {
   win.webContents.send('axiom:states-updated', Object.values(appStates))
 }
 
-function setState(win: BrowserWindow, appId: AppId, patch: Partial<AppState>): void {
+// `fromCheck` marks a write as belonging to a background update check rather
+// than to something the user asked for, so it doesn't count as a write the
+// check itself has to yield to.
+function setState(win: BrowserWindow, appId: AppId, patch: Partial<AppState>, fromCheck = false): void {
+  if (!fromCheck) appWrites.record(appId)
   appStates[appId] = { ...appStates[appId], ...patch }
   pushStates(win)
 }
