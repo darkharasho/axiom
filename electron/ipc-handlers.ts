@@ -11,6 +11,7 @@ import { IdentityStore, electronCipher } from './secrets'
 import { isPrivateUnlocked } from './privateTools'
 import { detectInstalled } from './detect'
 import { resolveInstalledVersion } from './installedVersion'
+import { isAppBusy, preserveInFlightPlugins } from './inFlight'
 import { appImageMatchesAsset } from './identifyAppImage'
 import { INSTALLED_VERSION_UNKNOWN, arcdpsPluginHasUpdate, appHasUpdate } from './shared/types'
 import {
@@ -107,7 +108,7 @@ async function refreshArcdps(win: BrowserWindow): Promise<void> {
     axiamConfigPath: defaultAxiamConfigPath(),
     candidates: defaultGw2Candidates(),
   })
-  arcdpsState = await buildArcdpsState({
+  const rebuilt = await buildArcdpsState({
     gw2Path: resolved.path,
     gw2PathSource: resolved.source,
     overrideError: resolved.overrideError,
@@ -127,6 +128,9 @@ async function refreshArcdps(win: BrowserWindow): Promise<void> {
       return r
     },
   })
+  // A refresh can land while an install is downloading — keep the in-flight
+  // plugins rather than replacing them with the (still stale) disk scan.
+  arcdpsState = preserveInFlightPlugins(arcdpsState, rebuilt)
   log.info(`[arcdps] refreshed gw2=${resolved.path ?? 'none'} (${resolved.source}) ` +
     arcdpsState.plugins.map(p => `${p.id}=${p.localBuild ? 'local' : p.upToDate === null ? '?' : p.upToDate ? 'ok' : 'UPDATE'}${p.disabled ? '(disabled)' : ''}`).join(' '))
   pushArcdps(win)
@@ -143,6 +147,9 @@ export async function runCheckUpdates(win: BrowserWindow): Promise<void> {
     const appId = id as AppId
     if (!isInstallable(meta)) continue
     if (!isAppVisible(meta, githubLogin)) continue
+    // Don't touch an app that's mid-install: overwriting its status with
+    // 'checking'/'idle' hides the progress bar and re-shows the Update button.
+    if (isAppBusy(appStates[appId].status)) continue
     setState(win, appId, { status: 'checking' })
     const platform = process.platform === 'win32' ? 'win' : 'linux'
     const pattern = meta.assetPattern[platform]
@@ -439,6 +446,7 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
     if (!isInstallable(meta)) return
     const { downloadUrl } = appStates[appId]
     if (!downloadUrl) return
+    if (isAppBusy(appStates[appId].status)) return
 
     const isUpdate = !!appStates[appId].installedVersion
 

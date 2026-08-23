@@ -1,6 +1,16 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { AppId, InstallableAppId, Config, AppState, ArcdpsState, GithubAuthState } from './shared/types'
 
+// Register one listener and hand back a teardown that removes only that listener.
+// `removeAllListeners(channel)` would wipe every subscriber on the channel, which
+// breaks whenever two components listen at once (e.g. useSelfUpdate is mounted in
+// both App and SettingsView — closing settings used to kill App's subscription).
+function subscribe<T>(channel: string, cb: (payload: T) => void): () => void {
+  const listener = (_e: unknown, payload: T) => cb(payload)
+  ipcRenderer.on(channel, listener)
+  return () => { ipcRenderer.removeListener(channel, listener) }
+}
+
 contextBridge.exposeInMainWorld('axiom', {
   getStates: (): Promise<AppState[]> =>
     ipcRenderer.invoke('axiom:get-states'),
@@ -56,27 +66,19 @@ contextBridge.exposeInMainWorld('axiom', {
   installSelfUpdate: (): Promise<void> =>
     ipcRenderer.invoke('axiom:install-self-update'),
 
-  onSelfUpdateStatus: (cb: (data: { status: string; version?: string; error?: string }) => void) => {
-    ipcRenderer.on('axiom:self-update-status', (_e, data) => cb(data))
-    return () => ipcRenderer.removeAllListeners('axiom:self-update-status')
-  },
+  onSelfUpdateStatus: (cb: (data: { status: string; version?: string; error?: string }) => void) =>
+    subscribe('axiom:self-update-status', cb),
 
   quit: (): void => ipcRenderer.send('axiom:quit'),
 
-  onStatesUpdated: (cb: (states: AppState[]) => void) => {
-    ipcRenderer.on('axiom:states-updated', (_e, states) => cb(states))
-    return () => ipcRenderer.removeAllListeners('axiom:states-updated')
-  },
+  onStatesUpdated: (cb: (states: AppState[]) => void) =>
+    subscribe('axiom:states-updated', cb),
 
-  onRequestCheckUpdates: (cb: () => void) => {
-    ipcRenderer.on('axiom:request-check-updates', cb)
-    return () => ipcRenderer.removeAllListeners('axiom:request-check-updates')
-  },
+  onRequestCheckUpdates: (cb: () => void) =>
+    subscribe('axiom:request-check-updates', () => cb()),
 
-  onGearLeverProgress: (cb: (chunk: string) => void) => {
-    ipcRenderer.on('axiom:gear-lever-progress', (_e, chunk) => cb(chunk))
-    return () => ipcRenderer.removeAllListeners('axiom:gear-lever-progress')
-  },
+  onGearLeverProgress: (cb: (chunk: string) => void) =>
+    subscribe('axiom:gear-lever-progress', cb),
 
   getArcdpsState: (): Promise<ArcdpsState> =>
     ipcRenderer.invoke('arcdps:get-state'),
@@ -96,10 +98,8 @@ contextBridge.exposeInMainWorld('axiom', {
   pickGw2Folder: (): Promise<string | null> =>
     ipcRenderer.invoke('arcdps:pick-gw2-folder'),
 
-  onArcdpsStateUpdated: (cb: (state: ArcdpsState) => void) => {
-    ipcRenderer.on('arcdps:state-updated', (_e, state) => cb(state))
-    return () => ipcRenderer.removeAllListeners('arcdps:state-updated')
-  },
+  onArcdpsStateUpdated: (cb: (state: ArcdpsState) => void) =>
+    subscribe('arcdps:state-updated', cb),
 
   githubGetStatus: (): Promise<GithubAuthState> =>
     ipcRenderer.invoke('github:status'),
@@ -113,8 +113,6 @@ contextBridge.exposeInMainWorld('axiom', {
   githubSignOut: (): Promise<GithubAuthState> =>
     ipcRenderer.invoke('github:sign-out'),
 
-  onGithubStatusUpdated: (cb: (state: GithubAuthState) => void) => {
-    ipcRenderer.on('github:status-updated', (_e, state) => cb(state))
-    return () => ipcRenderer.removeAllListeners('github:status-updated')
-  },
+  onGithubStatusUpdated: (cb: (state: GithubAuthState) => void) =>
+    subscribe('github:status-updated', cb),
 })
