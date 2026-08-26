@@ -39,9 +39,17 @@ describe('isAppVisible', () => {
   it('shows a gated app to an allowlisted login', () => { expect(isAppVisible(gatedApp, 'gw2dui')).toBe(true) })
   it('always shows a public (no-allowlist) app, even signed out', () => { expect(isAppVisible(APP_META.axivale, null)).toBe(true) })
 
-  it('gates axistream to its allowlist', () => {
+  it('shows axistream to everyone, including signed out', () => {
+    // AxiStream was gated to an allowlist while it was pre-1.0. It went
+    // generally available in AxiStream 1.0; the gating mechanism above stays,
+    // it just has no entries using it today.
     expect(isAppVisible(APP_META.axistream, 'gw2dui')).toBe(true)
-    expect(isAppVisible(APP_META.axistream, 'randomuser')).toBe(false)
-    expect(isAppVisible(APP_META.axistream, null)).toBe(false)
+    expect(isAppVisible(APP_META.axistream, 'randomuser')).toBe(true)
+    expect(isAppVisible(APP_META.axistream, null)).toBe(true)
+  })
+
+  it('has no gated entries in the registry — every app is generally available', () => {
+    const gated = Object.values(APP_META).filter(m => 'allowlist' in m && m.allowlist != null)
+    expect(gated).toEqual([])
   })
 })

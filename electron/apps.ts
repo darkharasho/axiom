@@ -91,7 +91,6 @@ export const APP_META: Record<AppId, AppMeta> = {
     repo: 'darkharasho/axistream',
     // configDir is the Electron userData dirname on Linux, which equals the npm package name
     configDir: '@axistream/app',
-    allowlist: ['darkharasho', 'gw2dui'],
     assetPattern: {
       win: /AxiStream.*\.exe$/i,
       linux: /AxiStream.*\.AppImage$/i,
