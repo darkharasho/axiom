@@ -254,6 +254,38 @@ export function resolveInstallDir(gw2: string, kind: InstallDir): string {
   return kind === '' ? gw2 : path.join(gw2, ...kind.split('/'))
 }
 
+// GW2 Nexus owns <GW2>/addons/ — its presence is what makes that folder a
+// valid place for an addon to load from.
+export function isNexusInstalled(gw2Path: string): boolean {
+  return fs.existsSync(path.join(gw2Path, 'addons'))
+}
+
+// Where a fresh install should write. An already-detected plugin is updated in
+// place. Otherwise the first declared location wins, EXCEPT that an addons/
+// location is only loadable when Nexus is actually installed. Several plugins
+// declare addons/ first so that *detection* prefers Nexus's copy (arcdps's
+// root d3d11.dll is Nexus's own loader in a Nexus setup) — but with no Nexus
+// present nothing reads addons/, and the install belongs in the GW2 root
+// beside arcdps's d3d11.dll, which is the folder arcdps loads its extensions
+// from.
+export function pickInstallLocation(
+  locations: PluginLocation[],
+  gw2Path: string,
+  installedDir: string | null,
+): PluginLocation {
+  if (installedDir != null) {
+    const existing = locations.find(l => l.dir === installedDir)
+    if (existing) return existing
+  }
+  if (!isNexusInstalled(gw2Path)) {
+    const root = locations.find(l => l.dir === '')
+    if (root) return root
+    const nonNexus = locations.find(l => l.dir !== 'addons')
+    if (nonNexus) return nonNexus
+  }
+  return locations[0]
+}
+
 function scanDirForPlugin(
   dir: string,
   location: PluginLocation,
@@ -300,7 +332,7 @@ function scanDirForPlugin(
 }
 
 export function detectInstalledPlugins(gw2Path: string): DetectedPlugin[] {
-  const nexusInstalled = fs.existsSync(path.join(gw2Path, 'addons'))
+  const nexusInstalled = isNexusInstalled(gw2Path)
   const out: DetectedPlugin[] = []
   const seen = new Set<string>()
   for (const meta of ARCDPS_REGISTRY) {

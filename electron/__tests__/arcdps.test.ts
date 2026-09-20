@@ -6,7 +6,8 @@ import path from 'path'
 
 vi.mock('electron', () => ({ app: { getPath: () => '/tmp/axiom-test-userdata' } }))
 
-import { resolveGw2Path, detectInstalledPlugins, computeFileMd5, checkArcdpsCoreUpdate, buildArcdpsState, installPluginFile, setPluginDisabled } from '../arcdps'
+import { resolveGw2Path, detectInstalledPlugins, computeFileMd5, checkArcdpsCoreUpdate, buildArcdpsState, installPluginFile, setPluginDisabled, pickInstallLocation } from '../arcdps'
+import { getPluginMeta } from '../arcdpsRegistry'
 import { arcdpsPluginHasUpdate } from '../shared/types'
 
 describe('resolveGw2Path', () => {
@@ -714,5 +715,53 @@ describe('arcdpsPluginHasUpdate', () => {
   })
   it('treats unknown (null) upToDate as no update', () => {
     expect(arcdpsPluginHasUpdate({ upToDate: null, disabled: false })).toBe(false)
+  })
+})
+
+describe('pickInstallLocation', () => {
+  const locations = getPluginMeta('arcdps')!.locations
+
+  it('installs arcdps as root d3d11.dll when Nexus is absent', () => {
+    const gw2 = fs.mkdtempSync(path.join(os.tmpdir(), 'arc-nonexus-'))
+    const loc = pickInstallLocation(locations, gw2, null)
+    expect(loc.dir).toBe('')
+    expect(loc.installFilename).toBe('d3d11.dll')
+  })
+
+  it('installs arcdps into addons/ when Nexus is present', () => {
+    const gw2 = fs.mkdtempSync(path.join(os.tmpdir(), 'arc-nexus-'))
+    fs.mkdirSync(path.join(gw2, 'addons'))
+    const loc = pickInstallLocation(locations, gw2, null)
+    expect(loc.dir).toBe('addons')
+    expect(loc.installFilename).toBe('ArcDPS.dll')
+  })
+
+  it('installs an addons-first plugin in the GW2 root when Nexus is absent', () => {
+    const gw2 = fs.mkdtempSync(path.join(os.tmpdir(), 'arc-extras-'))
+    const extras = getPluginMeta('unofficial_extras')!.locations
+    const loc = pickInstallLocation(extras, gw2, null)
+    expect(loc.dir).toBe('')
+    expect(loc.installFilename).toBe('extras.dll')
+  })
+
+  it('installs an addons-first plugin into addons/ when Nexus is present', () => {
+    const gw2 = fs.mkdtempSync(path.join(os.tmpdir(), 'arc-extras-nexus-'))
+    fs.mkdirSync(path.join(gw2, 'addons'))
+    const extras = getPluginMeta('unofficial_extras')!.locations
+    expect(pickInstallLocation(extras, gw2, null).dir).toBe('addons')
+  })
+
+  it('leaves root-first plugins in the GW2 root either way', () => {
+    const gw2 = fs.mkdtempSync(path.join(os.tmpdir(), 'arc-axipulse-'))
+    const axipulse = getPluginMeta('arcdps_axipulse')!.locations
+    expect(pickInstallLocation(axipulse, gw2, null).dir).toBe('')
+    fs.mkdirSync(path.join(gw2, 'addons'))
+    expect(pickInstallLocation(axipulse, gw2, null).dir).toBe('')
+  })
+
+  it('updates in place at an already-detected location', () => {
+    const gw2 = fs.mkdtempSync(path.join(os.tmpdir(), 'arc-inplace-'))
+    // No addons/ dir, but arcdps was detected there previously.
+    expect(pickInstallLocation(locations, gw2, 'addons').dir).toBe('addons')
   })
 })

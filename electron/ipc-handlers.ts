@@ -31,6 +31,8 @@ import {
   defaultGw2Candidates,
   buildArcdpsState,
   installPluginFile,
+  pickInstallLocation,
+  resolveInstallDir,
   checkArcdpsCoreUpdate,
   detectInstalledPlugins,
   setPluginDisabled,
@@ -366,12 +368,10 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
       return
     }
 
-    // Install at the location where the plugin is already detected; otherwise
-    // fall back to the first declared location (the preferred default).
-    const location = (plugin.installedDir != null
-      ? meta.locations.find(l => l.dir === plugin.installedDir)
-      : undefined) ?? meta.locations[0]
-    const installDirAbs = location.dir === '' ? current.gw2Path : pathSync.join(current.gw2Path, ...location.dir.split('/'))
+    // Install where the plugin is already detected; otherwise the preferred
+    // default for this GW2 install (addons/ only when Nexus is present).
+    const location = pickInstallLocation(meta.locations, current.gw2Path, plugin.installedDir)
+    const installDirAbs = resolveInstallDir(current.gw2Path, location.dir)
     // Overwrite the exact file we detected (its real name may differ from the
     // location's canonical installFilename — e.g. Unofficial Extras ships as
     // arcdps_unofficial_extras.dll but installs canonically as Unofficial_Extras.dll).

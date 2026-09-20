@@ -206,6 +206,9 @@ export const ARCDPS_REGISTRY: ArcPluginMeta[] = [
     //   arcdps_unofficial_extras.dll     (prefixed variant some installers use)
     locations: [
       { dir: 'addons',                  dllPattern: /^(arcdps_unofficial_extras|Unofficial_Extras|extras)\.dll$/i, installFilename: 'Unofficial_Extras.dll' },
+      // Without Nexus the plugin loads from the GW2 root, next to arcdps's own
+      // d3d11.dll — that is where a fresh non-Nexus install goes.
+      { dir: '',                        dllPattern: /^(arcdps_unofficial_extras|Unofficial_Extras|extras)\.dll$/i, installFilename: 'extras.dll' },
       { dir: 'bin64/arcdps/extensions', dllPattern: /^extras\.dll$/i,                                              installFilename: 'extras.dll' },
     ],
     // The release publishes the DLL as arcdps_unofficial_extras.dll; older
