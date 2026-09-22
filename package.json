@@ -37,7 +37,7 @@
     "wait-on": "^7.2.0"
   },
   "dependencies": {
-    "axi-design": "github:darkharasho/axi-design#v1.4",
+    "@axiapps/axi-design": "^1.6.0",
     "electron-log": "^5.4.3",
     "electron-updater": "^6.8.3",
     "lucide-react": "^1.8.0"
