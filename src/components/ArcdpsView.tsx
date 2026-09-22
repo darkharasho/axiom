@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import type { CSSProperties } from 'react'
 import { ChevronLeft, RefreshCw } from 'lucide-react'
 import { useArcdpsState } from '../hooks/useArcdpsState'
 import { ArcdpsRow } from './ArcdpsRow'
@@ -34,130 +35,55 @@ export function ArcdpsView({ onBack }: Props) {
   }
 
   return (
-    <div className="view-enter" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: 14 }}>
-      {/* Header */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        marginBottom: 10,
-        paddingBottom: 10,
-        borderBottom: '1px solid var(--border)',
-      }}>
-        <button
-          onClick={onBack}
-          aria-label="Back"
-          className="icon-btn"
-          style={{
-            background: 'none',
-            color: 'var(--text-dim)',
-            padding: '4px 8px 4px 2px',
-            marginRight: 2,
-            display: 'flex',
-            alignItems: 'center',
-          }}
-        >
+    <div className="view-enter ax-view">
+      <div className="ax-head">
+        <button className="ax-icon" onClick={onBack} aria-label="Back">
           <ChevronLeft size={16} />
         </button>
-        <span style={{ fontFamily: 'var(--font-title)', fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
-          arcdps &amp; Plugins
-        </span>
-        <button
-          onClick={check}
-          disabled={checking}
-          className="btn-ghost"
-          style={{
-            marginLeft: 'auto',
-            background: 'none',
-            color: checking ? 'var(--text-faint)' : 'var(--text-dim)',
-            fontSize: 11,
-            padding: '4px 0',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4,
-            transition: 'color 0.1s',
-          }}
-          onMouseEnter={e => { if (!checking) e.currentTarget.style.color = 'var(--text-light)' }}
-          onMouseLeave={e => { if (!checking) e.currentTarget.style.color = 'var(--text-dim)' }}
-        >
+        <span className="ax-title">arcdps &amp; Plugins</span>
+        <button className="ax-icon" style={{ marginLeft: 'auto' }} onClick={check} disabled={checking}>
           <RefreshCw size={10} className={checking ? 'spin' : ''} />
-          {checking ? 'Checking…' : 'Check for updates'}
+          {checking ? 'Checking…' : 'Check'}
         </button>
       </div>
 
-      {/* GW2 path line */}
-      <div style={{
-        fontSize: 10,
-        color: 'var(--text-faint)',
-        marginBottom: 10,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 6,
-        flexWrap: 'wrap',
-      }}>
+      {/* Where the plugins are going. A path is metadata about the install, not
+          a status of it — rule 6's cool ink is exactly what it is for. */}
+      <div className="ax-item__note" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', padding: '0 6px 8px', marginTop: 0 }}>
         {gw2Path ? (
           <>
-            <span style={{ color: 'var(--text-dim)', fontFamily: 'monospace', fontSize: 10 }}>{gw2Path}</span>
-            <span>({sourceLabel(gw2PathSource)})</span>
+            <span style={{ fontFamily: 'var(--axi-mono)', color: 'var(--axi-text-dim)', overflow: 'hidden', textOverflow: 'ellipsis' }}>{gw2Path}</span>
+            <span className="axi-chip axi-chip--meta ax-sm">{sourceLabel(gw2PathSource)}</span>
           </>
         ) : (
           <span>GW2 path not set</span>
         )}
-        <button
-          onClick={handleChangePath}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: 'var(--gold)',
-            fontSize: 10,
-            cursor: 'pointer',
-            padding: 0,
-            textDecoration: 'underline',
-            textUnderlineOffset: 2,
-          }}
-        >
-          Change…
-        </button>
+        <button className="ax-icon" onClick={handleChangePath}>Change…</button>
       </div>
 
       {overrideError && (
-        <div style={{
-          fontSize: 11,
-          color: 'var(--danger, #c66)',
-          marginBottom: 10,
-          padding: '6px 8px',
-          background: 'rgba(200, 100, 100, 0.08)',
-          border: '1px solid rgba(200, 100, 100, 0.2)',
-          borderRadius: 3,
-        }}>
-          {overrideError}
+        <div className="axi-notice" style={{ '--axi-panel-pad': '10px', padding: '10px 12px', marginBottom: 8, boxShadow: 'none' } as CSSProperties}>
+          <span className="axi-notice__icon" style={{ background: 'var(--axi-danger)' }} aria-hidden>!</span>
+          <p>{overrideError}</p>
         </div>
       )}
 
-      {/* Plugin list or empty state */}
-      <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div className="ax-scroll">
         {plugins.length === 0 ? (
           <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '100%',
-            gap: 8,
-            color: 'var(--text-faint)',
-            fontSize: 12,
-            textAlign: 'center',
-            padding: '0 20px',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            height: '100%', gap: 6, textAlign: 'center', padding: '0 20px',
+            font: 'var(--axi-t-small)', color: 'var(--axi-text-faint)',
           }}>
             {gw2Path === null ? (
               <>
                 <span>No GW2 path configured.</span>
-                <span style={{ fontSize: 11 }}>Set your GW2 installation path above to manage arcdps plugins.</span>
+                <span className="ax-item__note">Set your GW2 installation path above to manage arcdps plugins.</span>
               </>
             ) : (
               <>
                 <span>No plugins found.</span>
-                <span style={{ fontSize: 11 }}>Click &quot;Check for updates&quot; to load available plugins.</span>
+                <span className="ax-item__note">Check for updates to load available plugins.</span>
               </>
             )}
           </div>

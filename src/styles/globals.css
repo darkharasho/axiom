@@ -1,102 +1,204 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Outfit:wght@400;500;600;700&display=swap');
+/* axiom's layer over axi-design.
+
+   The design language is in node_modules and is imported first in main.tsx.
+   Only three kinds of rule belong in this file: the accent, the frameless
+   window's own plumbing, and the shapes a 420x560 tray popover needs that a
+   page-scale design language does not ship. Everything else is axi's - if you
+   find yourself writing a border weight or an offset here, reach for the token
+   instead, and if there is no token for it, it does not belong in the app. */
 
 :root {
-  --bg:           #08090c;
-  --panel:        #0c0d10;
-  --border:       #1e1f24;
-  --border-muted: #14151a;
-  --text:         #e2e3e8;
-  --text-light:   #aeafb8;
-  --text-dim:     #7c7d88;
-  --text-faint:   #52535c;
-  --gold:         #c89850;
-  --gold-bright:  #e8b050;
-  --gold-border:  rgba(200, 152, 80, 0.27);
-  --gold-border-bright: rgba(232, 176, 80, 0.27);
-  --font-ui:      'Outfit', system-ui, sans-serif;
-  --font-title:   'Cinzel', serif;
+  /* The whole theming surface. axi's stock accent is #ffc53d; axiom's gold is
+     darker and warmer, and every accented thing in the app follows this one
+     line. --axi-accent-ink stays as shipped: the gold is bright enough on this
+     ground that near-black text on top of it still reads. */
+  --axi-accent: #c89850;
 }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-html, body {
-  width: 100%;
-  height: 100%;
-  background: var(--bg);
-  overflow: hidden;
-}
+/* .axi-window rounds its corners. Behind that radius is the OS, and with
+   frame: false there is no OS chrome to show through - so paint the body in
+   the outline's own ink and the corner slivers read as part of the outline
+   rather than as four bright notches. */
+html, body { width: 100%; height: 100%; overflow: hidden; background: var(--axi-ink-line); }
 
 #root {
   width: 100%;
   height: 100%;
-  background: radial-gradient(ellipse at 50% 0%, rgba(200, 152, 80, 0.04) 0%, transparent 65%), var(--bg);
-  color: var(--text);
-  font-family: var(--font-ui);
-  font-size: 13px;
-  -webkit-font-smoothing: antialiased;
-  user-select: none;
   overflow: hidden;
+  /* A tray popover is chrome. Dragging a selection across its labels is never
+     what anyone meant to do. */
+  user-select: none;
 }
 
-button {
-  font-family: var(--font-ui);
+/* ---------- the view frame ---------- */
+/* Every view is the window's interior: a head, a scrolling middle and a foot,
+   separated by rules rather than outlines. Rule 8 is about tables, but a list
+   of eight apps inside a 420px window is the same claim - the window is the
+   raised thing and none of this is raised off it. */
+.ax-view { display: flex; flex-direction: column; height: 100%; padding: 12px; }
+
+.ax-head {
+  flex: none;
+  display: flex; align-items: center; gap: 8px;
+  padding-bottom: 9px; margin-bottom: 8px;
+  border-bottom: var(--axi-border-control) solid var(--axi-rule);
+  /* The frameless window needs a drag handle and this is the only strip that
+     is empty enough to be one. The controls in it opt back out. */
+  -webkit-app-region: drag;
+}
+.ax-head button, .ax-head a, .ax-foot button { -webkit-app-region: no-drag; }
+
+.ax-title {
+  font: var(--axi-t-label);
+  letter-spacing: var(--axi-ls-label);
+  text-transform: uppercase;
+  color: var(--axi-text);
+}
+
+.ax-scroll { flex: 1; min-height: 0; overflow-y: auto; }
+
+.ax-foot {
+  flex: none;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding-top: 9px; margin-top: 8px;
+  border-top: var(--axi-border-control) solid var(--axi-rule);
+}
+
+/* ---------- a list row ---------- */
+/* Drawn in a hairline rule, exactly as a table row is, and for the same
+   reason: eight outlined boxes stacked in a 420px window is eight raised
+   things where there is only one. The hover is the neutral ramp - moving the
+   cursor down the list is not a series of status changes. */
+.ax-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 6px;
+  border-bottom: var(--axi-border-hairline) solid var(--axi-rule);
+}
+.ax-item:last-child { border-bottom: 0; }
+.ax-item:hover { background: var(--axi-surface); }
+.ax-item__main { flex: 1; min-width: 0; }
+.ax-item__name {
+  font: var(--axi-t-small);
+  font-weight: 800;
+  color: var(--axi-text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ax-item--off .ax-item__name { color: var(--axi-text-dim); }
+.ax-item__note {
+  margin-top: 3px;
+  font: var(--axi-t-micro);
+  /* The token is drawn for uppercase chips at weight 800. A status line under
+     a name is running text, and at 800 it competed with the name it belongs
+     to - this is the one place the type scale needs the quieter weight. */
+  font-weight: 600;
+  letter-spacing: var(--axi-ls-micro);
+  color: var(--axi-text-faint);
+}
+/* An app's own icon, not ours to restyle - only to size, and to quiet where
+   the app is not installed. Opacity on an image is not rule 2's "colour at
+   partial opacity": there is no ink being muted, only artwork stepping back. */
+.ax-item__icon { width: 28px; height: 28px; object-fit: contain; flex: none; }
+.ax-item--off .ax-item__icon { opacity: .35; }
+
+/* ---------- compact controls ---------- */
+/* axi's controls are drawn for a page: .axi-btn rests at 12px/20px padding and
+   13px type, and four of those do not fit across 420px. This changes the size
+   and nothing else - the border weight, the radius, the offset block and the
+   hover lift are all still the language's, which is the part that has to stay
+   the same for the app to look like the rest of the suite. */
+.axi-btn.ax-sm, .axi-pill.ax-sm {
+  padding: 5px 9px; gap: 5px;
+  font: var(--axi-t-micro);
+  letter-spacing: var(--axi-ls-micro);
+}
+.axi-chip.ax-sm { padding: 3px 7px; }
+
+/* Chrome, not content: the back arrow, the settings cog, the row's overflow
+   menu. They have nothing to lift off, and a tray window this small would be
+   in constant motion if every one of them did. They answer on the ramp, which
+   is the same reason .axi-titlebar's buttons do. */
+.ax-icon {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 6px;
+  background: transparent;
+  border: var(--axi-border-control) solid transparent;
+  border-radius: var(--axi-radius-sm);
+  color: var(--axi-text-faint);
+  font: var(--axi-t-micro);
+  letter-spacing: var(--axi-ls-micro);
+  text-transform: uppercase;
   cursor: pointer;
-  border: none;
-  outline: none;
 }
+.ax-icon:hover:not(:disabled) { color: var(--axi-text); border-color: var(--axi-rule); }
+.ax-icon:disabled { color: var(--axi-text-faint); cursor: default; }
+.ax-icon--danger:hover:not(:disabled) { color: var(--axi-danger); border-color: var(--axi-danger); }
 
-button:disabled { opacity: 0.5; cursor: default; }
-
-@keyframes spin { to { transform: rotate(360deg); } }
-.spin { animation: spin 0.8s linear infinite; }
-
-button:hover:not(:disabled) { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12); }
-button:active:not(:disabled) { transform: scale(0.96); transition: transform 0.05s; }
-
-.icon-btn {
-  border-radius: 4px;
-  transition: background 0.1s;
+/* ---------- the row overflow menu ---------- */
+/* axi's .axi-menu__pop is drawn for a 310px filter panel. The popover form is
+   the language's; only the width and the item scale are the app's. */
+.ax-menu-item {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%;
+  padding: 6px 9px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--axi-radius-sm);
+  color: var(--axi-text-dim);
+  font: var(--axi-t-micro);
+  letter-spacing: var(--axi-ls-micro);
+  text-transform: uppercase;
+  text-align: left;
+  cursor: pointer;
 }
-.icon-btn:hover {
-  background: rgba(255, 255, 255, 0.05) !important;
-  box-shadow: none !important;
-}
+.ax-menu-item:hover { background: var(--axi-ground); color: var(--axi-text); }
+.ax-menu-item--danger:hover { background: var(--axi-danger); color: var(--axi-ink-line); }
 
-.btn-ghost:hover:not(:disabled) {
-  box-shadow: none !important;
-}
+/* ---------- motion ---------- */
+/* Rule 11: a work indicator animates transform or opacity and nothing else.
+   Both of these do. base.css flattens them under prefers-reduced-motion. */
+@keyframes ax-spin { to { transform: rotate(360deg); } }
+.spin { animation: ax-spin .8s linear infinite; }
 
-.btn-gold:hover:not(:disabled) {
-  filter: brightness(1.15) !important;
-  box-shadow: none !important;
-}
-
-@keyframes fadeIn {
+@keyframes ax-enter {
   from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: none; }
 }
-.view-enter { animation: fadeIn 150ms ease-out; }
+.view-enter { animation: ax-enter 150ms ease-out; height: 100%; }
 
-/* Thin, on-brand scrollbars for every scroll container. */
-*::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* ---------- scrollbars ---------- */
+/* Drawn from the neutral ramp. The old gold-at-18%-opacity thumb was rule 2's
+   exact failure: an accent thinned until it was brown. */
+*::-webkit-scrollbar { width: 6px; height: 6px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: var(--axi-rule); border-radius: 3px; }
+*::-webkit-scrollbar-thumb:hover { background: var(--axi-text-faint); }
+*::-webkit-scrollbar-corner { background: transparent; }
+* { scrollbar-width: thin; scrollbar-color: var(--axi-rule) transparent; }
+
+/* ---------- disabled ---------- */
+/* The language has no disabled state: on a marketing page nothing is ever
+   greyed out. An app is full of controls that are briefly not available, and
+   a control that still lifts under the cursor while doing nothing is a lie.
+   Drop to the faintest step of the ramp and take the lift away - no opacity,
+   because rule 2 is about not thinning ink and this keeps the ink whole. */
+.axi-btn:disabled, .axi-pill:disabled {
+  color: var(--axi-text-faint);
+  cursor: default;
 }
-*::-webkit-scrollbar-track {
-  background: transparent;
+.axi-btn--primary:disabled { background: var(--axi-surface-raised); }
+.axi-btn:disabled:hover, .axi-pill:disabled:hover {
+  transform: none;
+  box-shadow: none;
+  color: var(--axi-text-faint);
 }
-*::-webkit-scrollbar-thumb {
-  background: rgba(200, 152, 80, 0.18);
-  border-radius: 3px;
-  transition: background 0.15s;
-}
-*::-webkit-scrollbar-thumb:hover {
-  background: rgba(232, 176, 80, 0.45);
-}
-*::-webkit-scrollbar-corner {
-  background: transparent;
-}
-* {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(200, 152, 80, 0.25) transparent;
-}
+.axi-btn--primary:disabled:hover { background: var(--axi-surface-raised); }
+
+/* ---------- the status inks ---------- */
+/* Named for what they mean rather than for their colour, and deliberately
+   last in the file: they are applied on top of whatever component a status
+   lands on - a note, a button, an .ax-icon - and every one of those sets a
+   colour of its own at the same specificity. Source order is the whole
+   mechanism, so nothing may set a colour below this point. */
+.ax-ink-accent { color: var(--axi-accent); }
+.ax-ink-ok     { color: var(--axi-ok); }
+.ax-ink-danger { color: var(--axi-danger); }

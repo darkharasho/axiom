@@ -3,7 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com" />
+    <!-- The Google Fonts exceptions are gone with Cinzel and Outfit: axi's type
+         scale is the system stack, so the renderer no longer reaches the
+         network for anything and the policy can say so. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'" />
     <title>AxiOM</title>
   </head>
   <body>

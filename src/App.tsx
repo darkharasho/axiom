@@ -18,7 +18,11 @@ export default function App() {
   const infoState = infoAppId ? states.find(s => s.id === infoAppId) : undefined
 
   return (
-    <div style={{ width: '100%', height: '100%', background: 'var(--bg)' }}>
+    // The window is the panel. axi's .axi-window is exactly this shape: the
+    // ground, the panel-weight outline, and no offset block - there is nothing
+    // behind a frameless tray popover for it to be raised off, and a block
+    // would be clipped by the window edge anyway.
+    <div className="axi-window">
       {view === 'list' && (
         <AppList
           states={states}

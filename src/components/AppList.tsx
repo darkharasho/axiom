@@ -80,140 +80,59 @@ export function AppList({ states, checking, selfUpdate, onOpenSettings, onOpenAr
   }
 
   return (
-    <div className="view-enter" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: 14 }}>
-      {/* Header */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        marginBottom: 14,
-        paddingBottom: 10,
-        borderBottom: '1px solid var(--border)',
-      }}>
-        <img src="./svg/axiom-glyph.svg" alt="AxiOM" style={{ width: 20, height: 20, objectFit: 'contain' }} />
-        <span style={{ fontFamily: 'var(--font-title)', fontSize: 13, fontWeight: 700, letterSpacing: '0.5px' }}>
-          <span style={{ color: 'var(--text)' }}>Axi</span>
-          <span style={{ color: 'var(--gold)' }}>OM</span>
+    <div className="view-enter ax-view">
+      <div className="ax-head">
+        {/* The sigil is rule 7's motif doing its job: the glyph is axiom's, the
+            diamond behind it is the family's. */}
+        <img src="./svg/axiom-glyph.svg" alt="" aria-hidden style={{ width: 20, height: 20, objectFit: 'contain' }} />
+        <span className="ax-title">
+          Axi<span style={{ color: 'var(--axi-accent)' }}>OM</span>
         </span>
+
         {import.meta.env.DEV && (
-          <span
-            title="Running from the dev server"
-            style={{
-              marginLeft: 4,
-              border: '1px solid var(--gold)',
-              borderRadius: 3,
-              color: 'var(--gold-bright)',
-              background: 'rgba(212, 175, 55, 0.12)',
-              fontSize: 9,
-              fontWeight: 700,
-              letterSpacing: '0.5px',
-              textTransform: 'uppercase',
-              padding: '1px 5px',
-              lineHeight: 1.2,
-            }}
-          >
-            dev
-          </span>
+          <span className="axi-chip axi-chip--meta ax-sm" title="Running from the dev server">dev</span>
         )}
+
+        {/* The self-update state. Ready is the only one you can act on, so it is
+            the only one that gets a control; the rest annotate. */}
         {selfUpdate?.status === 'ready' && (
           <button
+            className="axi-btn axi-btn--primary ax-sm"
             onClick={() => window.axiom.installSelfUpdate()}
             title={`Restart to install AxiOM v${selfUpdate.version}`}
-            style={{
-              marginLeft: 6,
-              background: 'var(--gold)',
-              border: 'none',
-              borderRadius: 3,
-              color: 'var(--bg)',
-              fontSize: 9,
-              fontWeight: 700,
-              letterSpacing: '0.3px',
-              textTransform: 'uppercase',
-              padding: '2px 6px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 3,
-              cursor: 'pointer',
-            }}
           >
-            <ArrowUp size={9} />
+            <ArrowUp size={10} />
             Update
           </button>
         )}
         {(selfUpdate?.status === 'available' || selfUpdate?.status === 'downloading') && (
           <span
+            className="axi-chip ax-sm ax-ink-accent"
             title={selfUpdate.status === 'downloading' ? 'Downloading AxiOM update…' : `AxiOM v${selfUpdate.version} available`}
-            style={{
-              marginLeft: 6,
-              color: 'var(--gold-bright)',
-              fontSize: 9,
-              fontWeight: 600,
-              letterSpacing: '0.3px',
-              textTransform: 'uppercase',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 3,
-            }}
           >
             <RefreshCw size={9} className="spin" />
             {selfUpdate.status === 'downloading' ? 'Updating' : 'Update'}
           </span>
         )}
+
         <button
+          className="ax-icon"
+          style={{ marginLeft: 'auto' }}
           onClick={onOpenArcdps}
-          className="icon-btn"
-          style={{
-            marginLeft: 'auto',
-            position: 'relative',
-            background: 'none',
-            border: 'none',
-            color: 'var(--text-faint)',
-            cursor: 'pointer',
-            padding: '2px 6px',
-            borderRadius: 3,
-            display: 'flex',
-            alignItems: 'center',
-          }}
           title={arcdpsHasUpdate ? 'arcdps plugins — update available' : 'arcdps plugins'}
         >
-          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.3px', textTransform: 'uppercase', lineHeight: 1 }}>arcdps</span>
-          {arcdpsHasUpdate && (
-            <span
-              aria-hidden
-              style={{
-                position: 'absolute',
-                top: -2,
-                right: -2,
-                width: 6,
-                height: 6,
-                borderRadius: '50%',
-                background: 'var(--gold-bright)',
-                boxShadow: '0 0 4px var(--gold-bright)',
-              }}
-            />
-          )}
+          arcdps
+          {/* A diamond, not a glow dot: the motif already means "state" here,
+              and it costs no blur. */}
+          {arcdpsHasUpdate && <span className="axi-diamond axi-diamond--accent" aria-hidden style={{ width: 7, height: 7 }} />}
         </button>
-        <button
-          onClick={onOpenSettings}
-          className="icon-btn"
-          style={{
-            background: 'none',
-            border: 'none',
-            color: 'var(--text-faint)',
-            cursor: 'pointer',
-            padding: '2px 4px',
-            borderRadius: 3,
-            display: 'flex',
-            alignItems: 'center',
-          }}
-          title="Settings"
-        >
-          <Settings size={14} />
+        <button className="ax-icon" onClick={onOpenSettings} title="Settings" aria-label="Settings">
+          <Settings size={13} />
         </button>
       </div>
 
-      {/* App rows — scrolls when the suite outgrows the window; header/footer stay put */}
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', marginRight: -4, paddingRight: 4 }}>
+      {/* The list is the window's interior — rows in rules, never in outlines. */}
+      <div className="ax-scroll">
         {showSections && <SectionLabel>Installed</SectionLabel>}
         {installedIds.map(id => (
           <AppRow key={id} state={stateMap[id]} onAction={handleAction} onInfo={onOpenInfo} onRetry={handleRetry} />
@@ -224,72 +143,20 @@ export function AppList({ states, checking, selfUpdate, onOpenSettings, onOpenAr
         ))}
       </div>
 
-      {/* Footer */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginTop: 10,
-        paddingTop: 8,
-        borderTop: '1px solid var(--border)',
-      }}>
-        <button
-          onClick={onCheckUpdates}
-          disabled={checking}
-          className="btn-ghost"
-          style={{
-            background: 'none',
-            color: checking ? 'var(--text-faint)' : 'var(--text-dim)',
-            fontSize: 11,
-            padding: '4px 0',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4,
-            transition: 'color 0.1s',
-          }}
-          onMouseEnter={e => { if (!checking) e.currentTarget.style.color = 'var(--text-light)' }}
-          onMouseLeave={e => { if (!checking) e.currentTarget.style.color = 'var(--text-dim)' }}
-        >
+      <div className="ax-foot">
+        <button className="ax-icon" onClick={onCheckUpdates} disabled={checking}>
           <RefreshCw size={10} className={checking ? 'spin' : ''} />
-          {checking ? 'Checking...' : 'Check for updates'}
+          {checking ? 'Checking…' : 'Check for updates'}
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {appsWithUpdates.length >= 2 && (
-            <button
-              onClick={handleUpdateAll}
-              className="btn-ghost"
-              style={{
-                background: 'none',
-                color: 'var(--gold-bright)',
-                fontSize: 11,
-                padding: '4px 0',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 4,
-              }}
-              onMouseEnter={e => (e.currentTarget.style.opacity = '0.8')}
-              onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
-            >
+            <button className="axi-btn axi-btn--primary ax-sm" onClick={handleUpdateAll}>
               <ArrowUp size={10} />
               Update All
             </button>
           )}
-          <button
-            onClick={() => window.axiom.quit()}
-            className="btn-ghost"
-            style={{
-              background: 'none',
-              color: 'var(--text-dim)',
-              fontSize: 11,
-              padding: '4px 0',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-            }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#e05252')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-dim)')}
-          >
+          <button className="ax-icon ax-icon--danger" onClick={() => window.axiom.quit()}>
             <LogOut size={10} />
             Quit
           </button>
@@ -301,14 +168,10 @@ export function AppList({ states, checking, selfUpdate, onOpenSettings, onOpenAr
 
 function SectionLabel({ children }: { children: ReactNode }) {
   return (
-    <div style={{
-      fontSize: 9,
-      fontWeight: 600,
-      letterSpacing: '0.6px',
-      textTransform: 'uppercase',
-      color: 'var(--text-faint)',
-      margin: '6px 2px 2px',
-    }}>
+    <div
+      className="axi-eyebrow"
+      style={{ color: 'var(--axi-text-faint)', margin: '10px 6px 4px' }}
+    >
       {children}
     </div>
   )

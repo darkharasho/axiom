@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import { Download, ArrowUp, Power } from 'lucide-react'
 import type { ArcdpsPluginState } from '@shared/types'
 import { arcdpsPluginHasUpdate } from '@shared/types'
@@ -28,13 +29,10 @@ export function ArcdpsRow({ plugin, onInstall, onSetDisabled }: Props) {
     return 'Unknown'
   }
 
-  const statusColor = () => {
-    if (errorMessage) return '#e05252'
-    if (!installed) return 'var(--text-faint)'
-    if (disabled) return 'var(--text-faint)'
-    if (upToDate === false) return 'var(--gold-bright)'
-    if (upToDate === true) return 'var(--text-dim)'
-    return 'var(--text-dim)'
+  const statusClass = () => {
+    if (errorMessage) return 'ax-ink-danger'
+    if (upToDate === false) return 'ax-ink-accent'
+    return ''
   }
 
   const buttonLabel = () => {
@@ -46,83 +44,49 @@ export function ArcdpsRow({ plugin, onInstall, onSetDisabled }: Props) {
   }
 
   const hasUpdate = arcdpsPluginHasUpdate(plugin)
-  const hasBorder = hasUpdate
-    ? 'var(--gold-border-bright)'
-    : errorMessage
-    ? 'rgba(224, 82, 82, 0.35)'
-    : 'var(--border)'
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        padding: '8px 6px',
-        borderRadius: 6,
-        marginBottom: 3,
-        background: 'var(--panel)',
-        border: `1px solid ${hasBorder}`,
-        transition: 'background 0.1s',
-      }}
-      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
-      onMouseLeave={e => (e.currentTarget.style.background = 'var(--panel)')}
-    >
-      {/* Name + status */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{
-          fontSize: 12,
-          fontWeight: 600,
-          color: installed ? 'var(--text)' : 'var(--text-dim)',
-        }}>
-          {name}
-        </div>
-        {description && (
-          <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 1, lineHeight: 1.35 }}>
-            {description}
-          </div>
-        )}
-        <div style={{ fontSize: 10, color: statusColor(), marginTop: 3, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+    <div className={`ax-item${installed ? '' : ' ax-item--off'}`} style={{ alignItems: 'flex-start' }}>
+      <div className="ax-item__main">
+        <div className="ax-item__name">{name}</div>
+        {description && <div className="ax-item__note">{description}</div>}
+        <div className={`ax-item__note ${statusClass()}`} style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
           <span>{statusText()}</span>
-          {installedTag && (
-            <span style={{ color: 'var(--text-faint)' }}>installed: {installedTag}</span>
-          )}
-          {latestTag && (
-            <span style={{ color: 'var(--text-faint)' }}>latest: {latestTag}</span>
-          )}
+          {installedTag && <span className="axi-chip axi-chip--meta ax-sm">installed {installedTag}</span>}
+          {latestTag && <span className="axi-chip axi-chip--meta ax-sm">latest {latestTag}</span>}
         </div>
-        {errorMessage && (
-          <div style={{ fontSize: 10, color: '#e05252', marginTop: 2 }}>{errorMessage}</div>
-        )}
+        {errorMessage && <div className="ax-item__note ax-ink-danger">{errorMessage}</div>}
       </div>
 
-      {/* Action area */}
-      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, paddingTop: 2 }}>
         {isBusy && downloadProgress ? (
           <ProgressBar progress={downloadProgress} />
         ) : (
           <>
+            {/* On/off for the plugin itself. A pressed pill is the language's
+                "this one is on", and it fills in the ok ink rather than the
+                accent because what it asserts is "running", not "urgent". */}
             {installed && (
               <button
+                className="axi-pill ax-sm"
+                style={{ '--axi-pill-fill': 'var(--axi-ok)' } as CSSProperties}
                 onClick={() => onSetDisabled(id, !disabled)}
                 disabled={isBusy}
+                aria-pressed={!disabled}
                 title={disabled ? 'Enable this plugin' : 'Disable this plugin'}
                 aria-label={disabled ? 'Enable plugin' : 'Disable plugin'}
-                aria-pressed={!disabled}
-                style={toggleStyle(disabled, isBusy)}
               >
-                <Power size={13} />
+                <Power size={12} />
               </button>
             )}
             {!disabled && !checkFailed && (
               <button
+                className={hasUpdate ? 'axi-btn axi-btn--primary ax-sm' : 'axi-btn ax-sm'}
                 onClick={() => onInstall(id)}
                 disabled={isDisabled}
-                className={hasUpdate ? 'btn-gold' : undefined}
-                style={btnStyle(hasUpdate ? 'update' : installed ? 'disabled' : 'install', isDisabled)}
               >
-                {!installed && <Download size={11} />}
-                {hasUpdate && <ArrowUp size={11} />}
+                {!installed && <Download size={10} />}
+                {hasUpdate && <ArrowUp size={10} />}
                 {buttonLabel()}
               </button>
             )}
@@ -131,41 +95,4 @@ export function ArcdpsRow({ plugin, onInstall, onSetDisabled }: Props) {
       </div>
     </div>
   )
-}
-
-function toggleStyle(pluginDisabled: boolean, busy: boolean): React.CSSProperties {
-  return {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 4,
-    borderRadius: 4,
-    background: 'transparent',
-    border: 'none',
-    color: pluginDisabled ? 'var(--text-faint)' : '#5faa7a',
-    cursor: busy ? 'default' : 'pointer',
-    opacity: busy ? 0.5 : 1,
-    transition: 'color 0.1s',
-  }
-}
-
-function btnStyle(variant: 'install' | 'update' | 'disabled', disabled: boolean): React.CSSProperties {
-  const base: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 4,
-    borderRadius: 4,
-    padding: '4px 10px',
-    fontSize: 10,
-    fontWeight: 700,
-    whiteSpace: 'nowrap',
-    border: 'none',
-    cursor: disabled ? 'default' : 'pointer',
-    opacity: disabled && variant !== 'disabled' ? 0.5 : 1,
-  }
-  switch (variant) {
-    case 'update':   return { ...base, background: 'var(--gold-bright)', color: 'var(--bg)' }
-    case 'install':  return { ...base, background: 'transparent', color: 'var(--text-dim)', border: '1px solid var(--border)', fontWeight: 400 }
-    case 'disabled': return { ...base, background: 'transparent', color: 'var(--text-faint)', border: '1px solid var(--border)', fontWeight: 400, opacity: 0.5 }
-  }
 }

@@ -9,44 +9,15 @@ interface Props {
 
 export function GearLeverPrompt({ appId: _appId, onInstall, onOpenFlathub }: Props) {
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 4,
-      padding: '6px 0',
-    }}>
-      <span style={{ color: 'var(--text-dim)', fontSize: 10 }}>
-        Gear Lever required to manage AppImages
-      </span>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5 }}>
+      <span className="axi-chip axi-chip--meta ax-sm">Gear Lever required</span>
       <div style={{ display: 'flex', gap: 5 }}>
-        <button
-          onClick={onInstall}
-          style={{
-            flex: 1,
-            background: 'var(--gold)',
-            color: 'var(--bg)',
-            borderRadius: 4,
-            padding: '4px 8px',
-            fontSize: 10,
-            fontWeight: 700,
-          }}
-        >
-          Install Gear Lever
+        <button className="axi-btn axi-btn--primary ax-sm" onClick={onInstall}>
+          Install it
         </button>
-        <button
-          onClick={onOpenFlathub}
-          style={{
-            flex: 1,
-            background: 'transparent',
-            color: 'var(--gold)',
-            border: '1px solid var(--gold-border)',
-            borderRadius: 4,
-            padding: '4px 8px',
-            fontSize: 10,
-          }}
-        >
-          <ExternalLink size={10} style={{ marginRight: 3 }} />
-          Open Flathub
+        <button className="axi-btn ax-sm" onClick={onOpenFlathub}>
+          <ExternalLink size={10} />
+          Flathub
         </button>
       </div>
     </div>
