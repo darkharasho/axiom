@@ -2,7 +2,7 @@
 
    The design language is in node_modules and is imported first in main.tsx.
    Only three kinds of rule belong in this file: the accent, the frameless
-   window's own plumbing, and the shapes a 420x560 tray popover needs that a
+   window's own plumbing, and the shapes a 360x480 tray popover needs that a
    page-scale design language does not ship. Everything else is axi's - if you
    find yourself writing a border weight or an offset here, reach for the token
    instead, and if there is no token for it, it does not belong in the app. */
@@ -33,7 +33,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--axi-
 /* ---------- the view frame ---------- */
 /* Every view is the window's interior: a head, a scrolling middle and a foot,
    separated by rules rather than outlines. Rule 8 is about tables, but a list
-   of eight apps inside a 420px window is the same claim - the window is the
+   of eight apps inside a 360px window is the same claim - the window is the
    raised thing and none of this is raised off it. */
 .ax-view { display: flex; flex-direction: column; height: 100%; padding: 12px; }
 
@@ -41,7 +41,12 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--axi-
   flex: none;
   display: flex; align-items: center; gap: 8px;
   padding-bottom: 9px; margin-bottom: 8px;
-  border-bottom: var(--axi-border-control) solid var(--axi-rule);
+  /* The one structural line in the window drawn in the accent rather than on
+     the ramp. It is the app's spine and it is in every view, so it carries the
+     theme where a status ink never could - nothing here is being reported, and
+     the foot's matching rule stays neutral so the pair does not read as two
+     claims of equal weight. */
+  border-bottom: var(--axi-border-control) solid var(--axi-accent);
   /* The frameless window needs a drag handle and this is the only strip that
      is empty enough to be one. The controls in it opt back out. */
   -webkit-app-region: drag;
@@ -66,16 +71,30 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--axi-
 
 /* ---------- a list row ---------- */
 /* Drawn in a hairline rule, exactly as a table row is, and for the same
-   reason: eight outlined boxes stacked in a 420px window is eight raised
+   reason: eight outlined boxes stacked in a 360px window is eight raised
    things where there is only one. The hover is the neutral ramp - moving the
-   cursor down the list is not a series of status changes. */
+   cursor down the list is not a series of status changes, and the accent edge
+   below marks where the cursor is, not what the row is doing. */
 .ax-item {
   display: flex; align-items: center; gap: 10px;
   padding: 9px 6px;
   border-bottom: var(--axi-border-hairline) solid var(--axi-rule);
 }
 .ax-item:last-child { border-bottom: 0; }
+.ax-item { position: relative; }
 .ax-item:hover { background: var(--axi-surface); }
+/* Where the cursor is. Drawn at the panel weight and bled into the view's own
+   12px padding so it sits flush against the window's inside edge, which is
+   what makes it read as a marker on the list rather than a border on the row.
+   Pointer-events stay off it: it is under the cursor by definition. */
+.ax-item::before {
+  content: '';
+  position: absolute; left: -6px; top: 0; bottom: 0;
+  width: var(--axi-border-panel);
+  background: transparent;
+  pointer-events: none;
+}
+.ax-item:hover::before { background: var(--axi-accent); }
 .ax-item__main { flex: 1; min-width: 0; }
 .ax-item__name {
   font: var(--axi-t-small);
@@ -102,14 +121,64 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--axi-
 
 /* ---------- compact controls ---------- */
 /* axi's controls are drawn for a page: .axi-btn rests at 12px/20px padding and
-   13px type, and four of those do not fit across 420px. This changes the size
-   and nothing else - the border weight, the radius, the offset block and the
-   hover lift are all still the language's, which is the part that has to stay
-   the same for the app to look like the rest of the suite. */
+   13px type, and four of those do not fit across 360px. The border weight, the
+   radius and the type scale are all still the language's - what changes here is
+   size, the outline's ink, and the hover, each for a reason a page does not
+   have:
+
+   - One action per row means eight of these stacked down a 360px window. At
+     the language's --axi-ink-line they read as eight black stamps in a ladder
+     rather than as one control repeated; --axi-rule is the ink the language
+     already uses for lines drawn inside a raised thing, which is exactly what
+     these are, since the window is the raised thing and the list is its
+     interior.
+   - The offset block and its lift are what a control does when it has room to
+     move. Down a dense list they fire every time the cursor crosses a row, so
+     the whole column is in motion while you are only reading it. The hover
+     answers in the accent instead, which says the same thing without moving.
+   - min-width squares the column. The labels run from FOCUS to INSTALL and the
+     buttons are flush right, so unequal widths put a ragged edge down the side
+     of the window - the one edge in the layout with nothing else to align to.
+     Centring the label keeps the icon+text pair centred in the widened box. */
 .axi-btn.ax-sm, .axi-pill.ax-sm {
   padding: 5px 9px; gap: 5px;
   font: var(--axi-t-micro);
   letter-spacing: var(--axi-ls-micro);
+}
+.axi-btn.ax-sm {
+  min-width: 92px;
+  justify-content: center;
+  border-color: var(--axi-rule);
+}
+/* No colour here on purpose: the status inks at the foot of this file land on
+   these same buttons, and a hover that set a colour would outrank them. */
+.axi-btn.ax-sm:hover:not(:disabled) {
+  border-color: var(--axi-accent);
+  box-shadow: none;
+  transform: none;
+}
+/* The update button keeps its fill - it is the one urgent control in the list.
+   It loses the black ring and the block for the same reason as the rest. */
+.axi-btn--primary.ax-sm { border-color: var(--axi-accent); box-shadow: none; }
+.axi-btn--primary.ax-sm:hover:not(:disabled) { box-shadow: none; transform: none; }
+/* The arcdps enable/disable toggle, on the same terms. A pill is icon-only here
+   so it takes no min-width, but it sits in the same column as the buttons above
+   and would otherwise be the one control left stamped in black and still
+   lifting. Pressed keeps its fill - that is the whole point of the control - and
+   only loses the offset block. */
+.axi-pill.ax-sm { border-color: var(--axi-rule); box-shadow: none; }
+.axi-pill.ax-sm:hover:not(:disabled) {
+  border-color: var(--axi-accent);
+  box-shadow: none;
+  transform: none;
+}
+.axi-pill.ax-sm[aria-pressed="true"],
+.axi-pill.ax-sm[aria-pressed="true"]:hover {
+  box-shadow: none;
+  transform: none;
+  /* Read through the same fallback the fill is, so the outline is always the
+     fill's own colour rather than the hover's accent sitting on top of it. */
+  border-color: var(--axi-pill-fill, var(--axi-accent));
 }
 .axi-chip.ax-sm { padding: 3px 7px; }
 
@@ -152,6 +221,15 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--axi-
 }
 .ax-menu-item:hover { background: var(--axi-ground); color: var(--axi-text); }
 .ax-menu-item--danger:hover { background: var(--axi-danger); color: var(--axi-ink-line); }
+
+/* ---------- accented labels ---------- */
+/* Both of these are structure wearing the theme, which is why they may take
+   the accent while a row's status line may not: a section heading and a nav
+   target are always there and never change to say something happened. The
+   ramp still owns anything that reports. */
+.ax-sec { color: var(--axi-accent); margin: 10px 6px 4px; }
+.ax-nav { color: var(--axi-accent); }
+.ax-nav:hover:not(:disabled) { color: var(--axi-accent); border-color: var(--axi-accent); }
 
 /* ---------- motion ---------- */
 /* Rule 11: a work indicator animates transform or opacity and nothing else.

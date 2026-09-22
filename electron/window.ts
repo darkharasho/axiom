@@ -1,14 +1,14 @@
 import { BrowserWindow, screen, nativeImage } from 'electron'
 import path from 'path'
 
-const WINDOW_WIDTH = 420
+const WINDOW_WIDTH = 360
 
 export function createPopupWindow(): BrowserWindow {
   const icon = nativeImage.createFromPath(path.join(__dirname, '../public/AxiOM-tb-White.png'))
 
   const win = new BrowserWindow({
     width: WINDOW_WIDTH,
-    height: 560,
+    height: 480,
     show: false,
     frame: false,
     icon,

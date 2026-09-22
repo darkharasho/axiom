@@ -19,14 +19,18 @@ export function ArcdpsRow({ plugin, onInstall, onSetDisabled }: Props) {
   // on. Surface that instead of a phantom disabled "Update to latest" button.
   const checkFailed = installed && upToDate === null && !downloadUrl && !!errorMessage
 
+  // The versions read as part of the sentence rather than as chips beside it,
+  // which is how the app list has always shown them: "v2.1.0 · up to date". The
+  // meta chip is drawn as an outlined box in the one cool ink in the palette, so
+  // two per row made the loudest thing on the page a pair of version numbers.
   const statusText = () => {
-    if (!installed) return 'Not installed'
+    if (!installed) return latestTag ? `${latestTag} · not installed` : 'Not installed'
     if (disabled) return 'Disabled'
     if (checkFailed) return "Couldn't check for updates"
-    if (localBuild) return 'Local build (newer than latest release)'
-    if (upToDate === true) return 'Up to date'
-    if (upToDate === false) return 'Update available'
-    return 'Unknown'
+    if (localBuild) return installedTag ? `${installedTag} · local build` : 'Local build'
+    if (upToDate === true) return installedTag ? `${installedTag} · up to date` : 'Up to date'
+    if (upToDate === false) return latestTag ? `${latestTag} available` : 'Update available'
+    return installedTag ? `${installedTag} · unknown` : 'Unknown'
   }
 
   const statusClass = () => {
@@ -38,8 +42,11 @@ export function ArcdpsRow({ plugin, onInstall, onSetDisabled }: Props) {
   const buttonLabel = () => {
     if (!installed) return 'Install'
     if (upToDate === false) return 'Update'
-    if (localBuild) return 'Reinstall release'
-    if (upToDate === null) return 'Update to latest'
+    // Short enough to sit in the same fixed-width column as every other action
+    // in the app. What the longer labels used to carry - which release, how sure
+    // we are - is already on the status line directly above them.
+    if (localBuild) return 'Reinstall'
+    if (upToDate === null) return 'Update'
     return 'Up to date'
   }
 
@@ -50,11 +57,7 @@ export function ArcdpsRow({ plugin, onInstall, onSetDisabled }: Props) {
       <div className="ax-item__main">
         <div className="ax-item__name">{name}</div>
         {description && <div className="ax-item__note">{description}</div>}
-        <div className={`ax-item__note ${statusClass()}`} style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-          <span>{statusText()}</span>
-          {installedTag && <span className="axi-chip axi-chip--meta ax-sm">installed {installedTag}</span>}
-          {latestTag && <span className="axi-chip axi-chip--meta ax-sm">latest {latestTag}</span>}
-        </div>
+        <div className={`ax-item__note ${statusClass()}`}>{statusText()}</div>
         {errorMessage && <div className="ax-item__note ax-ink-danger">{errorMessage}</div>}
       </div>
 

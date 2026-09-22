@@ -47,13 +47,15 @@ export function ArcdpsView({ onBack }: Props) {
         </button>
       </div>
 
-      {/* Where the plugins are going. A path is metadata about the install, not
-          a status of it — rule 6's cool ink is exactly what it is for. */}
+      {/* Where the plugins are going, and how we know. Both are metadata, and
+          both stay on the faint step of the ramp: the cool meta ink is drawn as
+          an outlined chip, and a chip here shouted louder than the path it was
+          annotating. */}
       <div className="ax-item__note" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', padding: '0 6px 8px', marginTop: 0 }}>
         {gw2Path ? (
           <>
             <span style={{ fontFamily: 'var(--axi-mono)', color: 'var(--axi-text-dim)', overflow: 'hidden', textOverflow: 'ellipsis' }}>{gw2Path}</span>
-            <span className="axi-chip axi-chip--meta ax-sm">{sourceLabel(gw2PathSource)}</span>
+            <span>{sourceLabel(gw2PathSource)}</span>
           </>
         ) : (
           <span>GW2 path not set</span>

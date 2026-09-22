@@ -116,7 +116,7 @@ export function AppList({ states, checking, selfUpdate, onOpenSettings, onOpenAr
         )}
 
         <button
-          className="ax-icon"
+          className="ax-icon ax-nav"
           style={{ marginLeft: 'auto' }}
           onClick={onOpenArcdps}
           title={arcdpsHasUpdate ? 'arcdps plugins — update available' : 'arcdps plugins'}
@@ -168,11 +168,6 @@ export function AppList({ states, checking, selfUpdate, onOpenSettings, onOpenAr
 
 function SectionLabel({ children }: { children: ReactNode }) {
   return (
-    <div
-      className="axi-eyebrow"
-      style={{ color: 'var(--axi-text-faint)', margin: '10px 6px 4px' }}
-    >
-      {children}
-    </div>
+    <div className="axi-eyebrow ax-sec">{children}</div>
   )
 }
