@@ -81,12 +81,17 @@ export function AppList({ states, checking, selfUpdate, onOpenSettings, onOpenAr
 
   return (
     <div className="view-enter ax-view">
-      <div className="ax-head">
-        {/* The sigil is rule 7's motif doing its job: the glyph is axiom's, the
-            diamond behind it is the family's. */}
-        <img src="./svg/axiom-glyph.svg" alt="" aria-hidden style={{ width: 20, height: 20, objectFit: 'contain' }} />
+      {/* The front page wears the title card; the sub-views keep the plain head.
+          See .ax-head--brand in globals.css. */}
+      <div className="ax-head ax-head--brand">
+        {/* The glyph is light artwork, and light artwork on a gold band is the
+            one place it disappears. It gets a plate of the outline's own ink to
+            sit on, which is also what makes it read as stuck to the band. */}
+        <span className="ax-brandmark">
+          <img src="./svg/axiom-glyph.svg" alt="" aria-hidden style={{ width: 19, height: 19, objectFit: 'contain' }} />
+        </span>
         <span className="ax-title">
-          Axi<span style={{ color: 'var(--axi-accent)' }}>OM</span>
+          Axi<span className="ax-title__om">OM</span>
         </span>
 
         {import.meta.env.DEV && (

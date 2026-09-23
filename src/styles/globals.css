@@ -15,10 +15,11 @@
   --axi-accent: #c89850;
 }
 
-/* .axi-window rounds its corners. Behind that radius is the OS, and with
-   frame: false there is no OS chrome to show through - so paint the body in
-   the outline's own ink and the corner slivers read as part of the outline
-   rather than as four bright notches. */
+/* The body is painted in the outline's own ink. It used to be here because
+   .axi-window rounded its corners and the slivers behind that radius showed
+   the OS through - the language is square now, so there are no slivers, but a
+   frameless window still has no chrome behind it and any sub-pixel seam at the
+   edge should be the outline rather than whatever is underneath. */
 html, body { width: 100%; height: 100%; overflow: hidden; background: var(--axi-ink-line); }
 
 #root {
@@ -30,11 +31,23 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--axi-
   user-select: none;
 }
 
+/* A card in this language is an outline plus an offset block of ink falling
+   down and to the right of it, and it is the offset - not the weight - that
+   makes it read as an object sitting on something rather than as a frame drawn
+   around the screen. A frameless window has nothing behind it to fall onto, so
+   .axi-window ships wearing only the outline. Put the block back on the inside
+   and keep its direction: the panel offset, down and right, in the outline's
+   own ink. Same two numbers a card is already made of, same lopsided weight,
+   no third border weight invented to get it. */
+.axi-window {
+  box-shadow: inset calc(-1 * var(--axi-offset-panel)) calc(-1 * var(--axi-offset-panel)) 0 0 var(--axi-ink-line);
+}
+
 /* ---------- the view frame ---------- */
 /* Every view is the window's interior: a head, a scrolling middle and a foot,
-   separated by rules rather than outlines. Rule 8 is about tables, but a list
-   of eight apps inside a 360px window is the same claim - the window is the
-   raised thing and none of this is raised off it. */
+   separated by rules rather than outlines. The frame itself is never raised -
+   the window is the panel. What sits inside it may be, where the thing inside
+   is something you act on rather than something you read. */
 .ax-view { display: flex; flex-direction: column; height: 100%; padding: 12px; }
 
 .ax-head {
@@ -59,6 +72,66 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--axi-
   text-transform: uppercase;
   color: var(--axi-text);
 }
+.ax-title__om { color: var(--axi-accent); }
+
+/* ---------- the masthead ---------- */
+/* The front page only. A sub-view is an interior and keeps the plain head with
+   its accent rule; the list is the app's face, and a face gets a title card.
+   Bled out through the view's own 12px padding so the gold runs edge to edge
+   and reads as a band the window is wearing rather than a box inside it, and
+   closed with a panel-weight ink line, because a flat field of accent meeting
+   the ground needs the outline or it looks unfinished. */
+.ax-head--brand {
+  margin: -12px -12px 10px;
+  padding: 9px 12px;
+  /* Tighter than the plain head's 8px. The band has to hold a wordmark at h3
+     plus arcdps plus the gear inside 360px, and in dev a chip and the
+     self-update button land in it too. */
+  gap: 6px;
+  background: var(--axi-accent);
+  border-bottom: var(--axi-border-panel) solid var(--axi-ink-line);
+}
+/* Everything on the band is drawn in the ink the accent was contrast-checked
+   against. The wordmark drops its gold syllable here: the band is the accent
+   now, and gold letters on a gold field say nothing twice. */
+.ax-head--brand .ax-title {
+  font: var(--axi-t-h3);
+  letter-spacing: var(--axi-ls-h3);
+  color: var(--axi-accent-ink);
+}
+.ax-head--brand .ax-title__om { color: inherit; }
+.ax-head--brand .ax-icon,
+.ax-head--brand .ax-nav { color: var(--axi-accent-ink); border-color: transparent; }
+/* The plate under the wordmark's glyph. */
+.ax-brandmark {
+  flex: none;
+  width: 28px; height: 28px;
+  display: grid; place-items: center;
+  background: var(--axi-ink-line);
+  border: var(--axi-border-control) solid var(--axi-ink-line);
+  border-radius: var(--axi-radius-sm);
+}
+/* Anything that was drawn in the accent to stand out against the ground is
+   invisible once the ground here IS the accent. Both invert onto a plate of
+   ink and keep their own colour on top of it - which is why the meta chip is
+   pulled back out: rule 6 reserves that ink for annotation, and repainting it
+   gold to fit the band would spend the one colour that never means status. */
+.ax-head--brand .axi-btn--primary {
+  background: var(--axi-ink-line);
+  border-color: var(--axi-ink-line);
+  color: var(--axi-accent);
+}
+.ax-head--brand .axi-chip {
+  background: var(--axi-ink-line);
+  border-color: var(--axi-ink-line);
+  color: var(--axi-accent);
+}
+.ax-head--brand .axi-chip--meta { border-color: var(--axi-meta); color: var(--axi-meta); }
+.ax-head--brand .ax-icon:hover:not(:disabled),
+.ax-head--brand .ax-nav:hover:not(:disabled) {
+  color: var(--axi-accent-ink);
+  border-color: var(--axi-ink-line);
+}
 
 .ax-scroll { flex: 1; min-height: 0; overflow-y: auto; }
 
@@ -69,18 +142,21 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--axi-
   border-top: var(--axi-border-control) solid var(--axi-rule);
 }
 
-/* ---------- a list row ---------- */
-/* Drawn in a hairline rule, exactly as a table row is, and for the same
-   reason: eight outlined boxes stacked in a 360px window is eight raised
-   things where there is only one. The hover is the neutral ramp - moving the
-   cursor down the list is not a series of status changes, and the accent edge
-   below marks where the cursor is, not what the row is doing. */
+/* ---------- list rows ---------- */
+/* Two kinds, and the language has a rule for each. This one is the table kind:
+   a settings row is a label and its control, read down the list, so it stays
+   the panel's interior and is drawn in a rule (rule 8). The hover is the
+   neutral ramp - moving the cursor down a list is not a series of status
+   changes - and the accent edge marks where the cursor is, not what the row
+   is doing. The other kind is .ax-item--card below. */
 .ax-item {
   display: flex; align-items: center; gap: 10px;
   padding: 9px 6px;
   border-bottom: var(--axi-border-hairline) solid var(--axi-rule);
 }
-.ax-item:last-child { border-bottom: 0; }
+/* Scoped away from the card kind: this is more specific than .ax-item--card's
+   border shorthand, so unscoped it would strip the last card's bottom edge. */
+.ax-item:not(.ax-item--card):last-child { border-bottom: 0; }
 .ax-item { position: relative; }
 .ax-item:hover { background: var(--axi-surface); }
 /* Where the cursor is. Drawn at the panel weight and bled into the view's own
@@ -118,6 +194,68 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--axi-
    partial opacity": there is no ink being muted, only artwork stepping back. */
 .ax-item__icon { width: 28px; height: 28px; object-fit: contain; flex: none; }
 .ax-item--off .ax-item__icon { opacity: .35; }
+
+/* ---------- the card kind of row ---------- */
+/* An app or a plugin is a thing you act on: it has its own name, its own state
+   and its own verb at the end of it, and nobody reads down the list comparing
+   one to the next. Rule 8's counterpart clause covers it - drawn as a card,
+   outline and block, at the control weight because it sits inside a window
+   that already carries the panel's. The block is also what tells you the row
+   is pressable before you have read a word of it. */
+.ax-item--card {
+  padding: 7px 9px;
+  background: var(--axi-surface);
+  border: var(--axi-border-control) solid var(--axi-ink-line);
+  border-radius: var(--axi-radius-sm);
+  box-shadow: var(--axi-offset-control) var(--axi-offset-control) 0 var(--axi-ink-line);
+  /* The block falls outside the box. Without room for it the next card lands
+     on top of it and the window's edge clips the last one. */
+  margin: 0 var(--axi-offset-control) 8px 0;
+  transition: transform .1s, box-shadow .1s;
+}
+/* Rule 4's third case: a control already resting on a block has to move and
+   deepen together, or its lower-right edge stays put and it reads as growing
+   rather than lifting. */
+.ax-item--card:hover {
+  background: var(--axi-surface);
+  transform: translate(-2px, -2px);
+  box-shadow: var(--axi-offset-control-hover) var(--axi-offset-control-hover) 0 var(--axi-ink-line);
+}
+/* The lift is the cursor marker now, so the accent edge would be saying it
+   twice. */
+.ax-item--card::before { content: none; }
+@media (prefers-reduced-motion: reduce) {
+  .ax-item--card:hover { transform: none; }
+}
+/* The lift is a transform, and a transform makes the card a stacking context:
+   everything inside it, including a popover that asked for z-index 41, is
+   trapped at the card's own level and the next card - later in the DOM, also
+   positioned - paints straight over it. Raising the card itself is what lets
+   the menu out, and only while the menu is open, so the stack keeps its
+   painting order the rest of the time. */
+.ax-item--menu { z-index: 2; }
+/* Chunkier than a table row's label, because it is the name of an object and
+   not a cell. */
+.ax-item--card .ax-item__name { font-weight: 900; letter-spacing: -.02em; }
+
+/* The status ink lands here: a filled shape inside the row, never the row's
+   own edge. A coloured edge is rule 5's full-height stripe - five states would
+   become five coloured frames and the colour would stop meaning anything about
+   any one of them. Neutral is the resting tile, not an absence of one, so the
+   stack keeps its column of shapes whatever the states are. */
+.ax-tile {
+  flex: none;
+  width: 34px; height: 34px;
+  display: grid; place-items: center;
+  background: var(--axi-surface-raised);
+  border: var(--axi-border-control) solid var(--axi-ink-line);
+  border-radius: var(--axi-radius-sm);
+}
+.ax-tile--ok { background: var(--axi-ok); }
+.ax-tile--accent { background: var(--axi-accent); }
+.ax-tile--danger { background: var(--axi-danger); }
+.ax-tile .ax-item__icon { width: 21px; height: 21px; }
+.ax-item--off .ax-tile { opacity: .55; }
 
 /* ---------- compact controls ---------- */
 /* axi's controls are drawn for a page: .axi-btn rests at 12px/20px padding and
@@ -221,6 +359,16 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--axi-
 }
 .ax-menu-item:hover { background: var(--axi-ground); color: var(--axi-text); }
 .ax-menu-item--danger:hover { background: var(--axi-danger); color: var(--axi-ink-line); }
+
+/* Two lines and then stop. A plugin description explaining how a DLL gets
+   loaded ran to five lines of a row you are trying to scan, which buried the
+   name and the action either side of it. The full text is on the title. */
+.ax-clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
 
 /* ---------- accented labels ---------- */
 /* Both of these are structure wearing the theme, which is why they may take

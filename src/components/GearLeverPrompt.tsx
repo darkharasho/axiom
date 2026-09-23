@@ -10,7 +10,10 @@ interface Props {
 export function GearLeverPrompt({ appId: _appId, onInstall, onOpenFlathub }: Props) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5 }}>
-      <span className="axi-chip axi-chip--meta ax-sm">Gear Lever required</span>
+      {/* Faint rather than the meta chip: this sits inside a row, and an
+          outlined box in the palette's one cool ink outshouted the two buttons
+          under it that are the thing to actually do. */}
+      <span className="ax-item__note" style={{ marginTop: 0 }}>Gear Lever required</span>
       <div style={{ display: 'flex', gap: 5 }}>
         <button className="axi-btn axi-btn--primary ax-sm" onClick={onInstall}>
           Install it

@@ -25,6 +25,14 @@ export function ArcdpsView({ onBack }: Props) {
     await setGw2Path(picked)
   }
 
+  // A 360px window cannot hold an absolute Steam library path, and letting it
+  // wrap broke it across lines mid-word. The tail is the part that says which
+  // install this is; the whole path stays on the title.
+  const shortPath = (p: string) => {
+    const parts = p.split('/').filter(Boolean)
+    return parts.length > 2 ? `…/${parts.slice(-2).join('/')}` : p
+  }
+
   const sourceLabel = (source: typeof gw2PathSource) => {
     switch (source) {
       case 'axiam':  return 'detected via AxiAM'
@@ -54,7 +62,10 @@ export function ArcdpsView({ onBack }: Props) {
       <div className="ax-item__note" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', padding: '0 6px 8px', marginTop: 0 }}>
         {gw2Path ? (
           <>
-            <span style={{ fontFamily: 'var(--axi-mono)', color: 'var(--axi-text-dim)', overflow: 'hidden', textOverflow: 'ellipsis' }}>{gw2Path}</span>
+            <span
+              title={gw2Path}
+              style={{ fontFamily: 'var(--axi-mono)', color: 'var(--axi-text-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}
+            >{shortPath(gw2Path)}</span>
             <span>{sourceLabel(gw2PathSource)}</span>
           </>
         ) : (

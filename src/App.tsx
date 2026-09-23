@@ -19,9 +19,9 @@ export default function App() {
 
   return (
     // The window is the panel. axi's .axi-window is exactly this shape: the
-    // ground, the panel-weight outline, and no offset block - there is nothing
-    // behind a frameless tray popover for it to be raised off, and a block
-    // would be clipped by the window edge anyway.
+    // ground and the panel-weight outline. The offset block that would fall
+    // behind it has nowhere to go on a frameless popover, so globals.css turns
+    // it inward - still down and to the right - see the note there.
     <div className="axi-window">
       {view === 'list' && (
         <AppList

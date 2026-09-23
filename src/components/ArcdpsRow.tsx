@@ -53,10 +53,10 @@ export function ArcdpsRow({ plugin, onInstall, onSetDisabled }: Props) {
   const hasUpdate = arcdpsPluginHasUpdate(plugin)
 
   return (
-    <div className={`ax-item${installed ? '' : ' ax-item--off'}`} style={{ alignItems: 'flex-start' }}>
+    <div className={`ax-item ax-item--card${installed ? '' : ' ax-item--off'}`} style={{ alignItems: 'flex-start' }}>
       <div className="ax-item__main">
         <div className="ax-item__name">{name}</div>
-        {description && <div className="ax-item__note">{description}</div>}
+        {description && <div className="ax-item__note ax-clamp" title={description}>{description}</div>}
         <div className={`ax-item__note ${statusClass()}`}>{statusText()}</div>
         {errorMessage && <div className="ax-item__note ax-ink-danger">{errorMessage}</div>}
       </div>

@@ -1,10 +1,14 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import { Play, Download, ArrowUp, ExternalLink, Loader2, HelpCircle, RefreshCw, MoreHorizontal, Info, FolderOpen, Trash2, Maximize2 } from 'lucide-react'
 import type { AppState, AppId, InstallableAppId } from '@shared/types'
 import { INSTALLED_VERSION_UNKNOWN, appHasUpdate } from '@shared/types'
 import { APP_ICONS, APP_NAMES } from '../lib/appMeta'
 import { ProgressBar } from './ProgressBar'
 import { GearLeverPrompt } from './GearLeverPrompt'
+
+// The popover's own gap from its trigger, tighter than the language's 9px
+// because the rows it opens between are 8px apart.
+const MENU_GAP = 5
 
 type ActionType = 'launch' | 'install' | 'update' | 'uninstall' | 'invite' | 'install-gear-lever' | 'open-gear-lever-flathub' | 'browse-files'
 
@@ -19,7 +23,9 @@ export function AppRow({ state, onAction, onInfo, onRetry }: Props) {
   const { id, installedVersion, latestVersion, downloadUrl, status, downloadProgress, gearLeverMissing, isRunning } = state
   const isBusy = status === 'downloading' || status === 'installing' || status === 'deleting'
   const [menuOpen, setMenuOpen] = useState(false)
+  const [dropUp, setDropUp] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const popRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!menuOpen) return
@@ -29,6 +35,21 @@ export function AppRow({ state, onAction, onInfo, onRetry }: Props) {
     document.addEventListener('mousedown', handle)
     return () => document.removeEventListener('mousedown', handle)
   }, [menuOpen])
+  // The list scrolls inside a box with a hard edge, so a menu opened from one
+  // of the last rows would be cut off by it. Measure the room under the
+  // trigger before the browser paints and hang the popover above it instead
+  // when there isn't enough. Layout effect, not effect: at open time the
+  // popover is already in the DOM and this has to settle before it is seen.
+  useLayoutEffect(() => {
+    if (!menuOpen) { setDropUp(false); return }
+    const trigger = menuRef.current
+    const pop = popRef.current
+    const scroller = trigger?.closest('.ax-scroll')
+    if (!trigger || !pop || !scroller) return
+    const room = scroller.getBoundingClientRect().bottom - trigger.getBoundingClientRect().bottom - MENU_GAP
+    setDropUp(pop.offsetHeight > room)
+  }, [menuOpen])
+
   const isLaunching = status === 'launching'
   // The version is only meaningful for comparison when we actually know it; a
   // manually-installed app reports the unknown-version sentinel instead.
@@ -57,6 +78,17 @@ export function AppRow({ state, onAction, onInfo, onRetry }: Props) {
     if (status === 'error') return 'ax-ink-danger'
     if (hasUpdate) return 'ax-ink-accent'
     if (isRunning) return 'ax-ink-ok'
+    return ''
+  }
+
+  // The same verdicts statusClass() draws in the note, drawn again as the ink
+  // of the icon tile. Only a real status gets an ink: "not installed" and "up
+  // to date" are facts about the row, so they keep the neutral tile rather
+  // than losing one, which is what keeps the column of shapes unbroken.
+  const tileClass = () => {
+    if (status === 'error') return 'ax-tile--danger'
+    if (hasUpdate) return 'ax-tile--accent'
+    if (isRunning) return 'ax-tile--ok'
     return ''
   }
 
@@ -146,8 +178,10 @@ export function AppRow({ state, onAction, onInfo, onRetry }: Props) {
   const quiet = notInstalled && id !== 'axitools'
 
   return (
-    <div className={`ax-item${quiet ? ' ax-item--off' : ''}`}>
-      <img className="ax-item__icon" src={APP_ICONS[id]} alt={APP_NAMES[id]} />
+    <div className={`ax-item ax-item--card${quiet ? ' ax-item--off' : ''}${menuOpen ? ' ax-item--menu' : ''}`}>
+      <span className={`ax-tile ${tileClass()}`}>
+        <img className="ax-item__icon" src={APP_ICONS[id]} alt={APP_NAMES[id]} />
+      </span>
 
       <div className="ax-item__main">
         <div className="ax-item__name">{APP_NAMES[id]}</div>
@@ -166,10 +200,15 @@ export function AppRow({ state, onAction, onInfo, onRetry }: Props) {
             <MoreHorizontal size={14} />
           </button>
           {menuOpen && (
-            <div className="axi-menu__pop" /* Opens leftward: the trigger sits a few px from the window's right edge,
+            <div className="axi-menu__pop" ref={popRef} /* Opens leftward: the trigger sits a few px from the window's right edge,
                  and the language's default left: 0 would put 190px of popover outside
                  a window that cannot be resized to reveal it. */
-              style={{ '--axi-menu-width': '190px', left: 'auto', right: 0, top: 'calc(100% + 5px)', padding: 5 } as React.CSSProperties}>
+              style={{
+                '--axi-menu-width': '190px',
+                left: 'auto', right: 0, padding: 5,
+                top: dropUp ? 'auto' : `calc(100% + ${MENU_GAP}px)`,
+                bottom: dropUp ? `calc(100% + ${MENU_GAP}px)` : 'auto',
+              } as React.CSSProperties}>
               <MenuItem icon={<Info size={12} />} onClick={() => { onInfo(id); setMenuOpen(false) }}>Info</MenuItem>
               <MenuItem icon={<FolderOpen size={12} />} onClick={() => { onAction('browse-files', id); setMenuOpen(false) }}>Browse local files</MenuItem>
               <MenuItem icon={<Trash2 size={12} />} danger onClick={() => { onAction('uninstall', id); setMenuOpen(false) }}>Uninstall</MenuItem>
