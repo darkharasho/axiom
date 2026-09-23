@@ -1,17 +1,15 @@
 # Release Notes
 
-Version v0.3.22 — September 23, 2026
+Version v0.3.23 — September 23, 2026
 
-## A new look
+## The front page wears its name
 
-AxiOM's interface has been rebuilt on axi-design, the shared design system behind the rest of the Axi apps. Same window, same three clicks to install something — it just sits better next to AxiStream and the others now, and future changes land in every app at once instead of one at a time.
+The app list now opens under a gold masthead carrying the AxiOM wordmark. Sub-views keep the plain header — they're interiors, and only the front page gets the title card.
 
-The tray window got a pass of its own: fewer stray outlines, and the action column on each row lines up properly.
-
-## The mark is gold
-
-The app icon, the tray icon and the installer art are all repainted in AxiOM's gold. It matches the accent colour the app has been using inside the window, so the icon in your taskbar finally agrees with what opens when you click it.
+Rows are cards now, and each app's icon sits in a tile that takes on the colour of its state: gold when an update is waiting, green while the app is running, red if something went wrong. The verdict reads straight down the column of icons without having to read a word of it.
 
 ## Fixes
 
-- The Windows installer is back. v0.3.21 shipped Linux only — the repainted icon was rebuilt without the 256×256 size Windows requires, and the installer build stopped there.
+- The row menu no longer opens off the bottom of the window. Opening it from one of the last apps in the list used to push it under the edge of the scrolling area, where it was cut off; it now checks the room beneath itself and hangs above the row when there isn't enough.
+- Long arcdps plugin descriptions no longer push a row out of shape — they trim, with the full text on hover.
+- A Guild Wars 2 path too long for the window shows its last two folders instead of breaking across lines mid-word. Hover for the whole path.
