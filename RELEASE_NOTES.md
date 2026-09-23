@@ -1,6 +1,6 @@
 # Release Notes
 
-Version v0.3.21 — September 23, 2026
+Version v0.3.22 — September 23, 2026
 
 ## A new look
 
@@ -11,3 +11,7 @@ The tray window got a pass of its own: fewer stray outlines, and the action colu
 ## The mark is gold
 
 The app icon, the tray icon and the installer art are all repainted in AxiOM's gold. It matches the accent colour the app has been using inside the window, so the icon in your taskbar finally agrees with what opens when you click it.
+
+## Fixes
+
+- The Windows installer is back. v0.3.21 shipped Linux only — the repainted icon was rebuilt without the 256×256 size Windows requires, and the installer build stopped there.
