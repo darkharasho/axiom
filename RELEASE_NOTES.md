@@ -1,23 +1,13 @@
 # Release Notes
 
-Version v0.3.20 — August 26, 2026
+Version v0.3.21 — September 23, 2026
 
-## AxiStream is in the list for everyone
+## A new look
 
-AxiStream hit 1.0, so it's out from behind the sign-in gate. It now shows up in your app list whether or not you're signed in to GitHub, and installs and updates like everything else here.
+AxiOM's interface has been rebuilt on axi-design, the shared design system behind the rest of the Axi apps. Same window, same three clicks to install something — it just sits better next to AxiStream and the others now, and future changes land in every app at once instead of one at a time.
 
-If you haven't seen it: AxiStream gets a Guild Wars 2 player live on YouTube in about three clicks. It drives its own bundled OBS, so there's no scene to build and no stream key to copy.
+The tray window got a pass of its own: fewer stray outlines, and the action column on each row lines up properly.
 
-Version v0.3.19 — August 23, 2026
+## The mark is gold
 
-## One click on Update really is enough now
-
-v0.3.18 fixed half of this. It stopped a background update check from clobbering an install that was still running — but arcdps plugins are small DLLs that finish in well under a second, so the install was usually already done by the time the check caught up, and the check happily wrote its stale pre-install snapshot back on top. The row flipped straight back to **Update available** and you clicked Update again.
-
-Update checks are now ordered against your clicks: anything you did after a check started takes priority, whether or not it has finished. The same gap existed for the Axi app rows and is closed too.
-
-## Fixes
-
-- arcdps plugins no longer revert to **Update available** after a successful one-click update.
-- App update checks can no longer overwrite a version you just installed, including in the on-disk version record.
-- Opening the arcdps view no longer races with the Update button you press right after.
+The app icon, the tray icon and the installer art are all repainted in AxiOM's gold. It matches the accent colour the app has been using inside the window, so the icon in your taskbar finally agrees with what opens when you click it.
