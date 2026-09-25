@@ -68,12 +68,12 @@ export function AppRow({ state, onAction, onInfo, onRetry }: Props) {
     if (notInstalled) return 'Not installed'
     if (hasUpdate) return `v${latestVersion} available`
     if (isRunning) return versionKnown ? `v${installedVersion} · running` : 'Running'
-    return versionKnown ? `v${installedVersion} · up to date` : 'Installed'
+    return versionKnown ? `v${installedVersion}` : 'Installed'
   }
 
   // The status ink, and only where there is a real status to assert. Rule 5:
-  // "not installed" and "up to date" are facts about the row, not verdicts, so
-  // they stay on the neutral ramp.
+  // "not installed" and a bare version are facts about the row, not verdicts,
+  // so they stay on the neutral ramp.
   const statusClass = () => {
     if (status === 'error') return 'ax-ink-danger'
     if (hasUpdate) return 'ax-ink-accent'
@@ -82,8 +82,8 @@ export function AppRow({ state, onAction, onInfo, onRetry }: Props) {
   }
 
   // The same verdicts statusClass() draws in the note, drawn again as the ink
-  // of the icon tile. Only a real status gets an ink: "not installed" and "up
-  // to date" are facts about the row, so they keep the neutral tile rather
+  // of the icon tile. Only a real status gets an ink: "not installed" and a
+  // bare version are facts about the row, so they keep the neutral tile rather
   // than losing one, which is what keeps the column of shapes unbroken.
   const tileClass = () => {
     if (status === 'error') return 'ax-tile--danger'

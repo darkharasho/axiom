@@ -20,7 +20,7 @@ export function ArcdpsRow({ plugin, onInstall, onSetDisabled }: Props) {
   const checkFailed = installed && upToDate === null && !downloadUrl && !!errorMessage
 
   // The versions read as part of the sentence rather than as chips beside it,
-  // which is how the app list has always shown them: "v2.1.0 · up to date". The
+  // which is how the app list has always shown them: "v2.1.0 available". The
   // meta chip is drawn as an outlined box in the one cool ink in the palette, so
   // two per row made the loudest thing on the page a pair of version numbers.
   const statusText = () => {
@@ -28,7 +28,7 @@ export function ArcdpsRow({ plugin, onInstall, onSetDisabled }: Props) {
     if (disabled) return 'Disabled'
     if (checkFailed) return "Couldn't check for updates"
     if (localBuild) return installedTag ? `${installedTag} · local build` : 'Local build'
-    if (upToDate === true) return installedTag ? `${installedTag} · up to date` : 'Up to date'
+    if (upToDate === true) return installedTag ?? 'Up to date'
     if (upToDate === false) return latestTag ? `${latestTag} available` : 'Update available'
     return installedTag ? `${installedTag} · unknown` : 'Unknown'
   }
