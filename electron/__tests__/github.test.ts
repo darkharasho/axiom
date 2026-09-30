@@ -134,7 +134,7 @@ describe('fetchLatestRelease auth', () => {
     })
     vi.stubGlobal('fetch', fetchMock)
     const { fetchLatestRelease } = await import('../github')
-    await fetchLatestRelease('darkharasho/axivale', /AxiVale.*\.AppImage$/i, 'gho_tok')
+    await fetchLatestRelease('darkharasho/axivale', /AxiVale.*\.AppImage$/i, { token: 'gho_tok' })
     const headers = fetchMock.mock.calls[0][1].headers as Record<string, string>
     expect(headers.Authorization).toBe('Bearer gho_tok')
   })
@@ -151,5 +151,65 @@ describe('fetchLatestRelease auth', () => {
     await fetchLatestRelease('darkharasho/axivale', /AxiVale.*\.AppImage$/i)
     const headers = fetchMock.mock.calls[0][1].headers as Record<string, string>
     expect(headers.Authorization).toBeUndefined()
+  })
+})
+
+describe('fetchLatestRelease prerelease opt-in', () => {
+  const dll = (name: string) => ({ name, browser_download_url: `https://example.com/${name}` })
+  const extras = [
+    { tag_name: 'v2.7.rc1', prerelease: true, published_at: '2026-09-29T23:58:23Z', assets: [dll('arcdps_unofficial_extras.dll')] },
+    { tag_name: 'v2.6.1', published_at: '2026-09-15T20:36:12Z', assets: [dll('arcdps_unofficial_extras.dll')] },
+  ]
+
+  // Krappa ships Unofficial Extras as an rc after a game patch, so the version
+  // users actually run is often a prerelease. Without the opt-in AxiOM reads
+  // their hand-installed 2.7.rc1 as an unrecognized "local build".
+  it('picks a newer prerelease when prereleases are allowed', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => extras }))
+    const { fetchLatestRelease } = await import('../github')
+    const result = await fetchLatestRelease(
+      'Krappa322/arcdps_unofficial_extras_releases',
+      /^arcdps_unofficial_extras\.dll$/i,
+      { includePrerelease: true },
+    )
+    expect(result?.version).toBe('2.7.rc1')
+  })
+
+  it('excludes prereleases by default', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => extras }))
+    const { fetchLatestRelease } = await import('../github')
+    const result = await fetchLatestRelease(
+      'Krappa322/arcdps_unofficial_extras_releases',
+      /^arcdps_unofficial_extras\.dll$/i,
+    )
+    expect(result?.version).toBe('2.6.1')
+  })
+
+  // Opting in must not pin anyone to an rc forever: once the stable lands it is
+  // the newer publish and wins on published_at like any other release.
+  it('prefers a stable released after the prerelease', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [
+        { tag_name: 'v2.7.rc1', prerelease: true, published_at: '2026-09-29T23:58:23Z', assets: [dll('App.AppImage')] },
+        { tag_name: 'v2.7.0', published_at: '2026-10-06T00:00:00Z', assets: [dll('App.AppImage')] },
+      ],
+    }))
+    const { fetchLatestRelease } = await import('../github')
+    const result = await fetchLatestRelease('darkharasho/axivale', /App\.AppImage$/i, { includePrerelease: true })
+    expect(result?.version).toBe('2.7.0')
+  })
+
+  it('still skips drafts when prereleases are allowed', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [
+        { tag_name: 'v3.0.0', draft: true, published_at: '2026-10-01T00:00:00Z', assets: [dll('App.AppImage')] },
+        { tag_name: 'v2.9.rc1', prerelease: true, published_at: '2026-09-19T00:00:00Z', assets: [dll('App.AppImage')] },
+      ],
+    }))
+    const { fetchLatestRelease } = await import('../github')
+    const result = await fetchLatestRelease('darkharasho/axivale', /App\.AppImage$/i, { includePrerelease: true })
+    expect(result?.version).toBe('2.9.rc1')
   })
 })

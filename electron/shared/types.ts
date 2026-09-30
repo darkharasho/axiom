@@ -115,6 +115,11 @@ export interface Config {
   autoStart: boolean
   notifyOnUpdates: boolean
   trayBadge: boolean
+  // Prerelease opt-ins, deliberately separate: a user may want rc builds of the
+  // arcdps plugins (which ship rcs as the normal post-patch build) without
+  // running rc builds of the AxiOM apps, or the reverse.
+  allowPrereleaseApps: boolean
+  allowPrereleasePlugins: boolean
   apps: Record<InstallableAppId, ConfigApp>
   arcdps: ConfigArcdps
 }
@@ -131,6 +136,8 @@ export const DEFAULT_CONFIG: Config = {
   autoStart: false,
   notifyOnUpdates: false,
   trayBadge: true,
+  allowPrereleaseApps: false,
+  allowPrereleasePlugins: false,
   apps: {
     axibridge: { installedVersion: null, lastChecked: null },
     axiforge:  { installedVersion: null, lastChecked: null },

@@ -26,9 +26,22 @@ describe('config', () => {
 
   it('writes and reads back a config', async () => {
     const { readConfig, writeConfig } = await import('../config')
-    writeConfig({ autoStart: true, notifyOnUpdates: false, trayBadge: true, apps: readConfig().apps, arcdps: readConfig().arcdps })
+    writeConfig({ ...readConfig(), autoStart: true })
     const cfg = readConfig()
     expect(cfg.autoStart).toBe(true)
+  })
+
+  // An existing install's config.json predates the prerelease flags. readConfig
+  // must backfill them rather than leave them undefined, or `includePrerelease:
+  // undefined` silently reaches fetchLatestRelease.
+  it('backfills fields missing from an older config file', async () => {
+    fs.writeFileSync(`${TEST_DIR}/config.json`, JSON.stringify({ autoStart: true, trayBadge: false }))
+    const { readConfig } = await import('../config')
+    const cfg = readConfig()
+    expect(cfg.autoStart).toBe(true)
+    expect(cfg.trayBadge).toBe(false)
+    expect(cfg.allowPrereleaseApps).toBe(false)
+    expect(cfg.allowPrereleasePlugins).toBe(false)
   })
 
   it('merges partial updates via patchConfig', async () => {

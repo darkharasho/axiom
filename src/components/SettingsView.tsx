@@ -60,6 +60,37 @@ export function SettingsView({ onBack }: Props) {
           />
         </SettingRow>
 
+        {/* Prerelease opt-ins. Each re-checks immediately: flipping one changes
+            what counts as "latest", and without a re-check nothing on screen
+            moves until the next poll, which reads as the toggle doing nothing. */}
+        <SettingRow
+          label="Pre-release app versions"
+          note="Offer rc builds of the AxiOM apps"
+        >
+          <Toggle
+            id="prerelease-apps"
+            checked={config.allowPrereleaseApps ?? false}
+            onChange={async checked => {
+              await updateConfig({ allowPrereleaseApps: checked })
+              window.axiom.checkUpdates()
+            }}
+          />
+        </SettingRow>
+
+        <SettingRow
+          label="Pre-release plugin versions"
+          note="Offer rc builds of the arcdps plugins"
+        >
+          <Toggle
+            id="prerelease-plugins"
+            checked={config.allowPrereleasePlugins ?? false}
+            onChange={async checked => {
+              await updateConfig({ allowPrereleasePlugins: checked })
+              window.axiom.checkUpdates()
+            }}
+          />
+        </SettingRow>
+
         {/* GitHub sign-in. The device code is the one string in the app a user
             has to read character by character, so it is mono and accented. */}
         <SettingRow

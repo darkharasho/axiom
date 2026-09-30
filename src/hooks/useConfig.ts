@@ -5,6 +5,8 @@ const EMPTY_CONFIG: Config = {
   autoStart: false,
   notifyOnUpdates: false,
   trayBadge: true,
+  allowPrereleaseApps: false,
+  allowPrereleasePlugins: false,
   apps: {
     axibridge: { installedVersion: null, lastChecked: null },
     axiforge:  { installedVersion: null, lastChecked: null },

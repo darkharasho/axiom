@@ -124,7 +124,10 @@ async function refreshArcdps(win: BrowserWindow): Promise<void> {
     gw2PathSource: resolved.source,
     overrideError: resolved.overrideError,
     recordedInstalls: cfg.arcdps.plugins,
-    fetchRelease: (repo, pattern) => fetchLatestRelease(repo, pattern, githubToken ?? undefined),
+    fetchRelease: (repo, pattern) => fetchLatestRelease(repo, pattern, {
+      token: githubToken ?? undefined,
+      includePrerelease: cfg.allowPrereleasePlugins,
+    }),
     fetchCoreMd5: async (dll) => {
       // Use Electron's net.fetch (Chromium stack) rather than undici: it honors
       // the system proxy and OS trust store, and soft-fails cert revocation like
@@ -155,6 +158,7 @@ export async function runCheckUpdates(win: BrowserWindow): Promise<void> {
   // meant the update dot could lag the window by many seconds at startup —
   // long enough to read "no updates" and move on.
   await refreshArcdps(win)
+  const allowPrereleaseApps = readConfig().allowPrereleaseApps
   for (const [id, meta] of Object.entries(APP_META)) {
     const appId = id as AppId
     if (!isInstallable(meta)) continue
@@ -166,7 +170,10 @@ export async function runCheckUpdates(win: BrowserWindow): Promise<void> {
     setState(win, appId, { status: 'checking' }, true)
     const platform = process.platform === 'win32' ? 'win' : 'linux'
     const pattern = meta.assetPattern[platform]
-    const release = await fetchLatestRelease(meta.repo, pattern, githubToken ?? undefined)
+    const release = await fetchLatestRelease(meta.repo, pattern, {
+      token: githubToken ?? undefined,
+      includePrerelease: allowPrereleaseApps,
+    })
     const detected = await detectInstalled(meta.name, meta.configDir)
     // The fetches above took seconds. If the user hit Install or Update in that
     // window this whole result is stale — bail before it can write the version

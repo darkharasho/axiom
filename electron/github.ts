@@ -16,6 +16,14 @@ function releaseTime(r: GithubRelease): number {
   return Number.isNaN(t) ? 0 : t
 }
 
+export interface FetchReleaseOpts {
+  token?: string
+  // Opt in to prereleases (rc builds). Off by default: the newest stable is
+  // what a user who hasn't asked for test builds should be offered. Drafts are
+  // excluded either way — they aren't published to anyone.
+  includePrerelease?: boolean
+}
+
 // GitHub's /releases/latest is NOT simply "the newest release": it honors the
 // publisher's make_latest flag and orders by created_at (the tag's date), so a
 // release tagged earlier but published later can be left out of it entirely.
@@ -26,8 +34,9 @@ function releaseTime(r: GithubRelease): number {
 export async function fetchLatestRelease(
   repo: string,
   assetPattern: RegExp,
-  token?: string,
+  opts: FetchReleaseOpts = {},
 ): Promise<ReleaseInfo | null> {
+  const { token, includePrerelease = false } = opts
   try {
     const headers: Record<string, string> = {
       Accept: 'application/vnd.github+json',
@@ -38,8 +47,10 @@ export async function fetchLatestRelease(
     if (!res.ok) return null
     const body = await res.json() as GithubRelease | GithubRelease[]
     const releases = (Array.isArray(body) ? body : [body]).filter(Boolean)
+    // Selection stays newest-by-published_at, so opting into prereleases can't
+    // pin anyone to an rc: the stable that follows it is the newer publish.
     const usable = releases.filter(r =>
-      !r.draft && !r.prerelease && r.assets?.some(a => assetPattern.test(a.name)))
+      !r.draft && (includePrerelease || !r.prerelease) && r.assets?.some(a => assetPattern.test(a.name)))
     if (usable.length === 0) return null
     const latest = usable.reduce((a, b) => (releaseTime(b) > releaseTime(a) ? b : a))
     const asset = latest.assets.find(a => assetPattern.test(a.name))!

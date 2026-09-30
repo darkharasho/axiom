@@ -765,3 +765,64 @@ describe('pickInstallLocation', () => {
     expect(pickInstallLocation(locations, gw2, 'addons').dir).toBe('addons')
   })
 })
+
+// The prerelease opt-in itself lives in fetchLatestRelease; what matters here is
+// that buildArcdpsState reads a hand-installed rc correctly on both sides of the
+// toggle. Krappa ships Unofficial Extras rcs as the normal post-patch build, so
+// this is the common case for that plugin, not an edge one.
+describe('buildArcdpsState with a prerelease installed', () => {
+  const EXTRAS_BYTES = 'unofficial-extras-2.7.rc1-bytes'
+
+  function gw2WithExtras(tag: string): string {
+    const gw2 = fs.mkdtempSync(path.join(os.tmpdir(), `arc-prerelease-${tag}-`))
+    fs.mkdirSync(path.join(gw2, 'bin64'), { recursive: true })
+    fs.writeFileSync(path.join(gw2, 'bin64', 'Gw2-64.exe'), 'x')
+    fs.writeFileSync(path.join(gw2, 'extras.dll'), EXTRAS_BYTES) // mtime = now
+    return gw2
+  }
+
+  it('reads the rc as up to date when prereleases are allowed', async () => {
+    const digest = crypto.createHash('sha256').update(EXTRAS_BYTES).digest('hex')
+    const state = await buildArcdpsState({
+      gw2Path: gw2WithExtras('on'),
+      gw2PathSource: 'manual',
+      recordedInstalls: {},
+      // What fetchLatestRelease returns with includePrerelease: true.
+      fetchRelease: async () => ({
+        version: '2.7.rc1',
+        downloadUrl: 'https://example.test/arcdps_unofficial_extras.dll',
+        assetDigest: `sha256:${digest}`,
+        publishedAt: '2026-09-29T23:58:23Z',
+      }),
+      fetchCoreMd5: async () => null,
+    })
+    const p = state.plugins.find(x => x.id === 'unofficial_extras')!
+    expect(p.upToDate).toBe(true)
+    expect(p.installedTag).toBe('2.7.rc1')
+    expect(p.localBuild).toBe(false)
+    expect(arcdpsPluginHasUpdate(p)).toBe(false)
+  })
+
+  it('does not offer a downgrade to the stable when prereleases are off', async () => {
+    const state = await buildArcdpsState({
+      gw2Path: gw2WithExtras('off'),
+      gw2PathSource: 'manual',
+      // AxiOM installed the rc itself while the toggle was on, so it recorded it.
+      recordedInstalls: { unofficial_extras: { installedTag: '2.7.rc1', installedAt: '2026-09-30T00:00:00Z' } },
+      // What fetchLatestRelease returns with the toggle back off: the stable,
+      // whose digest cannot match the rc on disk.
+      fetchRelease: async () => ({
+        version: '2.6.1',
+        downloadUrl: 'https://example.test/arcdps_unofficial_extras.dll',
+        assetDigest: `sha256:${'b'.repeat(64)}`,
+        publishedAt: '2026-09-15T20:36:12Z',
+      }),
+      fetchCoreMd5: async () => null,
+    })
+    const p = state.plugins.find(x => x.id === 'unofficial_extras')!
+    // The rc postdates the stable, so it is a newer build, not a stale one.
+    expect(p.localBuild).toBe(true)
+    expect(p.installedTag).toBe('2.7.rc1')
+    expect(arcdpsPluginHasUpdate(p)).toBe(false)
+  })
+})
