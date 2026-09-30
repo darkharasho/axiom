@@ -21,7 +21,7 @@
    the OS through - the language is square now, so there are no slivers, but a
    frameless window still has no chrome behind it and any sub-pixel seam at the
    edge should be the outline rather than whatever is underneath. */
-html, body { width: 100%; height: 100%; overflow: hidden; background: var(--axi-ink-line); }
+html, body { width: 100%; height: 100%; overflow: hidden; background-color: var(--axi-ink-line); }
 
 #root {
   width: 100%;
