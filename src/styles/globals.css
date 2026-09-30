@@ -7,13 +7,14 @@
    find yourself writing a border weight or an offset here, reach for the token
    instead, and if there is no token for it, it does not belong in the app. */
 
-:root {
-  /* The whole theming surface. axi's stock accent is #ffc53d; axiom's gold is
-     darker and warmer, and every accented thing in the app follows this one
-     line. --axi-accent-ink stays as shipped: the gold is bright enough on this
-     ground that near-black text on top of it still reads. */
-  --axi-accent: #c89850;
-}
+/* AxiOM used to pin --axi-accent to #c89850 here, at :root - the same
+   specificity as the package's own [data-axi-accent="<id>"] rules in
+   accents.css. Because this sheet loads last, that tie always went to the
+   line below, so the accent picker could set the attribute and persist the
+   choice while the screen never moved. The fix is that there is no longer a
+   line here to win the tie: the accent now comes entirely from
+   src/themes/accents.ts and accents.css, with 'gold-bronze' (#d4a017) as
+   AxiOM's default - the palette's nearest entry to the old hardcoded gold. */
 
 /* The body is painted in the outline's own ink. It used to be here because
    .axi-window rounded its corners and the slivers behind that radius showed
@@ -320,6 +321,35 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--axi-
 }
 .axi-chip.ax-sm { padding: 3px 7px; }
 
+/* ---------- appearance pickers ---------- */
+/* The accent swatches and the surface buttons both live in a settings row
+   that is 360px wide and already carrying a label, so neither can afford the
+   language's own gap. Wrapping is deliberate: the palette grows over time and
+   a row that cannot fit every swatch on one line should drop to a second
+   rather than scroll sideways in a tray popover. */
+.ax-swatches, .ax-surface-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+/* A swatch is the one control in the app that IS a colour rather than one
+   drawn in it - the whole point is to see the hex before you pick it, so it
+   skips .axi-btn's ink and shows its own. The pressed ring answers in the
+   text ink rather than the accent: the swatch you are looking at may itself
+   be the accent, and a same-colour ring around it would disappear. */
+.ax-swatch {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: var(--axi-border-hairline) solid var(--axi-ink-line);
+  border-radius: var(--axi-radius-sm);
+  cursor: pointer;
+}
+.ax-swatch[aria-pressed="true"] {
+  outline: var(--axi-border-control) solid var(--axi-text);
+  outline-offset: 2px;
+}
+
 /* Chrome, not content: the back arrow, the settings cog, the row's overflow
    menu. They have nothing to lift off, and a tray window this small would be
    in constant motion if every one of them did. They answer on the ramp, which
@@ -428,3 +458,27 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--axi-
 .ax-ink-accent { color: var(--axi-accent); }
 .ax-ink-ok     { color: var(--axi-ok); }
 .ax-ink-danger { color: var(--axi-danger); }
+
+/* --- accent and surface crossfade --- */
+/* One class, held for 500ms by applyTheme/applySurface in src/themes, so the
+   whole window repaints together instead of each element snapping on its own
+   next frame. Shared by both: changing the accent and the surface together is
+   one fade, not two racing ones. */
+.theme-transitioning *,
+.theme-transitioning *::before,
+.theme-transitioning *::after {
+  transition:
+    background-color 0.4s ease,
+    border-color 0.4s ease,
+    color 0.2s ease,
+    box-shadow 0.4s ease,
+    outline-color 0.4s ease !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-transitioning *,
+  .theme-transitioning *::before,
+  .theme-transitioning *::after {
+    transition: none !important;
+  }
+}

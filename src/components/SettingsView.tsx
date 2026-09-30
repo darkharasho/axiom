@@ -5,6 +5,9 @@ import { useConfig } from '../hooks/useConfig'
 import { Toggle } from './Toggle'
 import { useGithubAuth } from '../hooks/useGithubAuth'
 import { useSelfUpdate } from '../hooks/useSelfUpdate'
+import { applyTheme, readAccent, applySurface, readSurface, SURFACES } from '../themes/applyTheme'
+import type { SurfaceId } from '../themes/applyTheme'
+import { ACCENTS } from '../themes/accents'
 
 interface Props {
   onBack: () => void
@@ -17,6 +20,8 @@ export function SettingsView({ onBack }: Props) {
   const github = useGithubAuth()
   const [version, setVersion] = useState(_cachedVersion)
   const selfUpdate = useSelfUpdate()
+  const [accent, setAccent] = useState(readAccent)
+  const [surface, setSurface] = useState<SurfaceId>(readSurface)
 
   useEffect(() => {
     window.axiom.getVersion().then(v => { _cachedVersion = v; setVersion(v) })
@@ -32,6 +37,41 @@ export function SettingsView({ onBack }: Props) {
       </div>
 
       <div className="ax-scroll">
+        {/* Appearance first: it is the setting a reader is most likely to
+            have come for. */}
+        <SettingRow label="Accent">
+          <div className="ax-swatches">
+            {ACCENTS.map((a) => (
+              <button
+                key={a.id}
+                type="button"
+                title={a.label}
+                aria-label={a.label}
+                aria-pressed={a.id === accent}
+                className="ax-swatch"
+                onClick={() => { setAccent(applyTheme(a.id)) }}
+                style={{ background: a.hex }}
+              />
+            ))}
+          </div>
+        </SettingRow>
+
+        <SettingRow label="Surface">
+          <div className="ax-surface-picker">
+            {SURFACES.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                aria-pressed={s.id === surface}
+                className={`axi-btn ax-sm${s.id === surface ? ' axi-btn--primary' : ''}`}
+                onClick={() => { setSurface(applySurface(s.id)) }}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </SettingRow>
+
         {/* Each setting is a row in the window's interior, drawn in a rule. */}
         <SettingRow label="Auto-start on login">
           <Toggle
