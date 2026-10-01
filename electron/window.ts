@@ -15,7 +15,17 @@ export function createPopupWindow(): BrowserWindow {
     resizable: false,
     skipTaskbar: true,
     alwaysOnTop: true,
-    transparent: false,
+    // A frameless window's corner is rounded in CSS, and CSS can only cut a
+    // hole: what shows through it is whatever the window itself was created
+    // over. An opaque window paints a square there, so the radius reads as no
+    // radius at all - which is why this popover looked square on the flat and
+    // glass surfaces, where --axi-radius is not 0. Transparent on Linux and
+    // Windows, the pattern axiam already ships; macOS rounds and shadows a
+    // frameless window itself, and transparency there would cost the native
+    // shadow for nothing. The renderer's half is in src/styles/globals.css.
+    ...(process.platform === 'darwin'
+      ? { transparent: false }
+      : { transparent: true, backgroundColor: '#00000000' }),
     ...(process.platform === 'linux' && { type: 'toolbar' }),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
