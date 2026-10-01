@@ -16,12 +16,17 @@
    src/themes/accents.ts and accents.css, with 'gold-bronze' (#d4a017) as
    AxiOM's default - the palette's nearest entry to the old hardcoded gold. */
 
-/* The body is painted in the outline's own ink. It used to be here because
-   .axi-window rounded its corners and the slivers behind that radius showed
-   the OS through - the language is square now, so there are no slivers, but a
-   frameless window still has no chrome behind it and any sub-pixel seam at the
-   edge should be the outline rather than whatever is underneath. */
-html, body { width: 100%; height: 100%; overflow: hidden; background-color: var(--axi-ink-line); }
+/* The page paints nothing. .axi-window is the only thing that paints: it
+   carries the ground, the outline and the radius, and its shape is the shape
+   the window should be. The default surface is square, so a fill behind the
+   shell cost nothing and was worth having as the colour of any sub-pixel seam
+   at the edge - but flat and glass give --axi-radius a value, and a fill behind
+   a rounded shell has no radius of its own, so it filled the corners straight
+   back in. The window is transparent now (see electron/window.ts); what shows
+   through the corner is the desktop, which is the point. Longhands rather than
+   the shorthand, so the colour and font the package sets on its own body rule
+   are left alone. */
+html, body { width: 100%; height: 100%; overflow: hidden; background-color: transparent; background-image: none; }
 
 #root {
   width: 100%;
