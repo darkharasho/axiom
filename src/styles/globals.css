@@ -202,13 +202,21 @@ html, body { width: 100%; height: 100%; overflow: hidden; background-color: var(
    one to the next. Rule 8's counterpart clause covers it - drawn as a card,
    outline and block, at the control weight because it sits inside a window
    that already carries the panel's. The block is also what tells you the row
-   is pressable before you have read a word of it. */
+   is pressable before you have read a word of it.
+
+   Asked for as the composed --axi-shadow-control rather than assembled out of
+   --axi-offset-control twice and the ink line. The offset pair is only the axi
+   surface's answer to what "raised" looks like; flat and glass answer the same
+   question with a soft drop and an inset top highlight, and they say so by
+   restating the composed token. Spelling the block out here pinned the card to
+   one surface's material - it kept axi's hard near-black step under the other
+   two until they zeroed the offsets, and then it had no relief at all. */
 .ax-item--card {
   padding: 7px 9px;
   background: var(--axi-surface);
   border: var(--axi-border-control) solid var(--axi-ink-line);
   border-radius: var(--axi-radius-sm);
-  box-shadow: var(--axi-offset-control) var(--axi-offset-control) 0 var(--axi-ink-line);
+  box-shadow: var(--axi-shadow-control);
   /* The block falls outside the box. Without room for it the next card lands
      on top of it and the window's edge clips the last one. */
   margin: 0 var(--axi-offset-control) 8px 0;
@@ -216,11 +224,13 @@ html, body { width: 100%; height: 100%; overflow: hidden; background-color: var(
 }
 /* Rule 4's third case: a control already resting on a block has to move and
    deepen together, or its lower-right edge stays put and it reads as growing
-   rather than lifting. */
+   rather than lifting. The translate is the lift in every surface; only the
+   relief under it changes, so the block deepens on axi and the drop deepens on
+   flat and glass. */
 .ax-item--card:hover {
   background: var(--axi-surface);
   transform: translate(-2px, -2px);
-  box-shadow: var(--axi-offset-control-hover) var(--axi-offset-control-hover) 0 var(--axi-ink-line);
+  box-shadow: var(--axi-shadow-control-hover);
 }
 /* The lift is the cursor marker now, so the accent edge would be saying it
    twice. */
@@ -387,8 +397,21 @@ html, body { width: 100%; height: 100%; overflow: hidden; background-color: var(
   text-align: left;
   cursor: pointer;
 }
-.ax-menu-item:hover { background: var(--axi-ground); color: var(--axi-text); }
-.ax-menu-item--danger:hover { background: var(--axi-danger); color: var(--axi-ink-line); }
+/* A hovered item is a recess under the cursor, not a thing raised out of the
+   popover, and --axi-well-fill is the token for that. It is also what
+   .axi-menu__pop's own labels hover to, so both kinds of menu item in the app
+   answer the same way. This used to be --axi-ground, which paints the same
+   pixels on axi - there --axi-well-fill resolves to the ground - but
+   --axi-ground is the page and is opaque in every surface, so on glass the
+   hovered item punched an opaque tile through the translucent popover.
+   --axi-well-fill is restated there as a translucent darkening for exactly
+   this case.
+   Danger keeps its fill and writes on it in the ink the fills were
+   contrast-checked against. --axi-ink-line is the outline's colour; flat and
+   glass relight it to a translucent white, which on red is barely a glyph at
+   all. */
+.ax-menu-item:hover { background: var(--axi-well-fill); color: var(--axi-text); }
+.ax-menu-item--danger:hover { background: var(--axi-danger); color: var(--axi-ink-on-fill); }
 
 /* Two lines and then stop. A plugin description explaining how a DLL gets
    loaded ran to five lines of a row you are trying to scan, which buried the
