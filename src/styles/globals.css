@@ -103,12 +103,19 @@ html, body { width: 100%; height: 100%; overflow: hidden; background-color: var(
 .ax-head--brand .ax-title__om { color: inherit; }
 .ax-head--brand .ax-icon,
 .ax-head--brand .ax-nav { color: var(--axi-accent-ink); border-color: transparent; }
-/* The plate under the wordmark's glyph. */
+/* The plate under the wordmark's glyph. Painted in --axi-ground-deep, the
+   language's token for deep chrome - the outline widened into a strip or a
+   plate, which is exactly what this is and what .axi-titlebar uses it for. The
+   axi surface defines it as the ink line itself, so this is the same near-black
+   plate it always was; flat and glass restate it dark in their own terms. It
+   used to ask for --axi-ink-line directly, which was the outline's colour doing
+   a fill's job: those surfaces relight the ink line to a translucent white, and
+   the plate turned into a veil over the gold with gold glyphs on it. */
 .ax-brandmark {
   flex: none;
   width: 28px; height: 28px;
   display: grid; place-items: center;
-  background: var(--axi-ink-line);
+  background: var(--axi-ground-deep);
   border: var(--axi-border-control) solid var(--axi-ink-line);
   border-radius: var(--axi-radius-sm);
 }
@@ -116,14 +123,23 @@ html, body { width: 100%; height: 100%; overflow: hidden; background-color: var(
    invisible once the ground here IS the accent. Both invert onto a plate of
    ink and keep their own colour on top of it - which is why the meta chip is
    pulled back out: rule 6 reserves that ink for annotation, and repainting it
-   gold to fit the band would spend the one colour that never means status. */
+   gold to fit the band would spend the one colour that never means status.
+
+   The plate is --axi-ground-deep for the reason .ax-brandmark's is. These are a
+   button and a chip, and a fill out of the deep-chrome token would be the wrong
+   answer for either of them anywhere else in the window - but the band is this
+   popover's chrome, and a control sitting in the chrome inverts onto it the same
+   way .axi-titlebar's buttons do. The surface fills are no use here: flat and
+   glass make them translucent, they composite up towards the gold underneath,
+   and a gold glyph on pale gold says nothing. The outline stays the ink line,
+   because an outline is the one thing that token is for. */
 .ax-head--brand .axi-btn--primary {
-  background: var(--axi-ink-line);
+  background: var(--axi-ground-deep);
   border-color: var(--axi-ink-line);
   color: var(--axi-accent);
 }
 .ax-head--brand .axi-chip {
-  background: var(--axi-ink-line);
+  background: var(--axi-ground-deep);
   border-color: var(--axi-ink-line);
   color: var(--axi-accent);
 }
