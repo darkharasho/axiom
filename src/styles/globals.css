@@ -149,6 +149,17 @@ html, body { width: 100%; height: 100%; overflow: hidden; background-color: tran
   color: var(--axi-accent);
 }
 .ax-head--brand .axi-chip--meta { border-color: var(--axi-meta); color: var(--axi-meta); }
+/* The update marker on the arcdps button, inverted for the same reason the
+   button and the chip above it are. An accent diamond on the accent band is
+   accent on accent: on the axi surface the ink line still cut it out of the
+   gold, but flat and glass relight that line to a translucent white and the
+   mark all but disappeared. Drawn in --axi-accent-ink it is the same ink every
+   other mark on the band is drawn in, outline included - a 7px shape is too
+   small to carry a fill and a contrasting outline both. */
+.ax-head--brand .axi-diamond {
+  background: var(--axi-accent-ink);
+  border-color: var(--axi-accent-ink);
+}
 .ax-head--brand .ax-icon:hover:not(:disabled),
 .ax-head--brand .ax-nav:hover:not(:disabled) {
   color: var(--axi-accent-ink);
