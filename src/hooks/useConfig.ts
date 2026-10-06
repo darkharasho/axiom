@@ -15,6 +15,7 @@ const EMPTY_CONFIG: Config = {
     axivale:    { installedVersion: null, lastChecked: null },
     axiroster:  { installedVersion: null, lastChecked: null },
     axistream:  { installedVersion: null, lastChecked: null },
+    axiadmin:   { installedVersion: null, lastChecked: null },
   },
   arcdps: {
     gw2PathOverride: null,

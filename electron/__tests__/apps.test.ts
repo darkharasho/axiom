@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { APP_META, isInstallable, isAppVisible } from '../apps'
+import { APP_META, isInstallable, isAppVisible, visibleAppStates } from '../apps'
 
 describe('axivale registry entry', () => {
   it('is installable and generally available (not private)', () => {
@@ -48,8 +48,50 @@ describe('isAppVisible', () => {
     expect(isAppVisible(APP_META.axistream, null)).toBe(true)
   })
 
-  it('has no gated entries in the registry — every app is generally available', () => {
+  it('gates only axiadmin', () => {
     const gated = Object.values(APP_META).filter(m => 'allowlist' in m && m.allowlist != null)
-    expect(gated).toEqual([])
+    expect(gated.map(m => m.id)).toEqual(['axiadmin'])
+  })
+})
+
+describe('axiadmin registry entry', () => {
+  it('is installable, private and gated to darkharasho', () => {
+    const m = APP_META.axiadmin
+    if (!isInstallable(m)) throw new Error('expected installable')
+    expect(m.name).toBe('AxiAdmin')
+    expect(m.repo).toBe('darkharasho/axiadmin')
+    expect(m.configDir).toBe('axiadmin')
+    expect(m.private).toBe(true)
+    expect(m.allowlist).toEqual(['darkharasho'])
+  })
+
+  it('asset patterns match the release names', () => {
+    const m = APP_META.axiadmin
+    if (!isInstallable(m)) throw new Error('expected installable')
+    expect(m.assetPattern.win.test('AxiAdmin-Setup-0.1.0.exe')).toBe(true)
+    expect(m.assetPattern.linux.test('AxiAdmin-0.1.0.AppImage')).toBe(true)
+    expect(m.assetPattern.linux.test('AxiAdmin-Setup-0.1.0.exe')).toBe(false)
+  })
+
+  it('is hidden unless the login is allowlisted', () => {
+    expect(isAppVisible(APP_META.axiadmin, null)).toBe(false)
+    expect(isAppVisible(APP_META.axiadmin, 'randomuser')).toBe(false)
+    expect(isAppVisible(APP_META.axiadmin, 'darkharasho')).toBe(true)
+  })
+})
+
+describe('visibleAppStates', () => {
+  const states = (['axibridge', 'axiadmin', 'axitools'] as const).map(id => ({ id }))
+
+  it('drops axiadmin when signed out', () => {
+    expect(visibleAppStates(states, null).map(s => s.id)).toEqual(['axibridge', 'axitools'])
+  })
+
+  it('drops axiadmin for a login not on its allowlist', () => {
+    expect(visibleAppStates(states, 'randomuser').map(s => s.id)).toEqual(['axibridge', 'axitools'])
+  })
+
+  it('keeps axiadmin for darkharasho', () => {
+    expect(visibleAppStates(states, 'darkharasho').map(s => s.id)).toEqual(['axibridge', 'axiadmin', 'axitools'])
   })
 })

@@ -12,6 +12,10 @@ interface InstallableAppMeta {
   assetPattern: AssetPattern
   configDir: string  // directory name under ~/.config/ where axiom-version is written
   allowlist?: readonly string[]  // GitHub logins gated to this app; hidden from everyone else. Absent = public.
+  // Private GitHub repo: release lookups and downloads need the signed-in user's
+  // repo-scoped token, and only ever send it to this repo's API paths (see
+  // tokenScope.ts). Always pair with an allowlist, which decides visibility.
+  private?: boolean
 }
 
 interface AxiToolsMeta {
@@ -96,6 +100,18 @@ export const APP_META: Record<AppId, AppMeta> = {
       linux: /AxiStream.*\.AppImage$/i,
     },
   },
+  axiadmin: {
+    id: 'axiadmin',
+    name: 'AxiAdmin',
+    repo: 'darkharasho/axiadmin',
+    configDir: 'axiadmin',
+    private: true,
+    allowlist: ['darkharasho'],
+    assetPattern: {
+      win: /AxiAdmin.*Setup.*\.exe$/i,
+      linux: /AxiAdmin.*\.AppImage$/i,
+    },
+  },
   axitools: {
     id: 'axitools',
     name: 'AxiTools',
@@ -111,4 +127,10 @@ export function isAppVisible(meta: AppMeta, login: string | null): boolean {
   const allowlist = 'allowlist' in meta ? meta.allowlist : undefined
   if (!allowlist) return true
   return login != null && allowlist.includes(login)
+}
+
+// The renderer must never learn that a gated app exists for a login that can't
+// see it, so the main process filters before every send.
+export function visibleAppStates<T extends { id: AppId }>(states: readonly T[], login: string | null): T[] {
+  return states.filter(s => isAppVisible(APP_META[s.id], login))
 }

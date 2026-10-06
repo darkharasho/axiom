@@ -3,7 +3,7 @@ import { autoUpdater } from 'electron-updater'
 import log from 'electron-log'
 import type { BrowserWindow } from 'electron'
 import type { AppId, InstallableAppId, AppState, ArcdpsState } from './shared/types'
-import { APP_META, isInstallable, isAppVisible } from './apps'
+import { APP_META, isInstallable, isAppVisible, visibleAppStates } from './apps'
 import { readConfig, patchConfig, setInstalledVersion } from './config'
 import { fetchLatestRelease } from './github'
 import { beginDeviceAuth, pollForToken, fetchGithubLogin, fetchGithubUser, GITHUB_DEVICE_CLIENT_ID } from './githubAuth'
@@ -252,7 +252,7 @@ function buildInitialStates(): Record<AppId, AppState> {
 }
 
 function pushStates(win: BrowserWindow): void {
-  win.webContents.send('axiom:states-updated', Object.values(appStates))
+  win.webContents.send('axiom:states-updated', visibleAppStates(Object.values(appStates), githubLogin))
 }
 
 // `fromCheck` marks a write as belonging to a background update check rather
@@ -272,6 +272,7 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
       if (saved) {
         applyIdentity(saved.token, saved.login, saved.id ?? null)
         pushGithubStatus(win)
+        pushStates(win)
         onIdentityChanged?.()
         if (saved.id == null) {
           // Signed in before the access check existed: backfill the numeric id
@@ -345,7 +346,7 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
     return githubStatus()
   })
 
-  ipcMain.handle('axiom:get-states', () => Object.values(appStates))
+  ipcMain.handle('axiom:get-states', () => visibleAppStates(Object.values(appStates), githubLogin))
 
   ipcMain.handle('axiom:get-config', () => readConfig())
   ipcMain.handle('axiom:set-config', (_e, patch: Partial<ReturnType<typeof readConfig>>) => {
@@ -497,6 +498,7 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
   ipcMain.handle('axiom:install', async (_e, appId: InstallableAppId) => {
     const meta = APP_META[appId]
     if (!isInstallable(meta)) return
+    if (!isAppVisible(meta, githubLogin)) return
     const { downloadUrl } = appStates[appId]
     if (!downloadUrl) return
     if (isAppBusy(appStates[appId].status)) return

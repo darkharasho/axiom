@@ -8,6 +8,7 @@ export const APP_ICONS: Record<AppId, string> = {
   axivale:    './svg/axivale-glyph.svg',
   axiroster:  './svg/axiroster-glyph.svg',
   axistream:  './svg/axistream-glyph.svg',
+  axiadmin:   './svg/axiadmin-glyph.svg',
   axitools:   './svg/axitools-glyph.svg',
 }
 
@@ -19,6 +20,7 @@ export const APP_NAMES: Record<AppId, string> = {
   axivale:    'AxiVale',
   axiroster:  'AxiRoster',
   axistream:  'AxiStream',
+  axiadmin:   'AxiAdmin',
   axitools:   'AxiTools',
 }
 
@@ -30,5 +32,6 @@ export const APP_BLURBS: Record<AppId, string> = {
   axivale:   'An AI agent for GW2 squads that reads your fight reports and helps run your community — answering questions about performance and handling routine Discord chores — scoped per server and per account, with confirmation before anything destructive.',
   axiroster:  'WvW guild roster manager for Guild Wars 2 leadership. Pull your roster from the GW2 API and Discord, track who is active, and share a live audit log and retention history across your whole officer team — on desktop or in the browser.',
   axistream:  'Gets a Guild Wars 2 player live on YouTube in about three clicks. Hardware-encodes via NVENC/VAAPI with GW2-tuned bitrate presets, composites privacy masks, and handles the full broadcast lifecycle via YouTube OAuth.',
+  axiadmin:   'Owner-only admin hub for axi-config: manage bans and flags, and see who changed what and when.',
   axitools:   'A Discord bot for GW2 communities — build sharing, RSS feeds, patch note alerts, and scheduled squad signups, with per-guild isolated storage for complete privacy.',
 }
