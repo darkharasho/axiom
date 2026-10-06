@@ -37,16 +37,38 @@ export function deviceFlowScope(mode: DeviceFlowMode, login: string | null, scop
   return SCOPE_PRIVATE
 }
 
-export type UnlockDecision =
-  | { ok: true; login: string; id: number; scopes: string[] }
+export type AuthOutcome =
+  | { ok: true; login: string; id: number | null; scopes: string[] }
   | { ok: false; error: string }
 
-/** Decide what to do with a token from a device flow that requested repo, using
- *  the account GitHub says owns it (not whoever was signed in). A different
- *  account approving the code is refused; the eligible account is accepted with
- *  the scopes GitHub actually granted, which may lack repo. */
-export function decideUnlockResult(user: { login: string; id: number; scopes: string[] }): UnlockDecision {
-  if (!isPrivateEligible(user.login)) {
+/** Remove and return the scopes requested for a device code; null if unknown or
+ *  already consumed. */
+export function takePending(pending: Map<string, string[]>, deviceCode: string): string[] | null {
+  const requested = pending.get(deviceCode) ?? null
+  pending.delete(deviceCode)
+  return requested
+}
+
+/** Decide what to do with a token after the device flow, from what GitHub says
+ *  about it (not who was signed in). `user` is the /user result (null if the
+ *  call failed); `fallbackLogin` exists only for a plain sign-in whose /user
+ *  call failed. A token granted repo is stored only for an eligible login, on
+ *  every path. An unlock requires /user and an eligible login, and keeps the
+ *  true granted scopes (which may lack repo). */
+export function resolveAuthOutcome(input: {
+  requested: readonly string[]
+  user: { login: string; id: number; scopes: string[] } | null
+  fallbackLogin?: string
+}): AuthOutcome {
+  const { requested, user, fallbackLogin } = input
+  const isUnlock = requested.includes('repo')
+  if (user == null) {
+    if (isUnlock) return { ok: false, error: 'Could not verify which GitHub account approved the unlock. Try again.' }
+    if (fallbackLogin == null) return { ok: false, error: 'Could not read your GitHub account.' }
+    // Scopes unknown: record read:user only, so nothing private unlocks.
+    return { ok: true, login: fallbackLogin, id: null, scopes: [SCOPE_BASIC] }
+  }
+  if ((isUnlock || user.scopes.includes('repo')) && !isPrivateEligible(user.login)) {
     return { ok: false, error: 'That GitHub account cannot unlock private apps. Approve the code with the account you signed in with.' }
   }
   return { ok: true, login: user.login, id: user.id, scopes: user.scopes }

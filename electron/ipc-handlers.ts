@@ -8,7 +8,7 @@ import { readConfig, patchConfig, setInstalledVersion } from './config'
 import { fetchLatestRelease } from './github'
 import { beginDeviceAuth, pollForToken, fetchGithubLogin, fetchGithubUser, GITHUB_DEVICE_CLIENT_ID, SCOPE_BASIC, scopeList } from './githubAuth'
 import { IdentityStore, electronCipher } from './secrets'
-import { isPrivateUnlocked, needsPrivateUnlock, deviceFlowScope, decideUnlockResult, type DeviceFlowMode } from './privateTools'
+import { isPrivateUnlocked, needsPrivateUnlock, deviceFlowScope, resolveAuthOutcome, takePending, type DeviceFlowMode } from './privateTools'
 import { detectInstalled } from './detect'
 import { resolveInstalledVersion } from './installedVersion'
 import { WriteLog, isAppBusy, mergeRefreshedPlugins } from './inFlight'
@@ -312,7 +312,12 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
     const scope = deviceFlowScope(mode, githubLogin, githubScopes)
     const begin = await beginDeviceAuth(GITHUB_DEVICE_CLIENT_ID, fetch, scope)
     pendingScopes.set(begin.deviceCode, scopeList(scope))
-    await shell.openExternal(begin.verificationUri)
+    try {
+      await shell.openExternal(begin.verificationUri)
+    } catch (err) {
+      pendingScopes.delete(begin.deviceCode)
+      throw err
+    }
     return {
       userCode: begin.userCode,
       verificationUri: begin.verificationUri,
@@ -324,31 +329,24 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
 
   ipcMain.handle('github:auth-complete', async (_e, deviceCode: string, interval: number, expiresIn: number) => {
     try {
+      // Consume the entry first so no error path leaks it; unknown or already
+      // used codes are refused before polling.
+      const requested = takePending(pendingScopes, deviceCode)
+      if (requested == null) return { ok: false, error: 'This GitHub sign-in is no longer valid. Start again.' }
       const token = await pollForToken(GITHUB_DEVICE_CLIENT_ID, deviceCode, {
         intervalSeconds: interval, expiresInSeconds: expiresIn,
       })
-      const requested = pendingScopes.get(deviceCode) ?? scopeList(SCOPE_BASIC)
-      pendingScopes.delete(deviceCode)
-      let login: string
-      let id: number | null = null
-      let scopes: string[]
-      if (requested.includes('repo')) {
-        // Unlock: trust only what GitHub says this token is. No fallback lookup;
-        // a failed /user call, or a different account approving the code, saves nothing.
-        const decision = decideUnlockResult(await fetchGithubUser(token))
-        if (!decision.ok) return { ok: false, error: decision.error }
-        ;({ login, id, scopes } = decision)
-      } else {
-        try {
-          const user = await fetchGithubUser(token)
-          login = user.login
-          id = user.id
-          scopes = user.scopes
-        } catch {
-          login = await fetchGithubLogin(token) // id stays unset; backfilled on next launch
-          scopes = requested // only the read:user fallback ran; grants nothing private
-        }
+      let user: Awaited<ReturnType<typeof fetchGithubUser>> | null = null
+      let fallbackLogin: string | undefined
+      try {
+        user = await fetchGithubUser(token)
+      } catch {
+        // An unlock gets no fallback; a plain sign-in falls back to the login-only lookup.
+        if (!requested.includes('repo')) fallbackLogin = await fetchGithubLogin(token)
       }
+      const outcome = resolveAuthOutcome({ requested, user, fallbackLogin })
+      if (!outcome.ok) return { ok: false, error: outcome.error }
+      const { login, id, scopes } = outcome
       const store = await getIdentityStore()
       // An unlock's repo-scoped token replaces the stored read:user one.
       store.save({ token, login, ...(id != null ? { id } : {}), scopes })

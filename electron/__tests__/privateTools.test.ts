@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { isPrivateUnlocked, needsPrivateUnlock, deviceFlowScope, decideUnlockResult } from '../privateTools'
+import { isPrivateUnlocked, needsPrivateUnlock, deviceFlowScope, resolveAuthOutcome, takePending } from '../privateTools'
 
 // No registry entry is gated today — AxiStream was the last one and went
 // generally available in AxiStream 1.0. The aggregation still has to work for
@@ -64,17 +64,50 @@ describe('deviceFlowScope', () => {
   })
 })
 
-describe('decideUnlockResult', () => {
-  it('rejects a different account approving the code', () => {
-    const r = decideUnlockResult({ login: 'randomuser', id: 1, scopes: ['read:user', 'repo'] })
-    expect(r.ok).toBe(false)
+describe('resolveAuthOutcome', () => {
+  const U = (login: string, scopes: string[]) => ({ login, id: 7, scopes })
+  const UNLOCK = ['read:user', 'repo']
+  const BASIC = ['read:user']
+
+  it('refuses a different account approving an unlock', () => {
+    expect(resolveAuthOutcome({ requested: UNLOCK, user: U('randomuser', UNLOCK) }).ok).toBe(false)
   })
-  it('accepts the eligible account with the granted scopes', () => {
-    expect(decideUnlockResult({ login: 'darkharasho', id: 1, scopes: ['read:user', 'repo'] }))
-      .toEqual({ ok: true, login: 'darkharasho', id: 1, scopes: ['read:user', 'repo'] })
+  it('refuses an unlock when /user failed, ignoring any fallback login', () => {
+    expect(resolveAuthOutcome({ requested: UNLOCK, user: null, fallbackLogin: 'darkharasho' }).ok).toBe(false)
   })
-  it('keeps the true granted scopes when repo was not granted', () => {
-    const r = decideUnlockResult({ login: 'darkharasho', id: 1, scopes: ['read:user'] })
-    expect(r).toEqual({ ok: true, login: 'darkharasho', id: 1, scopes: ['read:user'] })
+  it('accepts an unlock for the eligible account', () => {
+    expect(resolveAuthOutcome({ requested: UNLOCK, user: U('darkharasho', UNLOCK) }))
+      .toEqual({ ok: true, login: 'darkharasho', id: 7, scopes: UNLOCK })
+  })
+  it('keeps the true granted scopes when an unlock was granted without repo', () => {
+    expect(resolveAuthOutcome({ requested: UNLOCK, user: U('darkharasho', BASIC) }))
+      .toEqual({ ok: true, login: 'darkharasho', id: 7, scopes: BASIC })
+  })
+  it('refuses a plain sign-in whose token was granted repo for a non-eligible login', () => {
+    expect(resolveAuthOutcome({ requested: BASIC, user: U('randomuser', UNLOCK) }).ok).toBe(false)
+  })
+  it('stores a plain sign-in granted repo for an eligible login', () => {
+    expect(resolveAuthOutcome({ requested: BASIC, user: U('darkharasho', UNLOCK) }))
+      .toEqual({ ok: true, login: 'darkharasho', id: 7, scopes: UNLOCK })
+  })
+  it('signs in via the fallback login with read:user and no id', () => {
+    expect(resolveAuthOutcome({ requested: BASIC, user: null, fallbackLogin: 'randomuser' }))
+      .toEqual({ ok: true, login: 'randomuser', id: null, scopes: ['read:user'] })
+  })
+  it('signs in normally with the granted scopes', () => {
+    expect(resolveAuthOutcome({ requested: BASIC, user: U('randomuser', BASIC) }))
+      .toEqual({ ok: true, login: 'randomuser', id: 7, scopes: BASIC })
+  })
+})
+
+describe('takePending', () => {
+  it('returns and consumes the entry', () => {
+    const m = new Map([['d', ['read:user']]])
+    expect(takePending(m, 'd')).toEqual(['read:user'])
+    expect(m.has('d')).toBe(false)
+  })
+  it('returns null for an unknown or already consumed code', () => {
+    const m = new Map<string, string[]>()
+    expect(takePending(m, 'nope')).toBeNull()
   })
 })
