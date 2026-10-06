@@ -52,4 +52,35 @@ describe('SettingsView', () => {
     fireEvent.click(screen.getByRole('button', { name: /back/i }))
     expect(onBack).toHaveBeenCalled()
   })
+
+  it('offers "Unlock private apps" to an allowlisted login', async () => {
+    vi.mocked(window.axiom.githubGetStatus).mockResolvedValueOnce({ signedIn: true, login: 'darkharasho', unlocked: true, canUnlockPrivate: true })
+    render(<SettingsView onBack={vi.fn()} />)
+    expect(await screen.findByRole('button', { name: /unlock private apps/i })).toBeInTheDocument()
+  })
+
+  it('never offers the unlock to a login that is not allowlisted', async () => {
+    vi.mocked(window.axiom.githubGetStatus).mockResolvedValueOnce({ signedIn: true, login: 'randomuser', unlocked: false, canUnlockPrivate: false })
+    render(<SettingsView onBack={vi.fn()} />)
+    expect(await screen.findByText('randomuser')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /unlock private apps/i })).not.toBeInTheDocument()
+  })
+
+  it('runs the unlock device flow and shows its code', async () => {
+    vi.mocked(window.axiom.githubGetStatus).mockResolvedValueOnce({ signedIn: true, login: 'darkharasho', unlocked: true, canUnlockPrivate: true })
+    vi.mocked(window.axiom.githubAuthBegin).mockResolvedValueOnce({
+      userCode: 'ABCD-1234', verificationUri: 'https://github.com/login/device', deviceCode: 'DEV', interval: 5, expiresIn: 900,
+    })
+    vi.mocked(window.axiom.githubAuthComplete).mockReturnValueOnce(new Promise<never>(() => {})) // still waiting on GitHub
+    render(<SettingsView onBack={vi.fn()} />)
+    fireEvent.click(await screen.findByRole('button', { name: /unlock private apps/i }))
+    await waitFor(() => expect(window.axiom.githubAuthBegin).toHaveBeenCalledWith('unlock'))
+    expect(await screen.findByText('ABCD-1234')).toBeInTheDocument()
+  })
+
+  it('starts a normal sign-in in sign-in mode', async () => {
+    render(<SettingsView onBack={vi.fn()} />)
+    fireEvent.click(await screen.findByRole('button', { name: /^sign in$/i }))
+    await waitFor(() => expect(window.axiom.githubAuthBegin).toHaveBeenCalledWith('sign-in'))
+  })
 })

@@ -23,13 +23,13 @@ export function useGithubAuth() {
     } catch { /* clipboard unavailable — the code is still shown for manual entry */ }
   }, [])
 
-  const signIn = useCallback(async () => {
+  const runFlow = useCallback(async (mode: 'sign-in' | 'unlock') => {
     setBusy(true)
     setError(null)
     setUserCode(null)
     setCopied(false)
     try {
-      const begin = await window.axiom.githubAuthBegin()
+      const begin = await window.axiom.githubAuthBegin(mode)
       setUserCode(begin.userCode)
       await copyCode(begin.userCode) // auto-copy so the user can paste it straight into GitHub
       const res = await window.axiom.githubAuthComplete(begin.deviceCode, begin.interval, begin.expiresIn)
@@ -42,10 +42,15 @@ export function useGithubAuth() {
     }
   }, [copyCode])
 
+  const signIn = useCallback(() => runFlow('sign-in'), [runFlow])
+  // Second device flow asking for read:user repo; only offered when the main
+  // process reports canUnlockPrivate, and refused there for anyone else.
+  const unlockPrivate = useCallback(() => runFlow('unlock'), [runFlow])
+
   const signOut = useCallback(async () => {
     setError(null)
     await window.axiom.githubSignOut()
   }, [])
 
-  return { status, userCode, busy, error, copied, signIn, signOut, copyCode }
+  return { status, userCode, busy, error, copied, signIn, unlockPrivate, signOut, copyCode }
 }

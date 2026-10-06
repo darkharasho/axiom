@@ -139,9 +139,7 @@ export function SettingsView({ onBack }: Props) {
             ? `${github.status.login}${github.status.unlocked ? ' · private tools unlocked' : ''}`
             : undefined}
         >
-          {github.status.signedIn ? (
-            <button className="ax-icon" onClick={() => github.signOut()}>Sign out</button>
-          ) : github.userCode ? (
+          {github.userCode ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span className="ax-ink-accent" style={{ font: 'var(--axi-t-label)', fontFamily: 'var(--axi-mono)', letterSpacing: '1.5px' }}>
                 {github.userCode}
@@ -149,6 +147,15 @@ export function SettingsView({ onBack }: Props) {
               <button className="ax-icon" onClick={() => github.copyCode(github.userCode!)} title="Copy code" aria-label="Copy code">
                 {github.copied ? <Check size={13} /> : <Copy size={13} />}
               </button>
+            </div>
+          ) : github.status.signedIn ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {github.status.canUnlockPrivate && (
+                <button className="axi-btn ax-sm" onClick={() => github.unlockPrivate()} disabled={github.busy}>
+                  {github.busy ? 'Waiting…' : 'Unlock private apps'}
+                </button>
+              )}
+              <button className="ax-icon" onClick={() => github.signOut()}>Sign out</button>
             </div>
           ) : (
             <button className="axi-btn ax-sm" onClick={() => github.signIn()} disabled={github.busy}>

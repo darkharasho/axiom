@@ -39,7 +39,7 @@ vi.stubGlobal('axiom', {
   setGw2Path: vi.fn().mockResolvedValue(undefined),
   pickGw2Folder: vi.fn().mockResolvedValue(null),
   onArcdpsStateUpdated: vi.fn().mockReturnValue(() => {}),
-  githubGetStatus: vi.fn().mockResolvedValue({ signedIn: false, login: null, unlocked: false }),
+  githubGetStatus: vi.fn().mockResolvedValue({ signedIn: false, login: null, unlocked: false, canUnlockPrivate: false }),
   onGithubStatusUpdated: vi.fn().mockReturnValue(() => {}),
   githubAuthBegin: vi.fn().mockResolvedValue({ userCode: '', deviceCode: '', interval: 5, expiresIn: 300 }),
   githubAuthComplete: vi.fn().mockResolvedValue({ ok: true }),
