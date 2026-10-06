@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { GithubAuthState } from '@shared/types'
 
-const SIGNED_OUT: GithubAuthState = { signedIn: false, login: null, unlocked: false }
+const SIGNED_OUT: GithubAuthState = { signedIn: false, login: null, unlocked: false, canUnlockPrivate: false }
 
 export function useGithubAuth() {
   const [status, setStatus] = useState<GithubAuthState>(SIGNED_OUT)

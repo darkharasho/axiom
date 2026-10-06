@@ -1,9 +1,26 @@
 import { describe, it, expect, vi } from 'vitest'
-import { beginDeviceAuth, pollForToken, fetchGithubLogin, fetchGithubUser } from '../githubAuth'
+import { beginDeviceAuth, pollForToken, fetchGithubLogin, fetchGithubUser, parseScopesHeader, SCOPE_BASIC, SCOPE_PRIVATE, scopeList } from '../githubAuth'
 
 const noDelay = () => Promise.resolve()
 
 describe('beginDeviceAuth', () => {
+  const deviceOk = () => vi.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({ device_code: 'DEV', user_code: 'C', verification_uri: 'https://github.com/login/device' }),
+  })
+
+  it('requests read:user only by default', async () => {
+    const fetchFn = deviceOk()
+    await beginDeviceAuth('client', fetchFn as unknown as typeof fetch)
+    expect((fetchFn.mock.calls[0][1].body as URLSearchParams).get('scope')).toBe('read:user')
+  })
+
+  it('requests the scope it is given', async () => {
+    const fetchFn = deviceOk()
+    await beginDeviceAuth('client', fetchFn as unknown as typeof fetch, SCOPE_PRIVATE)
+    expect((fetchFn.mock.calls[0][1].body as URLSearchParams).get('scope')).toBe('read:user repo')
+  })
+
   it('returns the device + user codes', async () => {
     const fetchFn = vi.fn().mockResolvedValue({
       ok: true,
@@ -75,7 +92,15 @@ describe('fetchGithubLogin', () => {
 describe('fetchGithubUser', () => {
   it('returns the login and numeric id', async () => {
     const fetchFn = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ login: 'darkharasho', id: 4242 }) })
-    expect(await fetchGithubUser('tok', fetchFn as unknown as typeof fetch)).toEqual({ login: 'darkharasho', id: 4242 })
+    expect(await fetchGithubUser('tok', fetchFn as unknown as typeof fetch)).toEqual({ login: 'darkharasho', id: 4242, scopes: [] })
+  })
+
+  it('returns the scopes GitHub granted, from X-OAuth-Scopes', async () => {
+    const fetchFn = vi.fn().mockResolvedValue({
+      ok: true, headers: new Headers({ 'X-OAuth-Scopes': 'read:user, repo' }),
+      json: async () => ({ login: 'darkharasho', id: 4242 }),
+    })
+    expect((await fetchGithubUser('tok', fetchFn as unknown as typeof fetch)).scopes).toEqual(['read:user', 'repo'])
   })
 
   it('throws when the response has no numeric id', async () => {
@@ -86,5 +111,23 @@ describe('fetchGithubUser', () => {
   it('throws on a non-ok response', async () => {
     const fetchFn = vi.fn().mockResolvedValue({ ok: false, status: 401, json: async () => ({}) })
     await expect(fetchGithubUser('tok', fetchFn as unknown as typeof fetch)).rejects.toThrow()
+  })
+})
+
+describe('parseScopesHeader', () => {
+  it('splits on commas, trims and drops empty entries', () => {
+    expect(parseScopesHeader(' read:user ,repo,, ')).toEqual(['read:user', 'repo'])
+  })
+  it('treats a missing or empty header as no scopes', () => {
+    expect(parseScopesHeader(null)).toEqual([])
+    expect(parseScopesHeader('')).toEqual([])
+  })
+})
+
+describe('scope constants', () => {
+  it('splits a scope string into its scopes', () => {
+    expect(SCOPE_BASIC).toBe('read:user')
+    expect(scopeList(SCOPE_PRIVATE)).toEqual(['read:user', 'repo'])
+    expect(scopeList('read:user,repo')).toEqual(['read:user', 'repo'])
   })
 })

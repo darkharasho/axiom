@@ -1,13 +1,29 @@
 // GitHub OAuth device flow — "Sign in with GitHub".
 // Pure async functions: fetch + delay are injectable for unit testing with no
 // real network and no real timers. The IPC layer opens the verification URI.
-// Mirrors axivale/src/main/githubAuth.ts. Scope is read:user only — AxiOM only
-// needs to resolve the login (the axivale repo is public, so no repo scope).
+// Mirrors axivale/src/main/githubAuth.ts. Sign-in asks for read:user only, which
+// is enough to resolve the login. A login on the allowlist of a private APP_META
+// entry can then run a second flow ("Unlock private apps") asking for
+// read:user repo, because private release assets need the repo scope. No other
+// login is ever asked for repo (privateTools.ts#deviceFlowScope), and the token
+// only goes to the private repo's API paths (tokenScope.ts).
 
 const GITHUB_HOST = 'https://github.com'
 const GITHUB_API = 'https://api.github.com'
 const UA = 'AxiOM'
-const SCOPE = 'read:user'
+
+export const SCOPE_BASIC = 'read:user'
+export const SCOPE_PRIVATE = 'read:user repo'
+
+/** "read:user repo" or GitHub's "read:user,repo" → ['read:user', 'repo']. */
+export function scopeList(scope: string): string[] {
+  return scope.split(/[\s,]+/).filter(Boolean)
+}
+
+/** Parse the X-OAuth-Scopes response header (comma-separated). Missing → []. */
+export function parseScopesHeader(value: string | null | undefined): string[] {
+  return (value ?? '').split(',').map(x => x.trim()).filter(Boolean)
+}
 
 export const GITHUB_DEVICE_CLIENT_ID = process.env.GITHUB_DEVICE_CLIENT_ID || 'Ov23liFh1ih9LAcnLACw'
 
@@ -24,9 +40,9 @@ export interface DeviceAuthBegin {
   expiresIn: number
 }
 
-export async function beginDeviceAuth(clientId: string, fetchFn: FetchFn = fetch): Promise<DeviceAuthBegin> {
+export async function beginDeviceAuth(clientId: string, fetchFn: FetchFn = fetch, scope: string = SCOPE_BASIC): Promise<DeviceAuthBegin> {
   if (!clientId) throw new Error('Missing GitHub device client ID.')
-  const body = new URLSearchParams({ client_id: clientId, scope: SCOPE })
+  const body = new URLSearchParams({ client_id: clientId, scope })
   const res = await fetchFn(`${GITHUB_HOST}/login/device/code`, {
     method: 'POST',
     headers: { Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': UA },
@@ -82,9 +98,10 @@ export async function pollForToken(
   throw new Error('GitHub login timed out.')
 }
 
-/** GET /user: the login plus the numeric user id (used by the Axi access check).
+/** GET /user: the login, the numeric user id (used by the Axi access check) and
+ *  the scopes the token was actually granted (X-OAuth-Scopes).
  *  Throws when the request fails or the response has no usable id. */
-export async function fetchGithubUser(token: string, fetchFn: FetchFn = fetch): Promise<{ login: string; id: number }> {
+export async function fetchGithubUser(token: string, fetchFn: FetchFn = fetch): Promise<{ login: string; id: number; scopes: string[] }> {
   const res = await fetchFn(`${GITHUB_API}/user`, {
     headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, 'User-Agent': UA },
   })
@@ -93,7 +110,7 @@ export async function fetchGithubUser(token: string, fetchFn: FetchFn = fetch): 
   if (typeof data.id !== 'number' || !Number.isSafeInteger(data.id) || data.id <= 0) {
     throw new Error('GitHub did not return a user id.')
   }
-  return { login: data.login || 'github', id: data.id }
+  return { login: data.login || 'github', id: data.id, scopes: parseScopesHeader(res.headers?.get('X-OAuth-Scopes')) }
 }
 
 export async function fetchGithubLogin(token: string, fetchFn: FetchFn = fetch): Promise<string> {

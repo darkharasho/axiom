@@ -57,6 +57,7 @@ export interface GithubAuthState {
   signedIn: boolean
   login: string | null
   unlocked: boolean // login is in the private-tools allowlist
+  canUnlockPrivate: boolean // allowlisted for a private app, but the token lacks the repo scope
 }
 
 export interface ConfigApp {

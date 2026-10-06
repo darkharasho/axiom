@@ -104,8 +104,8 @@ contextBridge.exposeInMainWorld('axiom', {
   githubGetStatus: (): Promise<GithubAuthState> =>
     ipcRenderer.invoke('github:status'),
 
-  githubAuthBegin: (): Promise<{ userCode: string; verificationUri: string; deviceCode: string; interval: number; expiresIn: number }> =>
-    ipcRenderer.invoke('github:auth-begin'),
+  githubAuthBegin: (mode: 'sign-in' | 'unlock' = 'sign-in'): Promise<{ userCode: string; verificationUri: string; deviceCode: string; interval: number; expiresIn: number }> =>
+    ipcRenderer.invoke('github:auth-begin', mode),
 
   githubAuthComplete: (deviceCode: string, interval: number, expiresIn: number): Promise<{ ok: boolean; login?: string; error?: string }> =>
     ipcRenderer.invoke('github:auth-complete', deviceCode, interval, expiresIn),

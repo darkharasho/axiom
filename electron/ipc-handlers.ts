@@ -6,9 +6,9 @@ import type { AppId, InstallableAppId, AppState, ArcdpsState } from './shared/ty
 import { APP_META, isInstallable, isAppVisible, visibleAppStates } from './apps'
 import { readConfig, patchConfig, setInstalledVersion } from './config'
 import { fetchLatestRelease } from './github'
-import { beginDeviceAuth, pollForToken, fetchGithubLogin, fetchGithubUser, GITHUB_DEVICE_CLIENT_ID } from './githubAuth'
+import { beginDeviceAuth, pollForToken, fetchGithubLogin, fetchGithubUser, GITHUB_DEVICE_CLIENT_ID, SCOPE_BASIC, scopeList } from './githubAuth'
 import { IdentityStore, electronCipher } from './secrets'
-import { isPrivateUnlocked } from './privateTools'
+import { isPrivateUnlocked, needsPrivateUnlock, deviceFlowScope, decideUnlockResult, type DeviceFlowMode } from './privateTools'
 import { detectInstalled } from './detect'
 import { resolveInstalledVersion } from './installedVersion'
 import { WriteLog, isAppBusy, mergeRefreshedPlugins } from './inFlight'
@@ -61,10 +61,19 @@ let identityStore: IdentityStore | null = null
 let githubToken: string | null = null
 let githubLogin: string | null = null
 let githubId: number | null = null
+let githubScopes: string[] = []
+// Scopes requested per pending device code, so auth-complete knows whether the
+// flow asked for repo.
+const pendingScopes = new Map<string, string[]>()
 let unlocked = false
 
 function githubStatus(): import('./shared/types').GithubAuthState {
-  return { signedIn: githubToken != null, login: githubLogin, unlocked }
+  return {
+    signedIn: githubToken != null,
+    login: githubLogin,
+    unlocked,
+    canUnlockPrivate: githubToken != null && needsPrivateUnlock(githubLogin, githubScopes),
+  }
 }
 
 function pushGithubStatus(win: BrowserWindow): void {
@@ -82,10 +91,11 @@ async function getIdentityStore(): Promise<IdentityStore> {
 /** Numeric GitHub user id for the Axi access check; null when signed out or not yet known. */
 export function getGithubId(): number | null { return githubId }
 
-function applyIdentity(token: string | null, login: string | null, id: number | null = null): void {
+function applyIdentity(token: string | null, login: string | null, id: number | null = null, scopes: string[] = []): void {
   githubToken = token
   githubLogin = login
   githubId = id
+  githubScopes = scopes
   unlocked = isPrivateUnlocked(login)
 }
 
@@ -268,18 +278,23 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
       const store = await getIdentityStore()
       const saved = store.load()
       if (saved) {
-        applyIdentity(saved.token, saved.login, saved.id ?? null)
+        // Files written before the unlock flow carry no scopes; they were read:user.
+        const scopes = saved.scopes ?? scopeList(SCOPE_BASIC)
+        applyIdentity(saved.token, saved.login, saved.id ?? null, scopes)
         pushGithubStatus(win)
         pushStates(win)
         onIdentityChanged?.()
+        // Fetch AxiAdmin's (and every visible app's) release now rather than
+        // waiting for the next scheduled check.
+        void runCheckUpdates(win).then(() => onCheckComplete?.()).catch(() => { /* next scheduled check retries */ })
         if (saved.id == null) {
           // Signed in before the access check existed: backfill the numeric id
           // once. Fails open; the next launch retries.
           try {
             const user = await fetchGithubUser(saved.token)
             if (githubToken === saved.token) { // not signed out / replaced meanwhile
-              store.save({ token: saved.token, login: saved.login, id: user.id })
-              applyIdentity(saved.token, saved.login, user.id)
+              store.save({ token: saved.token, login: saved.login, id: user.id, scopes })
+              applyIdentity(saved.token, saved.login, user.id, scopes)
               onIdentityChanged?.()
             }
           } catch { /* offline or rejected token: leave the id unset */ }
@@ -290,8 +305,13 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
 
   ipcMain.handle('github:status', () => githubStatus())
 
-  ipcMain.handle('github:auth-begin', async () => {
-    const begin = await beginDeviceAuth(GITHUB_DEVICE_CLIENT_ID)
+  ipcMain.handle('github:auth-begin', async (_e, rawMode?: unknown) => {
+    const mode: DeviceFlowMode = rawMode === 'unlock' ? 'unlock' : 'sign-in'
+    // Throws for 'unlock' unless the signed-in login is on a private entry's
+    // allowlist, so no other account is ever asked for the repo scope.
+    const scope = deviceFlowScope(mode, githubLogin, githubScopes)
+    const begin = await beginDeviceAuth(GITHUB_DEVICE_CLIENT_ID, fetch, scope)
+    pendingScopes.set(begin.deviceCode, scopeList(scope))
     await shell.openExternal(begin.verificationUri)
     return {
       userCode: begin.userCode,
@@ -307,18 +327,32 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
       const token = await pollForToken(GITHUB_DEVICE_CLIENT_ID, deviceCode, {
         intervalSeconds: interval, expiresInSeconds: expiresIn,
       })
+      const requested = pendingScopes.get(deviceCode) ?? scopeList(SCOPE_BASIC)
+      pendingScopes.delete(deviceCode)
       let login: string
       let id: number | null = null
-      try {
-        const user = await fetchGithubUser(token)
-        login = user.login
-        id = user.id
-      } catch {
-        login = await fetchGithubLogin(token) // id stays unset; backfilled on next launch
+      let scopes: string[]
+      if (requested.includes('repo')) {
+        // Unlock: trust only what GitHub says this token is. No fallback lookup;
+        // a failed /user call, or a different account approving the code, saves nothing.
+        const decision = decideUnlockResult(await fetchGithubUser(token))
+        if (!decision.ok) return { ok: false, error: decision.error }
+        ;({ login, id, scopes } = decision)
+      } else {
+        try {
+          const user = await fetchGithubUser(token)
+          login = user.login
+          id = user.id
+          scopes = user.scopes
+        } catch {
+          login = await fetchGithubLogin(token) // id stays unset; backfilled on next launch
+          scopes = requested // only the read:user fallback ran; grants nothing private
+        }
       }
       const store = await getIdentityStore()
-      store.save({ token, login, ...(id != null ? { id } : {}) })
-      applyIdentity(token, login, id)
+      // An unlock's repo-scoped token replaces the stored read:user one.
+      store.save({ token, login, ...(id != null ? { id } : {}), scopes })
+      applyIdentity(token, login, id, scopes)
       pushGithubStatus(win)
       onIdentityChanged?.()
       await runCheckUpdates(win) // populate axivale immediately if now unlocked
