@@ -51,4 +51,25 @@ describe('IdentityStore', () => {
     const raw = require('fs').readFileSync(path, 'utf8') as string
     expect(raw).not.toContain('gho_secret')
   })
+
+  it('round-trips granted scopes', () => {
+    const store = new IdentityStore(path, fakeCipher)
+    store.save({ token: 'gho_secret', login: 'darkharasho', id: 4242, scopes: ['read:user', 'repo'] })
+    expect(store.load()).toEqual({ token: 'gho_secret', login: 'darkharasho', id: 4242, scopes: ['read:user', 'repo'] })
+  })
+
+  it('loads an old file without scopes, leaving scopes undefined', () => {
+    writeFileSync(path, JSON.stringify({ token: Buffer.from('gho_secret').toString('base64'), login: 'darkharasho', id: 4242 }))
+    const loaded = new IdentityStore(path, fakeCipher).load()
+    expect(loaded).toEqual({ token: 'gho_secret', login: 'darkharasho', id: 4242 })
+    expect(loaded?.scopes).toBeUndefined()
+  })
+
+  it.each([
+    ['a string', 'repo'],
+    ['a mixed array', [1, 'repo']],
+  ])('ignores scopes stored as %s', (_label, scopes) => {
+    writeFileSync(path, JSON.stringify({ token: Buffer.from('gho_secret').toString('base64'), login: 'darkharasho', scopes }))
+    expect(new IdentityStore(path, fakeCipher).load()?.scopes).toBeUndefined()
+  })
 })

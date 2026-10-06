@@ -11,12 +11,16 @@ export interface Identity {
   login: string
   /** Numeric GitHub user id; absent in files written before the access check. */
   id?: number
+  /** OAuth scopes the token was granted with; absent in files written before
+   *  the private-apps unlock (those tokens were read:user). */
+  scopes?: string[]
 }
 
 interface FileShape {
   token: string // base64 of encrypted bytes
   login: string
   id?: number
+  scopes?: string[]
 }
 
 /** Stores a single encrypted GitHub identity. AxiOM only needs one identity,
@@ -31,6 +35,7 @@ export class IdentityStore {
       if (!data.token || !data.login) return null
       const identity: Identity = { token: this.cipher.decrypt(Buffer.from(data.token, 'base64')), login: data.login }
       if (typeof data.id === 'number' && Number.isSafeInteger(data.id) && data.id > 0) identity.id = data.id
+      if (Array.isArray(data.scopes) && data.scopes.every(s => typeof s === 'string')) identity.scopes = [...data.scopes]
       return identity
     } catch {
       return null
@@ -43,6 +48,7 @@ export class IdentityStore {
       token: this.cipher.encrypt(identity.token).toString('base64'),
       login: identity.login,
       ...(identity.id != null ? { id: identity.id } : {}),
+      ...(identity.scopes != null ? { scopes: identity.scopes } : {}),
     }
     writeFileSync(this.path, JSON.stringify(data, null, 2), { mode: 0o600 })
     chmodSync(this.path, 0o600) // writeFileSync's mode only applies on creation
