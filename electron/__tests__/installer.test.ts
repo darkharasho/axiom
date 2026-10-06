@@ -98,6 +98,20 @@ describe('downloadFile', () => {
     expect(String(err)).not.toContain('gho_repo')
   })
 
+  it('records hop 0 for a status error on the first request', async () => {
+    h.replies.push({ statusCode: 404 })
+    const err = await downloadFile(ASSET_API, dest, () => {}, PRIVATE_HEADERS).catch(e => e)
+    expect((err as HttpStatusError).hop).toBe(0)
+  })
+
+  it('records hop 1 for a 404 after a redirect', async () => {
+    h.replies.push({ statusCode: 302, headers: { location: STORAGE } }, { statusCode: 404 })
+    const err = await downloadFile(ASSET_API, dest, () => {}, PRIVATE_HEADERS).catch(e => e)
+    expect(err).toBeInstanceOf(HttpStatusError)
+    expect((err as HttpStatusError).status).toBe(404)
+    expect((err as HttpStatusError).hop).toBe(1)
+  })
+
   // The file is only opened after the status check, so an error status never
   // creates it, and a leftover from an earlier attempt can't pass for success.
   it('creates no file on a 401', async () => {
@@ -129,6 +143,10 @@ describe('assetFilename', () => {
   })
   it('uses the asset name for an API url, which has none', () => {
     expect(assetFilename(ASSET_API, 'AxiAdmin-0.2.0.AppImage')).toBe('AxiAdmin-0.2.0.AppImage')
+  })
+  it.each(['', '.', '..', '../..'])('falls back to the url basename for the unusable name %j', (name) => {
+    expect(assetFilename('https://github.com/darkharasho/axibridge/releases/download/v1.0.0/AxiBridge-1.0.0.AppImage', name))
+      .toBe('AxiBridge-1.0.0.AppImage')
   })
   it('strips any directory part from the asset name', () => {
     expect(assetFilename(ASSET_API, '../../AxiAdmin-0.2.0.AppImage')).toBe('AxiAdmin-0.2.0.AppImage')

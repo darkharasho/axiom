@@ -8,7 +8,8 @@ import type { DownloadProgress } from './shared/types'
 import { writeLinuxDesktopEntry, findInstalledAppImage } from './desktopEntry'
 
 export class HttpStatusError extends Error {
-  constructor(readonly status: number) {
+  /** `hop` is 0 for the first request, 1+ for a redirect target. */
+  constructor(readonly status: number, readonly hop: number = 0) {
     super(`Download failed: HTTP ${status}`)
   }
 }
@@ -23,7 +24,8 @@ export interface DownloadOpts {
 /** File name to save a download under. A private asset's API url ends in a
  *  numeric id, so the release's asset name is passed in for it. */
 export function assetFilename(downloadUrl: string, filename?: string): string {
-  return path.basename(filename || new URL(downloadUrl).pathname)
+  const name = filename ? path.basename(filename) : ''
+  return name && name !== '.' && name !== '..' ? name : path.basename(new URL(downloadUrl).pathname)
 }
 
 const REDIRECT_CODES = new Set([301, 302, 303, 307, 308])
@@ -63,7 +65,7 @@ function downloadHop(
       }
       if (res.statusCode !== 200) {
         res.resume()
-        reject(new HttpStatusError(res.statusCode ?? 0))
+        reject(new HttpStatusError(res.statusCode ?? 0, redirects))
         return
       }
       const total = parseInt(res.headers['content-length'] ?? '0', 10)

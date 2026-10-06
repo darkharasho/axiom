@@ -559,12 +559,15 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
 
     // Private entries download through the asset API with the user's token;
     // public downloads stay anonymous (assetDownloadHeaders returns undefined).
-    const headers = assetDownloadHeaders(downloadUrl, githubToken)
+    // Token captured once: the install awaits for a long time, and the live
+    // value may be a different (or no) sign-in by the time it fails.
+    const installToken = githubToken
+    const headers = assetDownloadHeaders(downloadUrl, installToken)
     if (meta.private && !headers) {
       setState(win, appId, { notice: signInAgainMessage(meta.name) })
       return
     }
-    const dl: DownloadOpts = { headers, filename: assetNames[appId] }
+    const dl: DownloadOpts = { headers, filename: meta.private ? assetNames[appId] : undefined }
 
     if (process.platform === 'linux' && !isUpdate && !isGearLeverInstalled()) {
       setState(win, appId, { gearLeverMissing: true })
@@ -599,8 +602,10 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
       }
       onCheckComplete?.()
     } catch (err) {
-      if (meta.private && err instanceof HttpStatusError && (err.status === 401 || err.status === 404)) {
-        if (githubToken) privateAuthLatch.trip(appId, githubToken)
+      // Only the first hop (the api.github.com asset request) says anything
+      // about our token; a failure at the storage host does not.
+      if (meta.private && err instanceof HttpStatusError && err.hop === 0 && (err.status === 401 || err.status === 403 || err.status === 404)) {
+        if (installToken) privateAuthLatch.trip(appId, installToken)
         setState(win, appId, { status: 'idle', downloadProgress: undefined, downloadUrl: null, notice: signInAgainMessage(meta.name) })
         return
       }
