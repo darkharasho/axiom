@@ -72,6 +72,7 @@ export class AuthFailureLatch {
   private readonly failed = new Map<string, string>()
   trip(appId: string, token: string): void { this.failed.set(appId, token) }
   isTripped(appId: string, token: string): boolean { return this.failed.get(appId) === token }
+  clear(): void { this.failed.clear() }
 }
 
 export interface PrivateCheckInput {

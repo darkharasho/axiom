@@ -6,7 +6,8 @@ import type { AppId, InstallableAppId, AppState, ArcdpsState, ReleaseInfo } from
 import { APP_META, isInstallable, isAppVisible, visibleAppStates } from './apps'
 import { readConfig, patchConfig, setInstalledVersion } from './config'
 import { fetchLatestRelease } from './github'
-import { resolvePrivateRelease, AuthFailureLatch } from './privateRelease'
+import { resolvePrivateRelease, AuthFailureLatch, signInAgainMessage } from './privateRelease'
+import { assetDownloadHeaders } from './tokenScope'
 import { beginDeviceAuth, pollForToken, fetchGithubLogin, fetchGithubUser, GITHUB_DEVICE_CLIENT_ID, SCOPE_BASIC, scopeList } from './githubAuth'
 import { IdentityStore, electronCipher } from './secrets'
 import { isPrivateUnlocked, needsPrivateUnlock, deviceFlowScope, resolveAuthOutcome, takePending, type DeviceFlowMode } from './privateTools'
@@ -20,7 +21,7 @@ import {
   installGearLever,
   openInGearLever,
 } from './gearlever'
-import { installWindows, installLinux, updateLinux, uninstallWindows, uninstallLinux, downloadFile } from './installer'
+import { installWindows, installLinux, updateLinux, uninstallWindows, uninstallLinux, downloadFile, HttpStatusError, type DownloadOpts } from './installer'
 import { setAutoStart, getAutoStart, refreshAutoStartExec } from './autostart'
 import { isProcessRunning } from './process-check'
 import * as fsSync from 'fs'
@@ -201,12 +202,15 @@ export async function runCheckUpdates(win: BrowserWindow): Promise<void> {
     } else {
       release = await fetchLatestRelease(meta.repo, pattern, { includePrerelease: allowPrereleaseApps })
     }
-    if (release?.assetName) assetNames[appId as InstallableAppId] = release.assetName
     const detected = await detectInstalled(meta.name, meta.configDir)
     // The fetches above took seconds. If the user hit Install or Update in that
     // window this whole result is stale — bail before it can write the version
     // it saw back over the one the install just recorded.
     if (appWrites.touchedSince(token)(appId)) continue
+    // Kept in step with the downloadUrl set below: a check with no matching
+    // release must not leave an older asset name for install to pick up.
+    if (release?.assetName) assetNames[appId as InstallableAppId] = release.assetName
+    else delete assetNames[appId as InstallableAppId]
     const cfg = readConfig()
     const stored = cfg.apps[appId as InstallableAppId]?.installedVersion ?? null
 
@@ -381,6 +385,8 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
     const store = await getIdentityStore()
     store.clear()
     applyIdentity(null, null)
+    privateAuthLatch.clear()
+    for (const k of Object.keys(assetNames)) delete assetNames[k as InstallableAppId]
     // Drop any private app from the visible state so it disappears immediately.
     for (const [id, meta] of Object.entries(APP_META)) {
       if (!isAppVisible(meta, githubLogin)) {
@@ -551,6 +557,15 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
 
     const isUpdate = !!appStates[appId].installedVersion
 
+    // Private entries download through the asset API with the user's token;
+    // public downloads stay anonymous (assetDownloadHeaders returns undefined).
+    const headers = assetDownloadHeaders(downloadUrl, githubToken)
+    if (meta.private && !headers) {
+      setState(win, appId, { notice: signInAgainMessage(meta.name) })
+      return
+    }
+    const dl: DownloadOpts = { headers, filename: assetNames[appId] }
+
     if (process.platform === 'linux' && !isUpdate && !isGearLeverInstalled()) {
       setState(win, appId, { gearLeverMissing: true })
       return
@@ -563,26 +578,32 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
           downloadUrl,
           (p) => setState(win, appId, { downloadProgress: p }),
           () => setState(win, appId, { status: 'installing', downloadProgress: undefined }),
+          dl,
         )
         const newVersion = appStates[appId].latestVersion
         setInstalledVersion(appId, newVersion)
         writeAxiomVersionFile(meta.configDir, newVersion)
-        setState(win, appId, { status: 'idle', installedVersion: newVersion })
+        setState(win, appId, { status: 'idle', installedVersion: newVersion, notice: undefined })
       } else {
         setState(win, appId, { status: 'installing' })
         if (isUpdate) {
-          await updateLinux(meta.name, appId, downloadUrl, (p) => setState(win, appId, { downloadProgress: p }))
+          await updateLinux(meta.name, appId, downloadUrl, (p) => setState(win, appId, { downloadProgress: p }), dl)
         } else {
-          const appImagePath = await installLinux(downloadUrl, (p) => setState(win, appId, { downloadProgress: p }))
+          const appImagePath = await installLinux(downloadUrl, (p) => setState(win, appId, { downloadProgress: p }), dl)
           openInGearLever(appImagePath)
         }
         const newVersion = appStates[appId].latestVersion
         setInstalledVersion(appId, newVersion)
         writeAxiomVersionFile(meta.configDir, newVersion)
-        setState(win, appId, { status: 'idle', installedVersion: newVersion, downloadProgress: undefined })
+        setState(win, appId, { status: 'idle', installedVersion: newVersion, downloadProgress: undefined, notice: undefined })
       }
       onCheckComplete?.()
     } catch (err) {
+      if (meta.private && err instanceof HttpStatusError && (err.status === 401 || err.status === 404)) {
+        if (githubToken) privateAuthLatch.trip(appId, githubToken)
+        setState(win, appId, { status: 'idle', downloadProgress: undefined, downloadUrl: null, notice: signInAgainMessage(meta.name) })
+        return
+      }
       setState(win, appId, { status: 'error', errorMessage: String(err) })
     }
   })

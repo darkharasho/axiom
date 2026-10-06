@@ -110,3 +110,13 @@ describe('resolvePrivateRelease', () => {
     expect(unlockMessage('AxiAdmin')).toBe('Unlock private apps in Settings to update AxiAdmin')
   })
 })
+
+describe('AuthFailureLatch.clear', () => {
+  it('forgets a tripped token so the same token is tried again', () => {
+    const latch = new AuthFailureLatch()
+    latch.trip('axiadmin', 'gho_repo')
+    expect(latch.isTripped('axiadmin', 'gho_repo')).toBe(true)
+    latch.clear()
+    expect(latch.isTripped('axiadmin', 'gho_repo')).toBe(false)
+  })
+})
