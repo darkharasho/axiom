@@ -1,5 +1,15 @@
 # Release Notes
 
+Version v0.5.0 — October 5, 2026
+
+## Access check
+
+AxiOM now checks a public access list when it starts and every few hours. Access to the Axi apps can be revoked for accounts, guilds or Discord servers that violate the terms of use, and a revoked install shows a block screen instead of the app.
+
+The list is downloaded from `config.axi.link` and holds only one-way hashes. AxiOM checks your GitHub user ID against it on your device, if you signed in, and never sends it anywhere.
+
+If the list can't be reached, AxiOM keeps working as before. The README has a new **Access** section that spells out exactly what is checked and how to appeal.
+
 Version v0.4.1 — October 2, 2026
 
 ## Fixes
