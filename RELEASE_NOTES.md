@@ -1,5 +1,13 @@
 # Release Notes
 
+Version v0.6.0 — October 6, 2026
+
+## Private apps
+
+AxiOM can now list and install apps that live in private GitHub repos. They only show up for the accounts allowed to see them, and only after that account unlocks them in **Settings** by approving extra GitHub access. Nothing changes for anyone else: the normal sign-in still asks only to read your public profile.
+
+The extra access is only ever sent to those private repos' release downloads, never to anything else.
+
 Version v0.5.1 — October 6, 2026
 
 ## Fixes
