@@ -125,7 +125,10 @@ describe('fetchLatestRelease release selection', () => {
 })
 
 describe('fetchLatestRelease auth', () => {
-  it('sends a bearer header when a token is supplied', async () => {
+  // Public release lookups are always anonymous. The signed-in token can carry
+  // the repo scope, and it may only go to a private entry's API paths
+  // (tokenScope.ts). Even a stray token option must not leak through.
+  it('never sends an Authorization header', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => [{ tag_name: 'v1.0.0', assets: [
@@ -134,21 +137,7 @@ describe('fetchLatestRelease auth', () => {
     })
     vi.stubGlobal('fetch', fetchMock)
     const { fetchLatestRelease } = await import('../github')
-    await fetchLatestRelease('darkharasho/axivale', /AxiVale.*\.AppImage$/i, { token: 'gho_tok' })
-    const headers = fetchMock.mock.calls[0][1].headers as Record<string, string>
-    expect(headers.Authorization).toBe('Bearer gho_tok')
-  })
-
-  it('omits the bearer header when no token is supplied', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => [{ tag_name: 'v1.0.0', assets: [
-        { name: 'AxiVale-1.0.0.AppImage', browser_download_url: 'https://example.com/a.AppImage' },
-      ] }],
-    })
-    vi.stubGlobal('fetch', fetchMock)
-    const { fetchLatestRelease } = await import('../github')
-    await fetchLatestRelease('darkharasho/axivale', /AxiVale.*\.AppImage$/i)
+    await fetchLatestRelease('darkharasho/axivale', /AxiVale.*\.AppImage$/i, { token: 'gho_tok' } as never)
     const headers = fetchMock.mock.calls[0][1].headers as Record<string, string>
     expect(headers.Authorization).toBeUndefined()
   })

@@ -130,7 +130,6 @@ async function refreshArcdps(win: BrowserWindow): Promise<void> {
     overrideError: resolved.overrideError,
     recordedInstalls: cfg.arcdps.plugins,
     fetchRelease: (repo, pattern) => fetchLatestRelease(repo, pattern, {
-      token: githubToken ?? undefined,
       includePrerelease: cfg.allowPrereleasePlugins,
     }),
     fetchCoreMd5: async (dll) => {
@@ -176,7 +175,6 @@ export async function runCheckUpdates(win: BrowserWindow): Promise<void> {
     const platform = process.platform === 'win32' ? 'win' : 'linux'
     const pattern = meta.assetPattern[platform]
     const release = await fetchLatestRelease(meta.repo, pattern, {
-      token: githubToken ?? undefined,
       includePrerelease: allowPrereleaseApps,
     })
     const detected = await detectInstalled(meta.name, meta.configDir)

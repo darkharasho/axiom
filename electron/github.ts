@@ -17,7 +17,6 @@ function releaseTime(r: GithubRelease): number {
 }
 
 export interface FetchReleaseOpts {
-  token?: string
   // Opt in to prereleases (rc builds). Off by default: the newest stable is
   // what a user who hasn't asked for test builds should be offered. Drafts are
   // excluded either way — they aren't published to anyone.
@@ -36,13 +35,13 @@ export async function fetchLatestRelease(
   assetPattern: RegExp,
   opts: FetchReleaseOpts = {},
 ): Promise<ReleaseInfo | null> {
-  const { token, includePrerelease = false } = opts
+  const { includePrerelease = false } = opts
   try {
+    // Always anonymous: these are public repos (see tokenScope.ts).
     const headers: Record<string, string> = {
       Accept: 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28',
     }
-    if (token) headers.Authorization = `Bearer ${token}`
     const res = await fetch(`${GITHUB_API}/repos/${repo}/releases?per_page=30`, { headers })
     if (!res.ok) return null
     const body = await res.json() as GithubRelease | GithubRelease[]
