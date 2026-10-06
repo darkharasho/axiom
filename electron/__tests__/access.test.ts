@@ -15,9 +15,13 @@ let dir: string
 let configs: AxiConfig[] = []
 beforeEach(async () => { dir = await mkdtemp(join(tmpdir(), 'axiom-access-')) })
 afterEach(async () => {
-  for (const c of configs) c.close()
+  // Let any in-flight cache write settle before removing the directory.
+  for (const c of configs) {
+    await c.refresh()
+    c.close()
+  }
   configs = []
-  await rm(dir, { recursive: true, force: true })
+  await rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 })
 })
 
 function makeConfig(fetchFn: typeof fetch) {

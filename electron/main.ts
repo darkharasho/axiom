@@ -88,8 +88,14 @@ app.on('window-all-closed', () => {
 app.whenReady().then(async () => {
   // Access check first: when blocked, only the block screen exists. No popup,
   // tray, IPC handlers (install/launch/uninstall) or update checks are created.
-  const access = await startAccess({ electron, getGithubId })
-  if (access.blocked) return
+  let access: Awaited<ReturnType<typeof startAccess>> | null = null
+  try {
+    access = await startAccess({ electron, getGithubId })
+  } catch {
+    // Fail open: a bug in the check must not take the app down.
+    console.warn('access check unavailable')
+  }
+  if (access?.blocked) return
 
   if (process.platform === 'linux') {
     refreshOrphanedDesktopEntries(
@@ -100,7 +106,7 @@ app.whenReady().then(async () => {
   tray.setToolTip('AxiOM')
 
   win = createPopupWindow()
-  registerIpcHandlers(win, updateTrayIcon, () => void access.gate.recheck())
+  registerIpcHandlers(win, updateTrayIcon, () => void access?.gate.recheck())
 
   const toggleWindow = (position: Point, bounds?: Rectangle) => {
     if (!win) return
@@ -129,7 +135,7 @@ app.whenReady().then(async () => {
     { label: 'Quit', click: () => app.quit() },
   ]))
 
-  void access.gate.recheck() // not awaited: never delays startup
+  void access?.gate.recheck() // not awaited: never delays startup
 
   const cfg = readConfig()
   setAutoStart(cfg.autoStart)
