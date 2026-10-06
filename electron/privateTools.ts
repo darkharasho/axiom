@@ -2,7 +2,7 @@
 // per-app allowlists live on each APP_META entry (see apps.ts) — this only
 // aggregates them for the signed-in status shown in Settings. There is
 // intentionally no UI to edit the allowlists; they are code-defined.
-import { APP_META, isInstallable } from './apps'
+import { APP_META, isInstallable, isAppVisible } from './apps'
 import { SCOPE_BASIC, SCOPE_PRIVATE } from './githubAuth'
 
 export function isPrivateUnlocked(login: string | null): boolean {
@@ -19,6 +19,12 @@ export function isPrivateEligible(login: string | null): boolean {
   return Object.values(APP_META).some(
     meta => isInstallable(meta) && meta.private === true && meta.allowlist != null && meta.allowlist.includes(login),
   )
+}
+
+/** The login can see at least one private registry entry (so a release check
+ *  with its token has something to fetch). */
+export function hasVisiblePrivateApp(login: string | null): boolean {
+  return Object.values(APP_META).some(meta => isInstallable(meta) && meta.private === true && isAppVisible(meta, login))
 }
 
 /** Show the one-time "Unlock private apps" action: eligible, and the stored
@@ -68,8 +74,11 @@ export function resolveAuthOutcome(input: {
     // Scopes unknown: record read:user only, so nothing private unlocks.
     return { ok: true, login: fallbackLogin, id: null, scopes: [SCOPE_BASIC] }
   }
-  if ((isUnlock || user.scopes.includes('repo')) && !isPrivateEligible(user.login)) {
+  if (isPrivateEligible(user.login)) return { ok: true, login: user.login, id: user.id, scopes: user.scopes }
+  if (isUnlock) {
     return { ok: false, error: 'That GitHub account cannot unlock private apps. Approve the code with the account you signed in with.' }
   }
-  return { ok: true, login: user.login, id: user.id, scopes: user.scopes }
+  // Other apps share this OAuth client and may request repo; a non-eligible
+  // login signs in fine, but repo is never stored for it.
+  return { ok: true, login: user.login, id: user.id, scopes: user.scopes.filter(s => s !== 'repo') }
 }

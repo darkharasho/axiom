@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { isPrivateUnlocked, needsPrivateUnlock, deviceFlowScope, resolveAuthOutcome, takePending } from '../privateTools'
+import { isPrivateUnlocked, needsPrivateUnlock, deviceFlowScope, resolveAuthOutcome, takePending, hasVisiblePrivateApp } from '../privateTools'
 
 // No registry entry is gated today — AxiStream was the last one and went
 // generally available in AxiStream 1.0. The aggregation still has to work for
@@ -13,6 +13,7 @@ vi.mock('../apps', async (importOriginal) => {
       ...actual.APP_META,
       gatedonly: { id: 'gatedonly', name: 'GatedOnly', repo: null, allowlist: ['gatedonly'] },
       gatedfixture: { id: 'gatedfixture', name: 'GatedFixture', repo: null, allowlist: ['darkharasho'] },
+      privfixture: { id: 'privfixture', name: 'PrivFixture', repo: 'o/priv', private: true, allowlist: ['privuser'] },
     },
   }
 })
@@ -83,8 +84,9 @@ describe('resolveAuthOutcome', () => {
     expect(resolveAuthOutcome({ requested: UNLOCK, user: U('darkharasho', BASIC) }))
       .toEqual({ ok: true, login: 'darkharasho', id: 7, scopes: BASIC })
   })
-  it('refuses a plain sign-in whose token was granted repo for a non-eligible login', () => {
-    expect(resolveAuthOutcome({ requested: BASIC, user: U('randomuser', UNLOCK) }).ok).toBe(false)
+  it('strips repo from a plain sign-in by a non-eligible login instead of refusing', () => {
+    expect(resolveAuthOutcome({ requested: BASIC, user: U('randomuser', ['read:user', 'repo', 'gist']) }))
+      .toEqual({ ok: true, login: 'randomuser', id: 7, scopes: ['read:user', 'gist'] })
   })
   it('stores a plain sign-in granted repo for an eligible login', () => {
     expect(resolveAuthOutcome({ requested: BASIC, user: U('darkharasho', UNLOCK) }))
@@ -109,5 +111,13 @@ describe('takePending', () => {
   it('returns null for an unknown or already consumed code', () => {
     const m = new Map<string, string[]>()
     expect(takePending(m, 'nope')).toBeNull()
+  })
+})
+
+describe('hasVisiblePrivateApp', () => {
+  it('is true for a login on a private entry allowlist', () => { expect(hasVisiblePrivateApp('privuser')).toBe(true) })
+  it('is false for other logins and when signed out', () => {
+    expect(hasVisiblePrivateApp('randomuser')).toBe(false)
+    expect(hasVisiblePrivateApp(null)).toBe(false)
   })
 })

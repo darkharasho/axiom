@@ -83,6 +83,12 @@ describe('fetchGithubLogin', () => {
     expect(await fetchGithubLogin('tok', fetchFn as unknown as typeof fetch)).toBe('darkharasho')
   })
 
+  it('does not follow redirects and falls back on a 301', async () => {
+    const fetchFn = vi.fn().mockResolvedValue({ ok: false, status: 301, json: async () => ({ login: 'evil' }) })
+    expect(await fetchGithubLogin('tok', fetchFn as unknown as typeof fetch)).toBe('github')
+    expect(fetchFn.mock.calls[0][1]).toMatchObject({ redirect: 'manual' })
+  })
+
   it('falls back to "github" on error', async () => {
     const fetchFn = vi.fn().mockRejectedValue(new Error('boom'))
     expect(await fetchGithubLogin('tok', fetchFn as unknown as typeof fetch)).toBe('github')
@@ -105,6 +111,17 @@ describe('fetchGithubUser', () => {
 
   it('throws when the response has no numeric id', async () => {
     const fetchFn = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ login: 'darkharasho' }) })
+    await expect(fetchGithubUser('tok', fetchFn as unknown as typeof fetch)).rejects.toThrow()
+  })
+
+  it('does not follow redirects and throws on a 3xx', async () => {
+    const fetchFn = vi.fn().mockResolvedValue({ ok: false, status: 301, json: async () => ({}) })
+    await expect(fetchGithubUser('tok', fetchFn as unknown as typeof fetch)).rejects.toThrow()
+    expect(fetchFn.mock.calls[0][1]).toMatchObject({ redirect: 'manual' })
+  })
+
+  it('throws on an opaque redirect (status 0)', async () => {
+    const fetchFn = vi.fn().mockResolvedValue({ ok: false, status: 0, type: 'opaqueredirect', json: async () => ({}) })
     await expect(fetchGithubUser('tok', fetchFn as unknown as typeof fetch)).rejects.toThrow()
   })
 

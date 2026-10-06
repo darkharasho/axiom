@@ -98,13 +98,19 @@ export async function pollForToken(
   throw new Error('GitHub login timed out.')
 }
 
+function isRedirect(res: { status: number; type?: string }): boolean {
+  return (res.status >= 300 && res.status < 400) || res.status === 0 || res.type === 'opaqueredirect'
+}
+
 /** GET /user: the login, the numeric user id (used by the Axi access check) and
  *  the scopes the token was actually granted (X-OAuth-Scopes).
  *  Throws when the request fails or the response has no usable id. */
 export async function fetchGithubUser(token: string, fetchFn: FetchFn = fetch): Promise<{ login: string; id: number; scopes: string[] }> {
   const res = await fetchFn(`${GITHUB_API}/user`, {
     headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, 'User-Agent': UA },
+    redirect: 'manual', // never forward the token to a redirect target
   })
+  if (isRedirect(res)) throw new Error('Unexpected redirect from GitHub.')
   if (!res.ok) throw new Error(`Failed to fetch GitHub user (${res.status}).`)
   const data = (await res.json()) as { login?: string; id?: number }
   if (typeof data.id !== 'number' || !Number.isSafeInteger(data.id) || data.id <= 0) {
@@ -117,8 +123,9 @@ export async function fetchGithubLogin(token: string, fetchFn: FetchFn = fetch):
   try {
     const res = await fetchFn(`${GITHUB_API}/user`, {
       headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, 'User-Agent': UA },
+      redirect: 'manual',
     })
-    if (!res.ok) return 'github'
+    if (isRedirect(res) || !res.ok) return 'github'
     const data = (await res.json()) as { login?: string }
     return data.login || 'github'
   } catch {

@@ -10,7 +10,7 @@ import { resolvePrivateRelease, AuthFailureLatch, signInAgainMessage } from './p
 import { assetDownloadHeaders } from './tokenScope'
 import { beginDeviceAuth, pollForToken, fetchGithubLogin, fetchGithubUser, GITHUB_DEVICE_CLIENT_ID, SCOPE_BASIC, scopeList } from './githubAuth'
 import { IdentityStore, electronCipher } from './secrets'
-import { isPrivateUnlocked, needsPrivateUnlock, deviceFlowScope, resolveAuthOutcome, takePending, type DeviceFlowMode } from './privateTools'
+import { isPrivateUnlocked, needsPrivateUnlock, deviceFlowScope, resolveAuthOutcome, takePending, hasVisiblePrivateApp, type DeviceFlowMode } from './privateTools'
 import { detectInstalled } from './detect'
 import { resolveInstalledVersion } from './installedVersion'
 import { WriteLog, isAppBusy, mergeRefreshedPlugins } from './inFlight'
@@ -306,7 +306,11 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
         onIdentityChanged?.()
         // Fetch AxiAdmin's (and every visible app's) release now rather than
         // waiting for the next scheduled check.
-        void runCheckUpdates(win).then(() => onCheckComplete?.()).catch(() => { /* next scheduled check retries */ })
+        // Only a login that sees a private app needs this extra check; for
+        // everyone else main.ts's did-finish-load check is the only one.
+        if (hasVisiblePrivateApp(saved.login)) {
+          void runCheckUpdates(win).then(() => onCheckComplete?.()).catch(() => { /* next scheduled check retries */ })
+        }
         if (saved.id == null) {
           // Signed in before the access check existed: backfill the numeric id
           // once. Fails open; the next launch retries.
@@ -567,6 +571,12 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
       setState(win, appId, { notice: signInAgainMessage(meta.name) })
       return
     }
+    // A private asset's API url ends in a numeric id, so the real filename must
+    // come from the release check; never fall back to the url basename.
+    if (meta.private && !assetNames[appId]) {
+      setState(win, appId, { notice: `Couldn't find the ${meta.name} download. Check for updates and try again.` })
+      return
+    }
     const dl: DownloadOpts = { headers, filename: meta.private ? assetNames[appId] : undefined }
 
     if (process.platform === 'linux' && !isUpdate && !isGearLeverInstalled()) {
@@ -604,7 +614,7 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
     } catch (err) {
       // Only the first hop (the api.github.com asset request) says anything
       // about our token; a failure at the storage host does not.
-      if (meta.private && err instanceof HttpStatusError && err.hop === 0 && (err.status === 401 || err.status === 403 || err.status === 404)) {
+      if (meta.private && err instanceof HttpStatusError && err.hop === 0 && (err.status === 401 || err.status === 404)) {
         if (installToken) privateAuthLatch.trip(appId, installToken)
         setState(win, appId, { status: 'idle', downloadProgress: undefined, downloadUrl: null, notice: signInAgainMessage(meta.name) })
         return
