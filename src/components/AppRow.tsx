@@ -20,7 +20,7 @@ interface Props {
 }
 
 export function AppRow({ state, onAction, onInfo, onRetry }: Props) {
-  const { id, installedVersion, latestVersion, downloadUrl, status, downloadProgress, gearLeverMissing, isRunning } = state
+  const { id, installedVersion, latestVersion, downloadUrl, status, downloadProgress, gearLeverMissing, isRunning, notice } = state
   const isBusy = status === 'downloading' || status === 'installing' || status === 'deleting'
   const [menuOpen, setMenuOpen] = useState(false)
   const [dropUp, setDropUp] = useState(false)
@@ -63,6 +63,7 @@ export function AppRow({ state, onAction, onInfo, onRetry }: Props) {
     if (status === 'installing') return 'Installing…'
     if (status === 'deleting') return 'Removing…'
     if (status === 'launching') return 'Launching…'
+    if (notice) return notice
     if (status === 'error') return 'Error'
     if (id === 'axitools') return 'Discord Bot'
     if (notInstalled) return 'Not installed'
@@ -75,7 +76,7 @@ export function AppRow({ state, onAction, onInfo, onRetry }: Props) {
   // "not installed" and a bare version are facts about the row, not verdicts,
   // so they stay on the neutral ramp.
   const statusClass = () => {
-    if (status === 'error') return 'ax-ink-danger'
+    if (status === 'error' || notice) return 'ax-ink-danger'
     if (hasUpdate) return 'ax-ink-accent'
     if (isRunning) return 'ax-ink-ok'
     return ''
@@ -105,7 +106,7 @@ export function AppRow({ state, onAction, onInfo, onRetry }: Props) {
         />
       )
     }
-    if (status === 'error') {
+    if (status === 'error' && !notice) {
       return (
         <button
           className="axi-btn ax-sm ax-ink-danger"

@@ -48,6 +48,7 @@ export interface AppState {
   downloadUrl: string | null
   status: AppStatus
   errorMessage?: string
+  notice?: string              // a non-retryable hint shown in place of the status, e.g. "Sign in again to update AxiAdmin"
   downloadProgress?: DownloadProgress
   gearLeverMissing?: boolean
   isRunning?: boolean
@@ -128,6 +129,7 @@ export interface Config {
 export interface ReleaseInfo {
   version: string
   downloadUrl: string
+  assetName?: string          // the asset's file name; set when downloadUrl is an API url with no name in it
   assetSize?: number          // bytes of the matched release asset
   assetDigest?: string        // "<algo>:<hex>" digest of the asset (e.g. "sha256:…")
   publishedAt?: string        // ISO timestamp of the release

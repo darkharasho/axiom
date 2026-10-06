@@ -2,10 +2,11 @@ import { ipcMain, shell, app, Notification, dialog, clipboard, net } from 'elect
 import { autoUpdater } from 'electron-updater'
 import log from 'electron-log'
 import type { BrowserWindow } from 'electron'
-import type { AppId, InstallableAppId, AppState, ArcdpsState } from './shared/types'
+import type { AppId, InstallableAppId, AppState, ArcdpsState, ReleaseInfo } from './shared/types'
 import { APP_META, isInstallable, isAppVisible, visibleAppStates } from './apps'
 import { readConfig, patchConfig, setInstalledVersion } from './config'
 import { fetchLatestRelease } from './github'
+import { resolvePrivateRelease, AuthFailureLatch } from './privateRelease'
 import { beginDeviceAuth, pollForToken, fetchGithubLogin, fetchGithubUser, GITHUB_DEVICE_CLIENT_ID, SCOPE_BASIC, scopeList } from './githubAuth'
 import { IdentityStore, electronCipher } from './secrets'
 import { isPrivateUnlocked, needsPrivateUnlock, deviceFlowScope, resolveAuthOutcome, takePending, type DeviceFlowMode } from './privateTools'
@@ -65,6 +66,10 @@ let githubScopes: string[] = []
 // Scopes requested per pending device code, so auth-complete knows whether the
 // flow asked for repo.
 const pendingScopes = new Map<string, string[]>()
+// No retry after a private 401/404 until the token changes (privateRelease.ts).
+const privateAuthLatch = new AuthFailureLatch()
+// Asset file names for downloads whose url (the asset API url) carries none.
+const assetNames: Partial<Record<InstallableAppId, string>> = {}
 let unlocked = false
 
 function githubStatus(): import('./shared/types').GithubAuthState {
@@ -184,9 +189,19 @@ export async function runCheckUpdates(win: BrowserWindow): Promise<void> {
     setState(win, appId, { status: 'checking' }, true)
     const platform = process.platform === 'win32' ? 'win' : 'linux'
     const pattern = meta.assetPattern[platform]
-    const release = await fetchLatestRelease(meta.repo, pattern, {
-      includePrerelease: allowPrereleaseApps,
-    })
+    let release: ReleaseInfo | null
+    let notice: string | undefined
+    if (meta.private) {
+      const checked = await resolvePrivateRelease({
+        appId, name: meta.name, repo: meta.repo, assetPattern: pattern,
+        token: githubToken, scopes: githubScopes, latch: privateAuthLatch,
+      })
+      release = checked.release
+      notice = checked.notice
+    } else {
+      release = await fetchLatestRelease(meta.repo, pattern, { includePrerelease: allowPrereleaseApps })
+    }
+    if (release?.assetName) assetNames[appId as InstallableAppId] = release.assetName
     const detected = await detectInstalled(meta.name, meta.configDir)
     // The fetches above took seconds. If the user hit Install or Update in that
     // window this whole result is stale — bail before it can write the version
@@ -217,6 +232,7 @@ export async function runCheckUpdates(win: BrowserWindow): Promise<void> {
       installedVersion,
       latestVersion: release?.version ?? null,
       downloadUrl: release?.downloadUrl ?? null,
+      notice,
     }, true)
   }
   lastCheckTime = Date.now()
@@ -368,7 +384,7 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
     // Drop any private app from the visible state so it disappears immediately.
     for (const [id, meta] of Object.entries(APP_META)) {
       if (!isAppVisible(meta, githubLogin)) {
-        setState(win, id as AppId, { installedVersion: null, latestVersion: null, downloadUrl: null, status: 'idle' })
+        setState(win, id as AppId, { installedVersion: null, latestVersion: null, downloadUrl: null, status: 'idle', notice: undefined })
       }
     }
     pushGithubStatus(win)

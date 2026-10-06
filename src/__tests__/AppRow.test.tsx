@@ -80,4 +80,11 @@ describe('AppRow', () => {
     fireEvent.click(screen.getByRole('button', { name: /retry/i }))
     expect(onRetry).toHaveBeenCalledWith('axibridge')
   })
+
+  it('shows a notice in place of the status, without a Retry button', () => {
+    const state: AppState = { ...baseState, id: 'axiadmin', status: 'error', installedVersion: '0.1.0', latestVersion: null, notice: 'Sign in again to update AxiAdmin' }
+    render(<AppRow state={state} onAction={vi.fn()} onInfo={vi.fn()} onRetry={vi.fn()} />)
+    expect(screen.getByText('Sign in again to update AxiAdmin')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /retry/i })).not.toBeInTheDocument()
+  })
 })
