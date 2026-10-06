@@ -1,3 +1,4 @@
+import * as electron from 'electron'
 import { app, Tray, nativeImage, nativeTheme, Menu, screen, powerMonitor } from 'electron'
 import type { KeyboardEvent, Rectangle, Point } from 'electron'
 import path from 'path'
@@ -20,7 +21,8 @@ app.commandLine.appendSwitch(
   'CalculateNativeWinOcclusion,Translate,MediaRouter',
 )
 import { createPopupWindow, showWindowNearTray } from './window'
-import { registerIpcHandlers, runCheckUpdates, getLastCheckTime, hasAnyUpdates } from './ipc-handlers'
+import { registerIpcHandlers, runCheckUpdates, getLastCheckTime, hasAnyUpdates, getGithubId } from './ipc-handlers'
+import { startAccess } from './access'
 import { readConfig } from './config'
 import { setAutoStart } from './autostart'
 import { refreshOrphanedDesktopEntries } from './desktopEntry'
@@ -83,7 +85,12 @@ app.on('window-all-closed', () => {
   // Intentionally do nothing — keep the app running as a tray app
 })
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // Access check first: when blocked, only the block screen exists. No popup,
+  // tray, IPC handlers (install/launch/uninstall) or update checks are created.
+  const access = await startAccess({ electron, getGithubId })
+  if (access.blocked) return
+
   if (process.platform === 'linux') {
     refreshOrphanedDesktopEntries(
       Object.values(APP_META).filter(isInstallable).map((m) => ({ id: m.id, name: m.name })),
@@ -93,7 +100,7 @@ app.whenReady().then(() => {
   tray.setToolTip('AxiOM')
 
   win = createPopupWindow()
-  registerIpcHandlers(win, updateTrayIcon)
+  registerIpcHandlers(win, updateTrayIcon, () => void access.gate.recheck())
 
   const toggleWindow = (position: Point, bounds?: Rectangle) => {
     if (!win) return
@@ -121,6 +128,8 @@ app.whenReady().then(() => {
     { type: 'separator' },
     { label: 'Quit', click: () => app.quit() },
   ]))
+
+  void access.gate.recheck() // not awaited: never delays startup
 
   const cfg = readConfig()
   setAutoStart(cfg.autoStart)

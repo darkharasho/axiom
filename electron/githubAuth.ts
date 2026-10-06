@@ -82,6 +82,20 @@ export async function pollForToken(
   throw new Error('GitHub login timed out.')
 }
 
+/** GET /user: the login plus the numeric user id (used by the Axi access check).
+ *  Throws when the request fails or the response has no usable id. */
+export async function fetchGithubUser(token: string, fetchFn: FetchFn = fetch): Promise<{ login: string; id: number }> {
+  const res = await fetchFn(`${GITHUB_API}/user`, {
+    headers: { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, 'User-Agent': UA },
+  })
+  if (!res.ok) throw new Error(`Failed to fetch GitHub user (${res.status}).`)
+  const data = (await res.json()) as { login?: string; id?: number }
+  if (typeof data.id !== 'number' || !Number.isSafeInteger(data.id) || data.id <= 0) {
+    throw new Error('GitHub did not return a user id.')
+  }
+  return { login: data.login || 'github', id: data.id }
+}
+
 export async function fetchGithubLogin(token: string, fetchFn: FetchFn = fetch): Promise<string> {
   try {
     const res = await fetchFn(`${GITHUB_API}/user`, {

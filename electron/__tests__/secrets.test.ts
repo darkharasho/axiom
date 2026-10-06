@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { existsSync, rmSync } from 'fs'
+import { existsSync, rmSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
 import { IdentityStore, type Cipher } from '../secrets'
@@ -15,6 +15,19 @@ beforeEach(() => { path = join(tmpdir(), `axiom-identity-${process.pid}-${Math.f
 afterEach(() => { if (existsSync(path)) rmSync(path) })
 
 describe('IdentityStore', () => {
+  it('round-trips the numeric id', () => {
+    const store = new IdentityStore(path, fakeCipher)
+    store.save({ token: 'gho_secret', login: 'darkharasho', id: 4242 })
+    expect(store.load()).toEqual({ token: 'gho_secret', login: 'darkharasho', id: 4242 })
+  })
+
+  it('loads an old file without id, leaving id undefined', () => {
+    writeFileSync(path, JSON.stringify({ token: Buffer.from('gho_secret').toString('base64'), login: 'darkharasho' }))
+    const loaded = new IdentityStore(path, fakeCipher).load()
+    expect(loaded?.login).toBe('darkharasho')
+    expect(loaded?.id).toBeUndefined()
+  })
+
   it('round-trips a saved identity', () => {
     const store = new IdentityStore(path, fakeCipher)
     store.save({ token: 'gho_secret', login: 'darkharasho' })

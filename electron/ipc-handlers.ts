@@ -6,7 +6,7 @@ import type { AppId, InstallableAppId, AppState, ArcdpsState } from './shared/ty
 import { APP_META, isInstallable, isAppVisible } from './apps'
 import { readConfig, patchConfig, setInstalledVersion } from './config'
 import { fetchLatestRelease } from './github'
-import { beginDeviceAuth, pollForToken, fetchGithubLogin, GITHUB_DEVICE_CLIENT_ID } from './githubAuth'
+import { beginDeviceAuth, pollForToken, fetchGithubLogin, fetchGithubUser, GITHUB_DEVICE_CLIENT_ID } from './githubAuth'
 import { IdentityStore, electronCipher } from './secrets'
 import { isPrivateUnlocked } from './privateTools'
 import { detectInstalled } from './detect'
@@ -60,6 +60,7 @@ const arcdpsWrites = new WriteLog()
 let identityStore: IdentityStore | null = null
 let githubToken: string | null = null
 let githubLogin: string | null = null
+let githubId: number | null = null
 let unlocked = false
 
 function githubStatus(): import('./shared/types').GithubAuthState {
@@ -78,9 +79,13 @@ async function getIdentityStore(): Promise<IdentityStore> {
   return identityStore
 }
 
-function applyIdentity(token: string | null, login: string | null): void {
+/** Numeric GitHub user id for the Axi access check; null when signed out or not yet known. */
+export function getGithubId(): number | null { return githubId }
+
+function applyIdentity(token: string | null, login: string | null, id: number | null = null): void {
   githubToken = token
   githubLogin = login
+  githubId = id
   unlocked = isPrivateUnlocked(login)
 }
 
@@ -259,14 +264,27 @@ function setState(win: BrowserWindow, appId: AppId, patch: Partial<AppState>, fr
   pushStates(win)
 }
 
-export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => void): void {
+export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => void, onIdentityChanged?: () => void): void {
   void (async () => {
     try {
       const store = await getIdentityStore()
       const saved = store.load()
       if (saved) {
-        applyIdentity(saved.token, saved.login)
+        applyIdentity(saved.token, saved.login, saved.id ?? null)
         pushGithubStatus(win)
+        onIdentityChanged?.()
+        if (saved.id == null) {
+          // Signed in before the access check existed: backfill the numeric id
+          // once. Fails open; the next launch retries.
+          try {
+            const user = await fetchGithubUser(saved.token)
+            if (githubToken === saved.token) { // not signed out / replaced meanwhile
+              store.save({ token: saved.token, login: saved.login, id: user.id })
+              applyIdentity(saved.token, saved.login, user.id)
+              onIdentityChanged?.()
+            }
+          } catch { /* offline or rejected token: leave the id unset */ }
+        }
       }
     } catch { /* no stored identity / safeStorage unavailable */ }
   })()
@@ -290,11 +308,20 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
       const token = await pollForToken(GITHUB_DEVICE_CLIENT_ID, deviceCode, {
         intervalSeconds: interval, expiresInSeconds: expiresIn,
       })
-      const login = await fetchGithubLogin(token)
+      let login: string
+      let id: number | null = null
+      try {
+        const user = await fetchGithubUser(token)
+        login = user.login
+        id = user.id
+      } catch {
+        login = await fetchGithubLogin(token) // id stays unset; backfilled on next launch
+      }
       const store = await getIdentityStore()
-      store.save({ token, login })
-      applyIdentity(token, login)
+      store.save({ token, login, ...(id != null ? { id } : {}) })
+      applyIdentity(token, login, id)
       pushGithubStatus(win)
+      onIdentityChanged?.()
       await runCheckUpdates(win) // populate axivale immediately if now unlocked
       onCheckComplete?.()
       return { ok: true, login }
