@@ -62,6 +62,15 @@ export const ARCDPS_REGISTRY: ArcPluginMeta[] = [
     alwaysShow: true,
   },
   {
+    id: 'arcdps_axigear',
+    name: 'AxiGear (arcdps plugin)',
+    description: 'Checks in-game that your build, gear and consumables match your slot in an AxiForge comp or build.',
+    source: { kind: 'github', repo: 'darkharasho/arcdps-axigear' },
+    locations: arcOrNexus('arcdps_axigear.dll'),
+    assetPattern: /^arcdps_axigear\.dll$/i,
+    alwaysShow: true,
+  },
+  {
     id: 'squad_roles',
     name: 'Squad Roles',
     description: 'Marks squad members’ roles (heal, quickness, alacrity, etc.) in the arcdps overlay.',
@@ -191,7 +200,7 @@ export const ARCDPS_REGISTRY: ArcPluginMeta[] = [
     locations: arcOrNexus('arcdps_player_outline.dll'),
     assetPattern: /^arcdps_player_outline\.dll$/i,
     // First-party plugin: show it even when not yet installed, so users can
-    // install it straight from AxiOM (like arcdps and AxiPulse). With
+    // install it straight from AxiOM (like arcdps, AxiPulse and AxiGear). With
     // alwaysShow:false it only appeared once the DLL was already on disk.
     alwaysShow: true,
   },

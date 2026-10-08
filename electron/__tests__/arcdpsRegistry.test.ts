@@ -4,7 +4,7 @@ import { ARCDPS_REGISTRY, getPluginMeta } from '../arcdpsRegistry'
 describe('ARCDPS_REGISTRY', () => {
   // First-party plugins are shown even when not installed, so users can
   // install them straight from AxiOM. Third-party plugins are detect-only.
-  const ALWAYS_SHOWN = ['arcdps', 'arcdps_axipulse', 'player_outline']
+  const ALWAYS_SHOWN = ['arcdps', 'arcdps_axipulse', 'arcdps_axigear', 'player_outline']
 
   it('marks the first-party plugins as always-shown', () => {
     for (const id of ALWAYS_SHOWN) expect(getPluginMeta(id)?.alwaysShow).toBe(true)
@@ -55,6 +55,7 @@ describe('ARCDPS_REGISTRY', () => {
   // fetchLatestRelease returns null and version matching silently dies.
   const REAL_ASSET_NAMES: Record<string, string> = {
     arcdps_axipulse: 'arcdps_axipulse.dll',
+    arcdps_axigear: 'arcdps_axigear.dll',
     squad_roles: 'arcdps_squadroles.dll',
     squad_ready: 'arcdps_squad_ready.dll',
     player_list: 'player_list.dll',
