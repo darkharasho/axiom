@@ -1,5 +1,11 @@
 # Release Notes
 
+Version v0.6.1 — October 8, 2026
+
+## AxiGear
+
+The arcdps page now lists **AxiGear**, which checks in-game that your build, gear and consumables match your slot in an AxiForge comp or build. Install and update it from AxiOM like AxiPulse.
+
 Version v0.6.0 — October 6, 2026
 
 ## Private apps
