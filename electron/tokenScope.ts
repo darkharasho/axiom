@@ -2,7 +2,8 @@
 // private apps" the token carries the repo scope, so it is attached only to
 // api.github.com requests under /repos/<repo>/ of a private: true APP_META
 // entry. Everything else (public apps, arcdps plugins, the signed storage
-// host a private asset redirects to) is anonymous.
+// host a private asset redirects to) is anonymous, with one exception below:
+// release lists (releaseListBearer).
 //
 // Scope of this rule: requests under /repos/<repo>/ only. The identity lookup
 // GET https://api.github.com/user is an explicit, documented exception: it
@@ -33,6 +34,21 @@ export function bearerFor(
   if (u.protocol !== 'https:' || u.host !== API_HOST || u.username || u.password) return undefined
   const path = u.pathname.toLowerCase()
   return privateRepoPrefixes(metas).some(prefix => path.startsWith(prefix)) ? `Bearer ${token}` : undefined
+}
+
+const RELEASE_LIST = /^\/repos\/[^/%]+\/[^/%]+\/releases$/ // no %: an encoded / could shift segments
+
+/** The bearer for a release-list lookup (GET /repos/<owner>/<repo>/releases),
+ *  public repos included. Anonymous lookups share a 60/hour limit per network,
+ *  and running out reads as "no update"; signed in, the limit is 5,000/hour.
+ *  The token only goes back to GitHub, its issuer, on this one path: never an
+ *  asset, a download host or the storage host a download redirects to. */
+export function releaseListBearer(url: string, token: string | null | undefined): string | undefined {
+  if (!token) return undefined
+  let u: URL
+  try { u = new URL(url) } catch { return undefined }
+  if (u.protocol !== 'https:' || u.host !== API_HOST || u.username || u.password) return undefined
+  return RELEASE_LIST.test(u.pathname) ? `Bearer ${token}` : undefined
 }
 
 /** Headers for downloading a private release asset through its API url, or

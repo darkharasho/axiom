@@ -124,22 +124,86 @@ describe('fetchLatestRelease release selection', () => {
   })
 })
 
-describe('fetchLatestRelease auth', () => {
-  // Public release lookups are always anonymous. The signed-in token can carry
-  // the repo scope, and it may only go to a private entry's API paths
-  // (tokenScope.ts). Even a stray token option must not leak through.
-  it('never sends an Authorization header', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => [{ tag_name: 'v1.0.0', assets: [
-        { name: 'AxiVale-1.0.0.AppImage', browser_download_url: 'https://example.com/a.AppImage' },
-      ] }],
-    })
+describe('checkLatestRelease auth', () => {
+  const okList = () => ({
+    ok: true, status: 200,
+    json: async () => [{ tag_name: 'v1.0.0', assets: [
+      { name: 'AxiVale-1.0.0.AppImage', browser_download_url: 'https://example.com/a.AppImage' },
+    ] }],
+  })
+
+  it('sends no Authorization header when signed out', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(okList())
     vi.stubGlobal('fetch', fetchMock)
-    const { fetchLatestRelease } = await import('../github')
-    await fetchLatestRelease('darkharasho/axivale', /AxiVale.*\.AppImage$/i, { token: 'gho_tok' } as never)
-    const headers = fetchMock.mock.calls[0][1].headers as Record<string, string>
-    expect(headers.Authorization).toBeUndefined()
+    const { checkLatestRelease } = await import('../github')
+    await checkLatestRelease('darkharasho/axivale', /AxiVale.*\.AppImage$/i)
+    expect((fetchMock.mock.calls[0][1].headers as Record<string, string>).Authorization).toBeUndefined()
+  })
+
+  // Signed in, the lookup gets GitHub's 5,000/hour limit instead of the
+  // network's shared 60/hour. The bearer goes only to the release list.
+  it('sends the signed-in token, without following redirects', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(okList())
+    vi.stubGlobal('fetch', fetchMock)
+    const { checkLatestRelease } = await import('../github')
+    const r = await checkLatestRelease('darkharasho/axivale', /AxiVale.*\.AppImage$/i, { token: 'gho_tok' })
+    expect(r.kind).toBe('ok')
+    const init = fetchMock.mock.calls[0][1]
+    expect(init.headers.Authorization).toBe('Bearer gho_tok')
+    expect(init.redirect).toBe('manual')
+  })
+
+  it.each([
+    ['a rejected token', { ok: false, status: 401 }],
+    ['a redirect', { ok: false, status: 301 }],
+    ['an opaque redirect', { ok: false, status: 0, type: 'opaqueredirect' }],
+  ])('asks again anonymously after %s', async (_label, first) => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(first).mockResolvedValueOnce(okList())
+    vi.stubGlobal('fetch', fetchMock)
+    const { checkLatestRelease } = await import('../github')
+    const r = await checkLatestRelease('darkharasho/axivale', /AxiVale.*\.AppImage$/i, { token: 'gho_tok' })
+    expect(r.kind).toBe('ok')
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect((fetchMock.mock.calls[1][1].headers as Record<string, string>).Authorization).toBeUndefined()
+  })
+})
+
+describe('checkLatestRelease rate limit', () => {
+  const headers = (h: Record<string, string>) => ({ get: (k: string) => h[k.toLowerCase()] ?? null })
+
+  it('reports a 403 with no requests left as rate-limited, with the reset time', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false, status: 403, headers: headers({ 'x-ratelimit-remaining': '0', 'x-ratelimit-reset': '1791854082' }),
+    }))
+    const { checkLatestRelease } = await import('../github')
+    expect(await checkLatestRelease('darkharasho/axivale', /App\.AppImage$/i))
+      .toEqual({ kind: 'rate-limited', resetAt: 1791854082000 })
+  })
+
+  it('reports a 429 as rate-limited', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 429, headers: headers({}) }))
+    const { checkLatestRelease } = await import('../github')
+    expect(await checkLatestRelease('darkharasho/axivale', /App\.AppImage$/i))
+      .toEqual({ kind: 'rate-limited', resetAt: null })
+  })
+
+  it('treats any other 403 as unavailable', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 403, headers: headers({ 'x-ratelimit-remaining': '12' }) }))
+    const { checkLatestRelease } = await import('../github')
+    expect(await checkLatestRelease('darkharasho/axivale', /App\.AppImage$/i)).toEqual({ kind: 'unavailable' })
+  })
+
+  it('distinguishes no usable release from an unreachable GitHub', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => [] }))
+    const { checkLatestRelease } = await import('../github')
+    expect(await checkLatestRelease('darkharasho/axivale', /App\.AppImage$/i)).toEqual({ kind: 'none' })
+  })
+
+  it('says when to retry, and to sign in only when signed out', async () => {
+    const { rateLimitMessage } = await import('../github')
+    expect(rateLimitMessage(null, true)).toBe('GitHub limit reached')
+    expect(rateLimitMessage(null, false)).toBe('GitHub limit reached · sign in to raise it')
+    expect(rateLimitMessage(Date.UTC(2026, 9, 13, 1, 14), true)).toMatch(/^GitHub limit reached until \S/)
   })
 })
 

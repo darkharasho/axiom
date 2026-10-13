@@ -5,7 +5,7 @@ import type { BrowserWindow } from 'electron'
 import type { AppId, InstallableAppId, AppState, ArcdpsState, ReleaseInfo } from './shared/types'
 import { APP_META, isInstallable, isAppVisible, visibleAppStates } from './apps'
 import { readConfig, patchConfig, setInstalledVersion } from './config'
-import { fetchLatestRelease } from './github'
+import { checkLatestRelease, fetchLatestRelease, rateLimitMessage } from './github'
 import { resolvePrivateRelease, AuthFailureLatch, signInAgainMessage } from './privateRelease'
 import { assetDownloadHeaders } from './tokenScope'
 import { beginDeviceAuth, pollForToken, fetchGithubLogin, fetchGithubUser, GITHUB_DEVICE_CLIENT_ID, SCOPE_BASIC, scopeList } from './githubAuth'
@@ -147,6 +147,7 @@ async function refreshArcdps(win: BrowserWindow): Promise<void> {
     recordedInstalls: cfg.arcdps.plugins,
     fetchRelease: (repo, pattern) => fetchLatestRelease(repo, pattern, {
       includePrerelease: cfg.allowPrereleasePlugins,
+      token: githubToken,
     }),
     fetchCoreMd5: async (dll) => {
       // Use Electron's net.fetch (Chromium stack) rather than undici: it honors
@@ -200,7 +201,16 @@ export async function runCheckUpdates(win: BrowserWindow): Promise<void> {
       release = checked.release
       notice = checked.notice
     } else {
-      release = await fetchLatestRelease(meta.repo, pattern, { includePrerelease: allowPrereleaseApps })
+      const checked = await checkLatestRelease(meta.repo, pattern, { includePrerelease: allowPrereleaseApps, token: githubToken })
+      if (checked.kind === 'rate-limited') {
+        // A refused check learned nothing: keep the update the last good check
+        // found, and say why this one came back empty-handed.
+        const prev = before[appId]
+        release = prev?.latestVersion && prev.downloadUrl ? { version: prev.latestVersion, downloadUrl: prev.downloadUrl } : null
+        notice = rateLimitMessage(checked.resetAt, githubToken != null)
+      } else {
+        release = checked.kind === 'ok' ? checked.release : null
+      }
     }
     const detected = await detectInstalled(meta.name, meta.configDir)
     // The fetches above took seconds. If the user hit Install or Update in that

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { bearerFor, assetDownloadHeaders } from '../tokenScope'
+import { bearerFor, assetDownloadHeaders, releaseListBearer } from '../tokenScope'
 
 const TOKEN = 'gho_test'
 
@@ -60,5 +60,36 @@ describe('assetDownloadHeaders', () => {
 
   it('returns undefined for a public download, which stays anonymous', () => {
     expect(assetDownloadHeaders('https://github.com/darkharasho/axibridge/releases/download/v1.0.0/AxiBridge-1.0.0.AppImage', TOKEN)).toBeUndefined()
+  })
+})
+
+describe('releaseListBearer', () => {
+  it.each([
+    ['a public app release list', 'https://api.github.com/repos/darkharasho/axibridge/releases?per_page=30'],
+    ['a third-party arcdps plugin repo', 'https://api.github.com/repos/Krappa322/arcdps_unofficial_extras_releases/releases?per_page=30'],
+    ['a mixed-case host', 'https://API.GitHub.com/repos/darkharasho/axibridge/releases'],
+  ])('attaches to %s', (_label, url) => {
+    expect(releaseListBearer(url, TOKEN)).toBe('Bearer gho_test')
+  })
+
+  it.each([
+    ['a single release', 'https://api.github.com/repos/darkharasho/axibridge/releases/latest'],
+    ['a release asset', 'https://api.github.com/repos/darkharasho/axibridge/releases/assets/123'],
+    ['a public app download', 'https://github.com/darkharasho/axibridge/releases/download/v1.0.0/AxiBridge-1.0.0.AppImage'],
+    ['the asset redirect host', 'https://objects.githubusercontent.com/github-production-release-asset/123'],
+    ['the repo root', 'https://api.github.com/repos/darkharasho/axibridge'],
+    ['a dot-dot escape', 'https://api.github.com/repos/darkharasho/axibridge/../../user/releases'],
+    ['an encoded slash', 'https://api.github.com/repos/darkharasho%2Faxibridge/x/releases'],
+    ['a look-alike host', 'https://api.github.com.evil.example/repos/darkharasho/axibridge/releases'],
+    ['a userinfo host trick', 'https://api.github.com@evil.example/repos/darkharasho/axibridge/releases'],
+    ['a non-default port', 'https://api.github.com:8443/repos/darkharasho/axibridge/releases'],
+    ['plain http', 'http://api.github.com/repos/darkharasho/axibridge/releases'],
+    ['a relative url', 'repos/darkharasho/axibridge/releases'],
+  ])('never attaches to %s', (_label, url) => {
+    expect(releaseListBearer(url, TOKEN)).toBeUndefined()
+  })
+
+  it('returns undefined without a token', () => {
+    expect(releaseListBearer('https://api.github.com/repos/darkharasho/axibridge/releases', null)).toBeUndefined()
   })
 })
