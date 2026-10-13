@@ -1,5 +1,17 @@
 # Release Notes
 
+Version v0.7.0 — October 12, 2026
+
+## Update checks no longer run dry
+
+GitHub only allows 60 update checks an hour from one network when you're not signed in, and AxiOM's checks could use that up. When that happened, new versions simply didn't show up. If you're signed in to GitHub, update checks now use your sign-in, which raises the limit to 5,000 an hour.
+
+Your sign-in is only sent to GitHub, and only when listing an app's or plugin's releases. It's never sent with downloads or to any other site. If GitHub rejects it, AxiOM checks without it.
+
+## Fixes
+
+- When GitHub refuses an update check because the limit was reached, the app now says "GitHub limit reached until <time>" instead of quietly showing no update. Any update it had already found stays available.
+
 Version v0.6.1 — October 8, 2026
 
 ## AxiGear
