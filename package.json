@@ -26,7 +26,7 @@
     "concurrently": "^8.2.2",
     "cross-env": "^7.0.3",
     "electron": "^32.0.0",
-    "electron-builder": "^24.13.3",
+    "electron-builder": "^26.15.3",
     "jsdom": "^24.1.1",
     "playwright": "^1.60.0",
     "react": "^18.3.1",
