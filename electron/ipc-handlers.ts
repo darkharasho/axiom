@@ -754,6 +754,9 @@ if ($proc) {
         const fs = await import('fs')
         const os = await import('os')
         const pathMod = await import('path')
+        const { execFile } = await import('child_process')
+        const { promisify } = await import('util')
+        const execFileAsync = promisify(execFile)
         const searchDirs = [
           pathMod.join(os.homedir(), 'AppImages'),
           pathMod.join(os.homedir(), 'Applications'),
@@ -765,7 +768,14 @@ if ($proc) {
           try {
             const files = fs.readdirSync(dir)
             const appImage = files.find(f => f.toLowerCase().endsWith('.appimage') && f.toLowerCase().includes(meta.name.toLowerCase()))
-            if (appImage) { uninstallLinux(pathMod.join(dir, appImage)); break }
+            if (appImage) {
+              // AxiDPS restores arcdps as d3d11.dll and stops its launcher on --uninstall.
+              if (appId === 'axidps') {
+                try { await execFileAsync(pathMod.join(dir, appImage), ['--uninstall'], { timeout: 30_000 }) }
+                catch (e) { console.error('[uninstall] axidps --uninstall failed:', e) }
+              }
+              uninstallLinux(pathMod.join(dir, appImage)); break
+            }
           } catch { /* ignore */ }
         }
       }

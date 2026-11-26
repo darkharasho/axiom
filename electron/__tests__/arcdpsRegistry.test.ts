@@ -45,9 +45,10 @@ describe('ARCDPS_REGISTRY', () => {
   it('arcdps prefers addons/ (ArcDPS.dll, Nexus chainload) over GW2 root (d3d11.dll)', () => {
     // addons/ must be checked first because Nexus also uses root d3d11.dll
     const arc = getPluginMeta('arcdps')!
-    expect(arc.locations.map(l => l.dir)).toEqual(['addons', ''])
+    expect(arc.locations.map(l => l.dir)).toEqual(['addons', '', ''])
     expect(arc.locations[0].installFilename).toBe('ArcDPS.dll')
     expect(arc.locations[1].installFilename).toBe('d3d11.dll')
+    expect(arc.locations[2].installFilename).toBe('arcdps_d3d11.dll')
   })
 
   // The asset name each GitHub release actually publishes, captured from the

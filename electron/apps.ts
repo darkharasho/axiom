@@ -112,6 +112,7 @@ export const APP_META: Record<AppId, AppMeta> = {
       linux: /AxiAdmin.*\.AppImage$/i,
     },
   },
+  axidps: { id: 'axidps', name: 'AxiDPS', repo: 'darkharasho/axidps-releases', configDir: 'axidps', allowlist: ['darkharasho'], assetPattern: { win: /axidps.*Setup.*\.exe$/i, linux: /axidps.*\.AppImage$/i } },
   axitools: {
     id: 'axitools',
     name: 'AxiTools',

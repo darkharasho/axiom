@@ -48,9 +48,29 @@ describe('isAppVisible', () => {
     expect(isAppVisible(APP_META.axistream, null)).toBe(true)
   })
 
-  it('gates only axiadmin', () => {
+  it('gates only axiadmin and axidps', () => {
     const gated = Object.values(APP_META).filter(m => 'allowlist' in m && m.allowlist != null)
-    expect(gated.map(m => m.id)).toEqual(['axiadmin'])
+    expect(gated.map(m => m.id)).toEqual(['axiadmin', 'axidps'])
+  })
+})
+
+describe('axidps registry entry', () => {
+  it('is visible to darkharasho only', () => {
+    const m = APP_META.axidps
+    if (!isInstallable(m)) throw new Error('expected installable')
+    expect(m.repo).toBe('darkharasho/axidps-releases')
+    expect(m.configDir).toBe('axidps')
+    expect(isAppVisible(m, null)).toBe(false)
+    expect(isAppVisible(m, 'randomuser')).toBe(false)
+    expect(isAppVisible(m, 'darkharasho')).toBe(true)
+  })
+
+  it('asset patterns match the release names', () => {
+    const m = APP_META.axidps
+    if (!isInstallable(m)) throw new Error('expected installable')
+    expect(m.assetPattern.win.test('AxiDPS-Setup-0.4.0.exe')).toBe(true)
+    expect(m.assetPattern.linux.test('AxiDPS-0.4.0-x86_64.AppImage')).toBe(true)
+    expect(m.assetPattern.linux.test('AxiDPS-Setup-0.4.0.exe')).toBe(false)
   })
 })
 

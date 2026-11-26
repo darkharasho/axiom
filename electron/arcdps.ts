@@ -2,6 +2,7 @@ import crypto from 'crypto'
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
+import { axidpsInstalled } from './axidpsDll'
 import type { ArcdpsPluginState, ArcdpsState } from './shared/types'
 
 type Gw2Source = ArcdpsState['gw2PathSource']
@@ -273,6 +274,11 @@ export function pickInstallLocation(
   gw2Path: string,
   installedDir: string | null,
 ): PluginLocation {
+  // AxiDPS owns the root d3d11.dll; arcdps then lives at arcdps_d3d11.dll.
+  if (axidpsInstalled(gw2Path)) {
+    const beside = locations.find(l => l.dir === '' && l.installFilename === 'arcdps_d3d11.dll')
+    if (beside) return beside
+  }
   if (installedDir != null) {
     const existing = locations.find(l => l.dir === installedDir)
     if (existing) return existing
@@ -333,6 +339,7 @@ function scanDirForPlugin(
 
 export function detectInstalledPlugins(gw2Path: string): DetectedPlugin[] {
   const nexusInstalled = isNexusInstalled(gw2Path)
+  const axidps = axidpsInstalled(gw2Path)
   const out: DetectedPlugin[] = []
   const seen = new Set<string>()
   for (const meta of ARCDPS_REGISTRY) {
@@ -341,6 +348,8 @@ export function detectInstalledPlugins(gw2Path: string): DetectedPlugin[] {
       // arcdps shares its d3d11.dll filename with GW2 Nexus's loader. If Nexus
       // is installed (addons/ exists) the root d3d11.dll is Nexus, not arcdps.
       if (meta.id === 'arcdps' && location.dir === '' && nexusInstalled) continue
+      // Likewise the root d3d11.dll is AxiDPS's, never arcdps, when it's installed.
+      if (meta.id === 'arcdps' && location.dir === '' && axidps && location.installFilename === 'd3d11.dll') continue
       const baseDir = resolveInstallDir(gw2Path, location.dir)
       // Look in the base location first.
       let found = scanDirForPlugin(baseDir, location, meta)

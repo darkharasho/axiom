@@ -718,6 +718,38 @@ describe('arcdpsPluginHasUpdate', () => {
   })
 })
 
+describe('arcdps beside axidps', () => {
+  const locations = getPluginMeta('arcdps')!.locations
+  const mk = () => fs.mkdtempSync(path.join(os.tmpdir(), 'arc-axidps-'))
+
+  it('reports arcdps at arcdps_d3d11.dll, not the axidps root d3d11.dll', () => {
+    const gw2 = mk()
+    fs.writeFileSync(path.join(gw2, 'd3d11.dll'), 'axidps-dll-version=0.4.0\0')
+    fs.writeFileSync(path.join(gw2, 'arcdps_d3d11.dll'), 'arcdps')
+    const arc = detectInstalledPlugins(gw2).find(p => p.id === 'arcdps')
+    expect(arc?.dllPath).toBe(path.join(gw2, 'arcdps_d3d11.dll'))
+  })
+
+  it('reports no arcdps when only the axidps d3d11.dll exists', () => {
+    const gw2 = mk()
+    fs.writeFileSync(path.join(gw2, 'd3d11.dll'), 'axidps-dll-version=0.4.0\0')
+    expect(detectInstalledPlugins(gw2).find(p => p.id === 'arcdps')).toBeUndefined()
+  })
+
+  it('installs arcdps as arcdps_d3d11.dll when axidps is installed', () => {
+    const gw2 = mk()
+    fs.writeFileSync(path.join(gw2, 'd3d11.dll'), 'axidps-dll-version=0.4.0\0')
+    expect(pickInstallLocation(locations, gw2, null).installFilename).toBe('arcdps_d3d11.dll')
+    expect(pickInstallLocation(locations, gw2, '').installFilename).toBe('arcdps_d3d11.dll')
+  })
+
+  it('still installs d3d11.dll without axidps', () => {
+    const gw2 = mk()
+    fs.writeFileSync(path.join(gw2, 'd3d11.dll'), 'arcdps')
+    expect(pickInstallLocation(locations, gw2, null).installFilename).toBe('d3d11.dll')
+  })
+})
+
 describe('pickInstallLocation', () => {
   const locations = getPluginMeta('arcdps')!.locations
 

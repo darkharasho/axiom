@@ -49,6 +49,8 @@ export const ARCDPS_REGISTRY: ArcPluginMeta[] = [
     locations: [
       { dir: 'addons', dllPattern: /^ArcDPS\.dll$/i, installFilename: 'ArcDPS.dll' },
       { dir: '',       dllPattern: /^d3d11\.dll$/i,  installFilename: 'd3d11.dll' },
+      // Beside AxiDPS, which owns d3d11.dll and chainloads arcdps from here.
+      { dir: '',       dllPattern: /^arcdps_d3d11\.dll$/i, installFilename: 'arcdps_d3d11.dll' },
     ],
     alwaysShow: true,
   },
