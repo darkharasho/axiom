@@ -50,6 +50,9 @@ export const ARCDPS_REGISTRY: ArcPluginMeta[] = [
       { dir: 'addons', dllPattern: /^ArcDPS\.dll$/i, installFilename: 'ArcDPS.dll' },
       { dir: '',       dllPattern: /^d3d11\.dll$/i,  installFilename: 'd3d11.dll' },
       // Beside AxiDPS, which owns d3d11.dll and chainloads arcdps from here.
+      { dir: '',       dllPattern: /^axidps_chain_d3d11\.dll$/i, installFilename: 'axidps_chain_d3d11.dll' },
+      // AxiDPS's old chain name (still chainloaded); detected so an update
+      // overwrites it in place. Never chosen for a fresh install.
       { dir: '',       dllPattern: /^arcdps_d3d11\.dll$/i, installFilename: 'arcdps_d3d11.dll' },
     ],
     alwaysShow: true,

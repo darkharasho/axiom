@@ -201,7 +201,7 @@ export async function runCheckUpdates(win: BrowserWindow): Promise<void> {
       release = checked.release
       notice = checked.notice
     } else {
-      const checked = await checkLatestRelease(meta.repo, pattern, { includePrerelease: allowPrereleaseApps, token: githubToken })
+      const checked = await checkLatestRelease(meta.repo, pattern, { includePrerelease: allowPrereleaseApps || meta.prerelease === true, token: githubToken })
       if (checked.kind === 'rate-limited') {
         // A refused check learned nothing: keep the update the last good check
         // found, and say why this one came back empty-handed.

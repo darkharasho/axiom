@@ -16,6 +16,9 @@ interface InstallableAppMeta {
   // repo-scoped token, and only ever send it to this repo's API paths (see
   // tokenScope.ts). Always pair with an allowlist, which decides visibility.
   private?: boolean
+  // Beta entry that only ships rc builds: always offer prereleases for it,
+  // whatever the global "prerelease apps" setting says. Pair with an allowlist.
+  prerelease?: boolean
 }
 
 interface AxiToolsMeta {
@@ -112,7 +115,7 @@ export const APP_META: Record<AppId, AppMeta> = {
       linux: /AxiAdmin.*\.AppImage$/i,
     },
   },
-  axidps: { id: 'axidps', name: 'AxiDPS', repo: 'darkharasho/axidps-releases', configDir: 'axidps', allowlist: ['darkharasho'], assetPattern: { win: /axidps.*Setup.*\.exe$/i, linux: /axidps.*\.AppImage$/i } },
+  axidps: { id: 'axidps', name: 'AxiDPS', repo: 'darkharasho/axidps-releases', configDir: 'axidps', allowlist: ['darkharasho'], prerelease: true, assetPattern: { win: /axidps.*Setup.*\.exe$/i, linux: /axidps.*\.AppImage$/i } },
   axitools: {
     id: 'axitools',
     name: 'AxiTools',

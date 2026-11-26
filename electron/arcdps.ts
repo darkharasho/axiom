@@ -274,9 +274,10 @@ export function pickInstallLocation(
   gw2Path: string,
   installedDir: string | null,
 ): PluginLocation {
-  // AxiDPS owns the root d3d11.dll; arcdps then lives at arcdps_d3d11.dll.
-  if (axidpsInstalled(gw2Path)) {
-    const beside = locations.find(l => l.dir === '' && l.installFilename === 'arcdps_d3d11.dll')
+  // AxiDPS owns the root d3d11.dll and chainloads axidps_chain_d3d11.dll. With
+  // Nexus, that chain file is Nexus's loader and arcdps belongs in addons/.
+  if (axidpsInstalled(gw2Path) && !isNexusInstalled(gw2Path)) {
+    const beside = locations.find(l => l.dir === '' && l.installFilename === 'axidps_chain_d3d11.dll')
     if (beside) return beside
   }
   if (installedDir != null) {

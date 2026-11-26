@@ -721,10 +721,19 @@ describe('arcdpsPluginHasUpdate', () => {
 describe('arcdps beside axidps', () => {
   const locations = getPluginMeta('arcdps')!.locations
   const mk = () => fs.mkdtempSync(path.join(os.tmpdir(), 'arc-axidps-'))
+  const axidps = (gw2: string) => fs.writeFileSync(path.join(gw2, 'd3d11.dll'), 'axidps-dll-version=0.4.0\0')
 
-  it('reports arcdps at arcdps_d3d11.dll, not the axidps root d3d11.dll', () => {
+  it('reports arcdps at axidps_chain_d3d11.dll, not the axidps root d3d11.dll', () => {
     const gw2 = mk()
-    fs.writeFileSync(path.join(gw2, 'd3d11.dll'), 'axidps-dll-version=0.4.0\0')
+    axidps(gw2)
+    fs.writeFileSync(path.join(gw2, 'axidps_chain_d3d11.dll'), 'arcdps')
+    const arc = detectInstalledPlugins(gw2).find(p => p.id === 'arcdps')
+    expect(arc?.dllPath).toBe(path.join(gw2, 'axidps_chain_d3d11.dll'))
+  })
+
+  it('still reports arcdps under the old arcdps_d3d11.dll chain name', () => {
+    const gw2 = mk()
+    axidps(gw2)
     fs.writeFileSync(path.join(gw2, 'arcdps_d3d11.dll'), 'arcdps')
     const arc = detectInstalledPlugins(gw2).find(p => p.id === 'arcdps')
     expect(arc?.dllPath).toBe(path.join(gw2, 'arcdps_d3d11.dll'))
@@ -732,15 +741,24 @@ describe('arcdps beside axidps', () => {
 
   it('reports no arcdps when only the axidps d3d11.dll exists', () => {
     const gw2 = mk()
-    fs.writeFileSync(path.join(gw2, 'd3d11.dll'), 'axidps-dll-version=0.4.0\0')
+    axidps(gw2)
     expect(detectInstalledPlugins(gw2).find(p => p.id === 'arcdps')).toBeUndefined()
   })
 
-  it('installs arcdps as arcdps_d3d11.dll when axidps is installed', () => {
+  it('installs arcdps as axidps_chain_d3d11.dll when axidps is installed', () => {
     const gw2 = mk()
-    fs.writeFileSync(path.join(gw2, 'd3d11.dll'), 'axidps-dll-version=0.4.0\0')
-    expect(pickInstallLocation(locations, gw2, null).installFilename).toBe('arcdps_d3d11.dll')
-    expect(pickInstallLocation(locations, gw2, '').installFilename).toBe('arcdps_d3d11.dll')
+    axidps(gw2)
+    expect(pickInstallLocation(locations, gw2, null).installFilename).toBe('axidps_chain_d3d11.dll')
+    expect(pickInstallLocation(locations, gw2, '').installFilename).toBe('axidps_chain_d3d11.dll')
+  })
+
+  it('with Nexus, the chain file is Nexus: arcdps goes to addons/ and is not read from the chain', () => {
+    const gw2 = mk()
+    axidps(gw2)
+    fs.mkdirSync(path.join(gw2, 'addons'))
+    fs.writeFileSync(path.join(gw2, 'axidps_chain_d3d11.dll'), 'nexus')
+    expect(pickInstallLocation(locations, gw2, null).installFilename).toBe('ArcDPS.dll')
+    expect(detectInstalledPlugins(gw2).find(p => p.id === 'arcdps')).toBeUndefined()
   })
 
   it('still installs d3d11.dll without axidps', () => {

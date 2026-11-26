@@ -65,12 +65,21 @@ describe('axidps registry entry', () => {
     expect(isAppVisible(m, 'darkharasho')).toBe(true)
   })
 
+  it('tracks rc builds: it only ships prereleases', () => {
+    const m = APP_META.axidps
+    if (!isInstallable(m)) throw new Error('expected installable')
+    expect(m.prerelease).toBe(true)
+  })
+
   it('asset patterns match the release names', () => {
     const m = APP_META.axidps
     if (!isInstallable(m)) throw new Error('expected installable')
     expect(m.assetPattern.win.test('AxiDPS-Setup-0.4.0.exe')).toBe(true)
     expect(m.assetPattern.linux.test('AxiDPS-0.4.0-x86_64.AppImage')).toBe(true)
     expect(m.assetPattern.linux.test('AxiDPS-Setup-0.4.0.exe')).toBe(false)
+    expect(m.assetPattern.win.test('axidps-0.2.0-rc.1-Setup.exe')).toBe(true)
+    expect(m.assetPattern.linux.test('axidps-0.2.0-rc.1.AppImage')).toBe(true)
+    expect(m.assetPattern.linux.test('dll-signed.dll')).toBe(false)
   })
 })
 
