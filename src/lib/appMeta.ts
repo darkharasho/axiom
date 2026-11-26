@@ -9,7 +9,7 @@ export const APP_ICONS: Record<AppId, string> = {
   axiroster:  './svg/axiroster-glyph.svg',
   axistream:  './svg/axistream-glyph.svg',
   axiadmin:   './svg/axiadmin-glyph.svg',
-  axidps:     './svg/axiadmin-glyph.svg',  // placeholder until AxiDPS has its own glyph
+  axidps:     './svg/axidps-glyph.svg',
   axitools:   './svg/axitools-glyph.svg',
 }
 

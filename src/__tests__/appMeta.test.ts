@@ -17,3 +17,12 @@ describe('axiadmin glyph', () => {
     expect(readFileSync(path.join(root, 'marketing/assets/axiadmin-glyph.svg'), 'utf8')).toBe(GLYPH)
   })
 })
+
+describe('axidps glyph', () => {
+  it('has its own glyph, not the axiadmin placeholder', () => {
+    expect(APP_ICONS.axidps).toBe('./svg/axidps-glyph.svg')
+    const svg = readFileSync(path.join(process.cwd(), 'public/svg/axidps-glyph.svg'), 'utf8')
+    expect(svg).toContain('viewBox="242 242 540 540"')
+    expect(svg).not.toContain('#ffc53d')
+  })
+})
