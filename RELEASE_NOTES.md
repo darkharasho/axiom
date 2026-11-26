@@ -4,7 +4,7 @@ Version v0.7.1 — November 26, 2026
 
 ## Signed Windows installer
 
-The Windows installer and app are now signed by Michael Stephens. Windows SmartScreen shows a known publisher instead of the "unknown publisher" warning.
+The Windows installer and app are now code-signed. Windows SmartScreen shows a known publisher instead of the "unknown publisher" warning.
 
 Version v0.7.0 — October 12, 2026
 
