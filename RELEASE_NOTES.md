@@ -1,5 +1,11 @@
 # Release Notes
 
+Version v0.7.2 — November 26, 2026
+
+## Fixes
+
+- Small fixes to how releases are built and published.
+
 Version v0.7.1 — November 26, 2026
 
 ## Signed Windows installer
