@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { isPrivateUnlocked, needsPrivateUnlock, deviceFlowScope, resolveAuthOutcome, takePending, hasVisiblePrivateApp } from '../privateTools'
+import { isPrivateUnlocked, isPrivateEligible, needsPrivateUnlock, deviceFlowScope, resolveAuthOutcome, takePending, hasVisiblePrivateApp } from '../privateTools'
 
 // No registry entry is gated today — AxiStream was the last one and went
 // generally available in AxiStream 1.0. The aggregation still has to work for
@@ -22,7 +22,10 @@ describe('isPrivateUnlocked', () => {
   it('is true for a login on a gated entry allowlist', () => { expect(isPrivateUnlocked('darkharasho')).toBe(true) })
   it('is false for any other login', () => { expect(isPrivateUnlocked('randomuser')).toBe(false) })
   it('is false when signed out (null)', () => { expect(isPrivateUnlocked(null)).toBe(false) })
-  it('is false for gw2dui now that axistream is public', () => { expect(isPrivateUnlocked('gw2dui')).toBe(false) })
+  it('is true for gw2dui, on the AxiDPS beta allowlist', () => { expect(isPrivateUnlocked('gw2dui')).toBe(true) })
+  it('never asks gw2dui for the repo scope: that allowlist is on a public repo', () => {
+    expect(isPrivateEligible('gw2dui')).toBe(false)
+  })
 })
 
 describe('needsPrivateUnlock', () => {
