@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Settings, RefreshCw, LogOut, ArrowUp } from 'lucide-react'
 import type { AppState, AppId, InstallableAppId } from '@shared/types'
-import { arcdpsPluginHasUpdate, appHasUpdate } from '@shared/types'
+import { arcdpsPluginHasUpdate, appHasUpdate, RUNS_WITH_GAME } from '@shared/types'
 import type { SelfUpdateState } from '../hooks/useSelfUpdate'
 import { AppRow } from './AppRow'
 import { useArcdpsState } from '../hooks/useArcdpsState'
@@ -61,7 +61,7 @@ export function AppList({ states, checking, selfUpdate, onOpenSettings, onOpenAr
 
   const handleRetry = (appId: AppId) => {
     const state = stateMap[appId]
-    if (state?.installedVersion) {
+    if (state?.installedVersion && !RUNS_WITH_GAME.includes(appId)) {
       window.axiom.launch(appId)
     } else {
       window.axiom.install(appId as InstallableAppId)

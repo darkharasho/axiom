@@ -24,6 +24,8 @@ import {
 import { installWindows, installLinux, updateLinux, uninstallWindows, uninstallLinux, downloadFile, HttpStatusError, type DownloadOpts } from './installer'
 import { setAutoStart, getAutoStart, refreshAutoStartExec } from './autostart'
 import { isProcessRunning } from './process-check'
+import { runsWithGame, setUpAfterLinuxInstall } from './runsWithGame'
+import { findInstalledAppImage } from './desktopEntry'
 import * as fsSync from 'fs'
 import * as osSync from 'os'
 import * as pathSync from 'path'
@@ -615,6 +617,7 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
           const appImagePath = await installLinux(downloadUrl, (p) => setState(win, appId, { downloadProgress: p }), dl)
           openInGearLever(appImagePath)
         }
+        if (runsWithGame(appId)) setUpAfterLinuxInstall(findInstalledAppImage(meta.name))
         const newVersion = appStates[appId].latestVersion
         setInstalledVersion(appId, newVersion)
         writeAxiomVersionFile(meta.configDir, newVersion)

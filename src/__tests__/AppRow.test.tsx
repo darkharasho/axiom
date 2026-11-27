@@ -17,6 +17,21 @@ describe('AppRow', () => {
     expect(screen.getByRole('button', { name: /launch/i })).toBeInTheDocument()
   })
 
+  // AxiDPS runs while Guild Wars 2 runs; the game starts it, so there is nothing to launch.
+  it('shows no Launch button for an app that runs with the game', () => {
+    const state: AppState = { ...baseState, id: 'axidps', installedVersion: '0.2.0-rc.6', latestVersion: '0.2.0-rc.6' }
+    render(<AppRow state={state} onAction={vi.fn()} onInfo={vi.fn()} onRetry={vi.fn()} />)
+    expect(screen.queryByRole('button', { name: /launch/i })).not.toBeInTheDocument()
+    expect(screen.getByText('v0.2.0-rc.6 · starts with GW2')).toBeInTheDocument()
+  })
+
+  it('shows no Focus button for an app that runs with the game while it runs', () => {
+    const state: AppState = { ...baseState, id: 'axidps', installedVersion: '0.2.0-rc.6', latestVersion: '0.2.0-rc.6', isRunning: true }
+    render(<AppRow state={state} onAction={vi.fn()} onInfo={vi.fn()} onRetry={vi.fn()} />)
+    expect(screen.queryByRole('button', { name: /focus/i })).not.toBeInTheDocument()
+    expect(screen.getByText('v0.2.0-rc.6 · running')).toBeInTheDocument()
+  })
+
   it('shows Update button when newer version available', () => {
     const state = { ...baseState, latestVersion: '2.6.0', downloadUrl: 'https://example.com/app.AppImage' }
     render(<AppRow state={state} onAction={vi.fn()} onInfo={vi.fn()} onRetry={vi.fn()} />)

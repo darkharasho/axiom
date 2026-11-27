@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import { Play, Download, ArrowUp, ExternalLink, Loader2, HelpCircle, RefreshCw, MoreHorizontal, Info, FolderOpen, Trash2, Maximize2 } from 'lucide-react'
 import type { AppState, AppId, InstallableAppId } from '@shared/types'
-import { INSTALLED_VERSION_UNKNOWN, appHasUpdate } from '@shared/types'
+import { INSTALLED_VERSION_UNKNOWN, RUNS_WITH_GAME, appHasUpdate } from '@shared/types'
 import { APP_ICONS, APP_NAMES } from '../lib/appMeta'
 import { ProgressBar } from './ProgressBar'
 import { GearLeverPrompt } from './GearLeverPrompt'
@@ -56,6 +56,8 @@ export function AppRow({ state, onAction, onInfo, onRetry }: Props) {
   const versionKnown = !!installedVersion && installedVersion !== INSTALLED_VERSION_UNKNOWN
   const hasUpdate = appHasUpdate(installedVersion, latestVersion)
   const notInstalled = !installedVersion
+  // Started by the game, so there is nothing to launch or focus.
+  const withGame = RUNS_WITH_GAME.includes(id)
 
   const statusText = () => {
     if (status === 'checking') return 'Checking…'
@@ -69,6 +71,7 @@ export function AppRow({ state, onAction, onInfo, onRetry }: Props) {
     if (notInstalled) return 'Not installed'
     if (hasUpdate) return `v${latestVersion} available`
     if (isRunning) return versionKnown ? `v${installedVersion} · running` : 'Running'
+    if (withGame) return versionKnown ? `v${installedVersion} · starts with GW2` : 'Starts with GW2'
     return versionKnown ? `v${installedVersion}` : 'Installed'
   }
 
@@ -160,7 +163,7 @@ export function AppRow({ state, onAction, onInfo, onRetry }: Props) {
         </div>
       )
     }
-    if (installedVersion) {
+    if (installedVersion && !withGame) {
       return isRunning ? (
         <button className="axi-btn ax-sm" onClick={() => onAction('launch', id)}>
           <Maximize2 size={10} />

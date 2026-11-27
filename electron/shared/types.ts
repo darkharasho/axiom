@@ -9,6 +9,12 @@ export type InstallableAppId = Exclude<AppId, 'axitools'>
 export const INSTALLED_VERSION_UNKNOWN = 'installed'
 
 /**
+ * Apps that run while Guild Wars 2 runs: the game starts them, so AxiOM offers no Launch or
+ * Focus for them, and sets them up after each install or update instead (see runsWithGame.ts).
+ */
+export const RUNS_WITH_GAME: readonly AppId[] = ['axidps']
+
+/**
  * Single source of truth for "this app should signal an update available".
  * The unknown-version sentinel must NOT count as an update — otherwise a
  * manually-installed app (whose version we can't read) lights the tray dot

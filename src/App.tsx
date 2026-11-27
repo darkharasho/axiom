@@ -6,6 +6,7 @@ import { ArcdpsView } from './components/ArcdpsView'
 import { useAppStates } from './hooks/useAppStates'
 import { useSelfUpdate } from './hooks/useSelfUpdate'
 import type { AppId, InstallableAppId } from '@shared/types'
+import { RUNS_WITH_GAME } from '@shared/types'
 
 type View = 'list' | 'settings' | 'info' | 'arcdps'
 
@@ -45,7 +46,7 @@ export default function App() {
           appId={infoAppId}
           onBack={() => setView('list')}
           downloadUrl={infoState?.downloadUrl ?? undefined}
-          onLaunch={infoState?.installedVersion && infoAppId !== 'axitools' ? () => window.axiom.launch(infoAppId) : undefined}
+          onLaunch={infoState?.installedVersion && infoAppId !== 'axitools' && !RUNS_WITH_GAME.includes(infoAppId) ? () => window.axiom.launch(infoAppId) : undefined}
           onInstall={!infoState?.installedVersion && infoState?.downloadUrl ? () => window.axiom.install(infoAppId as InstallableAppId) : undefined}
           onInvite={infoAppId === 'axitools' ? () => window.axiom.launch('axitools') : undefined}
         />
