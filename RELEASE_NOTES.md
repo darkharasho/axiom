@@ -1,5 +1,11 @@
 # Release Notes
 
+Version v0.7.4 — November 26, 2026
+
+## Fixes
+
+- Apps that start together with Guild Wars 2 no longer show a Launch button; AxiOM sets them up after each install or update instead.
+
 Version v0.7.3 — November 26, 2026
 
 ## Fixes
