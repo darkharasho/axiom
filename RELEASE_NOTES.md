@@ -1,5 +1,11 @@
 # Release Notes
 
+Version v0.7.3 — November 26, 2026
+
+## Fixes
+
+- Launch works again for apps that are not built on Electron, and AxiOM no longer shows such an app as running when only its helper processes are.
+
 Version v0.7.2 — November 26, 2026
 
 ## Fixes
