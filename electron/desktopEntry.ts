@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
+import { APP_META } from './apps'
 
 // Resolved per call rather than at module load so the home directory is read
 // when it's actually needed (module-load capture also made this untestable).
@@ -106,13 +107,18 @@ export function writeLinuxDesktopEntry(appId: string, name: string, appImagePath
   const mimeTypes = APP_MIME_TYPES[appId] ?? []
   const mimeLine = mimeTypes.length ? `MimeType=${mimeTypes.map((m) => `${m};`).join('')}\n` : ''
 
+  const native = (APP_META as Record<string, { native?: boolean }>)[appId]?.native === true
+  const execLine = native
+    ? `Exec=${appImagePath}`
+    : `Exec=env DESKTOPINTEGRATION=1 ${appImagePath} --no-sandbox %U`
+
   const contents =
     `[Desktop Entry]
 Type=Application
 Name=${name}
 ${iconLine}
 TryExec=${appImagePath}
-Exec=env DESKTOPINTEGRATION=1 ${appImagePath} --no-sandbox %U
+${execLine}
 Terminal=false
 Categories=Utility;
 StartupWMClass=${name}

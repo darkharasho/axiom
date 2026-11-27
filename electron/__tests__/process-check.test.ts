@@ -40,6 +40,25 @@ describe('isProcessRunning', () => {
     expect(await isProcessRunning('AxiBridge')).toBe(false)
   })
 
+  it('matches any process name containing the app name by default', async () => {
+    Object.defineProperty(process, 'platform', { value: 'linux', configurable: true })
+    const { exec } = await import('child_process')
+    vi.mocked(exec).mockImplementation((_cmd: any, cb: any) => { cb(null, '', ''); return {} as any })
+    const { isProcessRunning } = await import('../process-check')
+    await isProcessRunning('AxiBridge')
+    expect(vi.mocked(exec).mock.calls[0][0]).toBe('pgrep -i "AxiBridge"')
+  })
+
+  // AxiDPS's own core and overlay (axidps-core, axidps-overlay) must not count as the launcher.
+  it('matches the whole process name when asked for an exact match', async () => {
+    Object.defineProperty(process, 'platform', { value: 'linux', configurable: true })
+    const { exec } = await import('child_process')
+    vi.mocked(exec).mockImplementation((_cmd: any, cb: any) => { cb(null, '', ''); return {} as any })
+    const { isProcessRunning } = await import('../process-check')
+    await isProcessRunning('AxiDPS', { exact: true })
+    expect(vi.mocked(exec).mock.calls[0][0]).toBe('pgrep -x -i "AxiDPS"')
+  })
+
   it('resolves true on Windows when tasklist output contains the exe', async () => {
     Object.defineProperty(process, 'platform', { value: 'win32', configurable: true })
     const { exec } = await import('child_process')

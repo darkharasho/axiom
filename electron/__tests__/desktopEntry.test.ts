@@ -92,6 +92,22 @@ describe('writeLinuxDesktopEntry', () => {
     expect(fs.readFileSync(entryPath('axiforge'), 'utf8')).not.toContain('MimeType=')
   })
 
+  // AxiDPS is a native launcher, not Electron: it rejects --no-sandbox and exits.
+  it('writes a plain Exec line for a native app', () => {
+    process.env.HOME = tmp
+    writeLinuxDesktopEntry('axidps', 'AxiDPS', '/apps/axidps-0.2.0-rc.6.AppImage')
+    const entry = fs.readFileSync(entryPath('axidps'), 'utf8')
+    expect(entry).toContain('Exec=/apps/axidps-0.2.0-rc.6.AppImage\n')
+    expect(entry).not.toContain('--no-sandbox')
+  })
+
+  it('keeps the Electron flags for an Electron app', () => {
+    process.env.HOME = tmp
+    writeLinuxDesktopEntry('axiforge', 'AxiForge', '/apps/AxiForge-1.0.0.AppImage')
+    expect(fs.readFileSync(entryPath('axiforge'), 'utf8'))
+      .toContain('Exec=env DESKTOPINTEGRATION=1 /apps/AxiForge-1.0.0.AppImage --no-sandbox %U')
+  })
+
   it('reports no change when the entry already matches', () => {
     process.env.HOME = tmp
     expect(writeLinuxDesktopEntry('axibridge', 'AxiBridge', '/apps/AxiBridge-2.18.0.AppImage')).toBe(true)

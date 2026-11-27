@@ -681,7 +681,7 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
     } else {
       const { execSync, spawn } = await import('child_process')
       try {
-        if (await isProcessRunning(meta.name)) {
+        if (await isProcessRunning(meta.name, { exact: meta.native })) {
           console.log(`[launch] ${meta.name}: running — trying to focus an existing window`)
           // Emit FOCUSED only when we actually find+raise a real window. A headless
           // instance has no MainWindowHandle, so nothing matches and we fall through
@@ -925,7 +925,7 @@ if ($proc) {
     })
     await Promise.all(entries.map(async ([id, meta]) => {
       const appId = id as AppId
-      const running = await isProcessRunning(meta.name)
+      const running = await isProcessRunning(meta.name, { exact: isInstallable(meta) && meta.native })
       if (running !== appStates[appId].isRunning) {
         setState(win, appId, { isRunning: running })
         activateHyperMode()

@@ -19,6 +19,10 @@ interface InstallableAppMeta {
   // Beta entry that only ships rc builds: always offer prereleases for it,
   // whatever the global "prerelease apps" setting says. Pair with an allowlist.
   prerelease?: boolean
+  // A native app, not Electron: its .desktop entry gets no Electron flags (AxiDPS
+  // rejects --no-sandbox and exits), and only a process named exactly `name` counts
+  // as it running (AxiDPS's own axidps-core and axidps-overlay must not).
+  native?: boolean
 }
 
 interface AxiToolsMeta {
@@ -115,7 +119,7 @@ export const APP_META: Record<AppId, AppMeta> = {
       linux: /AxiAdmin.*\.AppImage$/i,
     },
   },
-  axidps: { id: 'axidps', name: 'AxiDPS', repo: 'darkharasho/axidps-releases', configDir: 'axidps', allowlist: ['darkharasho'], prerelease: true, assetPattern: { win: /axidps.*Setup.*\.exe$/i, linux: /axidps.*\.AppImage$/i } },
+  axidps: { id: 'axidps', name: 'AxiDPS', repo: 'darkharasho/axidps-releases', configDir: 'axidps', allowlist: ['darkharasho'], prerelease: true, native: true, assetPattern: { win: /axidps.*Setup.*\.exe$/i, linux: /axidps.*\.AppImage$/i } },
   axitools: {
     id: 'axitools',
     name: 'AxiTools',
