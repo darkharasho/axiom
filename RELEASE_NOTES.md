@@ -1,5 +1,11 @@
 # Release Notes
 
+Version v0.7.7 — November 27, 2026
+
+## Changes
+
+- Early-testing access can now change without an update.
+
 Version v0.7.6 — November 27, 2026
 
 ## Changes
