@@ -14,7 +14,7 @@ import { IdentityStore, electronCipher } from './secrets'
 import { isPrivateUnlocked, needsPrivateUnlock, deviceFlowScope, resolveAuthOutcome, takePending, hasVisiblePrivateApp, type DeviceFlowMode } from './privateTools'
 import { detectInstalled } from './detect'
 import { resolveInstalledVersion } from './installedVersion'
-import { WriteLog, isAppBusy, mergeRefreshedPlugins } from './inFlight'
+import { WriteLog, isAppBusy, mergeRefreshedPlugins, singleFlight } from './inFlight'
 import { appImageMatchesAsset } from './identifyAppImage'
 import { INSTALLED_VERSION_UNKNOWN, arcdpsPluginHasUpdate, appHasUpdate } from './shared/types'
 import {
@@ -186,7 +186,16 @@ async function refreshArcdps(win: BrowserWindow): Promise<void> {
   pushArcdps(win)
 }
 
-export async function runCheckUpdates(win: BrowserWindow): Promise<void> {
+// One update check at a time: callers that ask while one runs share it.
+let checkWin: BrowserWindow | null = null
+const checkUpdates = singleFlight(() => doCheckUpdates(checkWin!))
+
+export function runCheckUpdates(win: BrowserWindow): Promise<void> {
+  checkWin = win
+  return checkUpdates()
+}
+
+async function doCheckUpdates(win: BrowserWindow): Promise<void> {
   const before = { ...appStates }
   // arcdps first: its core check is a single cheap md5 fetch, while the app
   // loop below is seven sequential GitHub round-trips. Checking arcdps last
@@ -304,23 +313,46 @@ function buildInitialStates(): Record<AppId, AppState> {
 }
 
 /**
- * Follow the remote allowlist: re-send the visible apps whenever it changes, and
- * check a newly visible app for updates so it doesn't sit there without a version.
+ * After an app appears, make sure it gets a version: wait for a check already
+ * running (it may reach the app, now visible, on its own), then check again only
+ * for an app that still has none. Sign-in starts a check and makes the app
+ * appear at the same moment; this keeps that to one check.
+ */
+export async function checkAppearedAfter(
+  ids: AppId[],
+  running: () => Promise<void> | null,
+  latest: (id: AppId) => string | null,
+  check: () => Promise<void>,
+): Promise<void> {
+  const r = running()
+  if (r) await r.catch(() => { /* its failure is its own; decide below */ })
+  if (ids.some(id => latest(id) === null)) await check()
+}
+
+/**
+ * Follow the remote allowlist: re-send the visible apps whenever it changes (and
+ * tell `onChange`, which redraws the tray dot), and check a newly visible app
+ * for updates so it doesn't sit there without a version.
  */
 export function setRemoteAllowlist(
   r: RemoteAllowlist | null,
   win: BrowserWindow,
-  checkUpdates: () => void = () => void runCheckUpdates(win).catch(() => { /* next scheduled check retries */ }),
+  opts: { checkAppeared?: (ids: AppId[]) => void; onChange?: () => void } = {},
 ): void {
   remote = r
   if (!r) return
+  const onChange = opts.onChange ?? (() => {})
+  const checkAppeared = opts.checkAppeared ?? (ids => void checkAppearedAfter(
+    ids, () => checkUpdates.running(), id => appStates[id]?.latestVersion ?? null, () => runCheckUpdates(win),
+  ).then(onChange).catch(() => { /* next scheduled check retries */ }))
   let shown = new Set(visibleStates().map(s => s.id))
   r.onChange(() => {
     const now = visibleStates()
-    const appeared = now.some(s => !shown.has(s.id) && s.latestVersion === null)
+    const appeared = now.filter(s => !shown.has(s.id) && s.latestVersion === null).map(s => s.id)
     shown = new Set(now.map(s => s.id))
     pushStates(win)
-    if (appeared) checkUpdates()
+    onChange()
+    if (appeared.length) checkAppeared(appeared)
   })
 }
 

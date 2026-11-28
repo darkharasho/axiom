@@ -66,3 +66,20 @@ export function mergeRefreshedPlugins(
     }),
   }
 }
+
+/**
+ * Wrap an async job so a call while it runs joins that run instead of starting
+ * a second one (sign-in, a newly allowed app and the startup check all ask for
+ * an update check within moments of each other). `running()` is the current
+ * run, or null.
+ */
+export function singleFlight(fn: () => Promise<void>): (() => Promise<void>) & { running(): Promise<void> | null } {
+  let current: Promise<void> | null = null
+  const run = () => {
+    if (current) return current
+    const p = fn().finally(() => { if (current === p) current = null })
+    current = p
+    return p
+  }
+  return Object.assign(run, { running: () => current })
+}

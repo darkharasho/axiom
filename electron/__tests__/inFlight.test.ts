@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { WriteLog, isAppBusy, isArcdpsPluginBusy, mergeRefreshedPlugins } from '../inFlight'
+import { WriteLog, isAppBusy, isArcdpsPluginBusy, mergeRefreshedPlugins, singleFlight } from '../inFlight'
 import type { ArcdpsPluginState, ArcdpsState } from '../shared/types'
 
 function plugin(over: Partial<ArcdpsPluginState> = {}): ArcdpsPluginState {
@@ -179,5 +179,29 @@ describe('mergeRefreshedPlugins', () => {
     const next = state([plugin({ id: 'still_here' })])
 
     expect(mergeRefreshedPlugins(prev, next, () => true).plugins.map(p => p.id)).toEqual(['still_here'])
+  })
+})
+
+describe('singleFlight', () => {
+  it('a call while one is running joins it instead of starting another', async () => {
+    let runs = 0
+    let release!: () => void
+    const f = singleFlight(() => { runs++; return new Promise<void>(r => { release = r }) })
+    const a = f(), b = f()
+    expect(runs).toBe(1)
+    expect(b).toBe(a)
+    release()
+    await a
+    expect(f.running()).toBeNull()
+    void f()
+    expect(runs).toBe(2)
+  })
+
+  it('a failed run clears, so the next call starts fresh', async () => {
+    let runs = 0
+    const f = singleFlight(async () => { runs++; throw new Error('x') })
+    await expect(f()).rejects.toThrow('x')
+    await expect(f()).rejects.toThrow('x')
+    expect(runs).toBe(2)
   })
 })

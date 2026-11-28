@@ -110,7 +110,7 @@ app.whenReady().then(async () => {
   registerIpcHandlers(win, updateTrayIcon, () => void access?.gate.recheck())
   if (access && !access.blocked) {
     const remote = createRemoteAllowlist(access.config)
-    setRemoteAllowlist(remote, win)
+    setRemoteAllowlist(remote, win, { onChange: updateTrayIcon })
     void remote.setGithubId(getGithubId())
   }
 

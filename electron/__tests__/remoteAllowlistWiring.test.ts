@@ -9,7 +9,7 @@ vi.mock('electron', () => ({
 vi.mock('electron-updater', () => ({ autoUpdater: { on: vi.fn() } }))
 vi.mock('electron-log', () => ({ default: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }))
 
-import { setRemoteAllowlist } from '../ipc-handlers'
+import { setRemoteAllowlist, checkAppearedAfter } from '../ipc-handlers'
 import type { RemoteAllowlist } from '../remoteAllowlist'
 
 function stub(allowed: boolean) {
@@ -39,7 +39,7 @@ describe('remote allowlist wiring', () => {
     const r = stub(false)
     const { send, win } = fakeWin()
     const check = vi.fn()
-    setRemoteAllowlist(r, win, check)
+    setRemoteAllowlist(r, win, { checkAppeared: check })
     r.fire()
     expect(lastIds(send)).not.toContain('axidps')
     expect(check).not.toHaveBeenCalled()
@@ -47,16 +47,53 @@ describe('remote allowlist wiring', () => {
     r.fire()
     expect(lastIds(send)).toContain('axidps')
     expect(check).toHaveBeenCalledTimes(1)
+    expect(check).toHaveBeenCalledWith(['axidps'])
   })
 
   it('a removed tester loses the app on the next push', () => {
     const r = stub(true)
     const { send, win } = fakeWin()
-    setRemoteAllowlist(r, win, vi.fn())
+    setRemoteAllowlist(r, win, { checkAppeared: vi.fn() })
     r.fire()
     expect(lastIds(send)).toContain('axidps')
     r.allowed = false
     r.fire()
     expect(lastIds(send)).not.toContain('axidps')
+  })
+
+  it("every change also refreshes the tray dot, so a removed app's update stops showing at once", () => {
+    const r = stub(true)
+    const { win } = fakeWin()
+    const changed = vi.fn()
+    setRemoteAllowlist(r, win, { checkAppeared: vi.fn(), onChange: changed })
+    r.allowed = false
+    r.fire()
+    expect(changed).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('checkAppearedAfter', () => {
+  it('waits for a running check and skips a second one when it already found the app', async () => {
+    let release!: () => void
+    const running = new Promise<void>(r => { release = r })
+    const latest: Record<string, string | null> = { axidps: null }
+    const check = vi.fn(async () => {})
+    const done = checkAppearedAfter(['axidps'], () => running, id => latest[id] ?? null, check)
+    latest.axidps = '1.0.0'
+    release()
+    await done
+    expect(check).not.toHaveBeenCalled()
+  })
+
+  it('checks again when the running check passed the app before it appeared', async () => {
+    const check = vi.fn(async () => {})
+    await checkAppearedAfter(['axidps'], () => Promise.resolve(), () => null, check)
+    expect(check).toHaveBeenCalledTimes(1)
+  })
+
+  it('checks at once when nothing is running', async () => {
+    const check = vi.fn(async () => {})
+    await checkAppearedAfter(['axidps'], () => null, () => null, check)
+    expect(check).toHaveBeenCalledTimes(1)
   })
 })
