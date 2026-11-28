@@ -1,5 +1,11 @@
 # Release Notes
 
+Version v0.7.9 — November 28, 2026
+
+## Changes
+
+- An app in early testing now gets its updates from a new place.
+
 Version v0.7.8 — November 27, 2026
 
 ## Fixes
