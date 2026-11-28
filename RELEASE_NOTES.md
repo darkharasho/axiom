@@ -1,5 +1,12 @@
 # Release Notes
 
+Version v0.7.8 — November 27, 2026
+
+## Fixes
+
+- Signing in no longer checks for updates twice.
+- When an app in early testing is no longer available to you, its update dot in the tray goes away at once instead of after the next update check.
+
 Version v0.7.7 — November 27, 2026
 
 ## Changes
