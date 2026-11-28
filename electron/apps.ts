@@ -131,14 +131,22 @@ export function isInstallable(meta: AppMeta): meta is InstallableAppMeta {
   return meta.repo !== null
 }
 
-export function isAppVisible(meta: AppMeta, login: string | null): boolean {
+// remoteAllows: the signed-in user's hashed id is on the app's remote allowlist
+// (see remoteAllowlist.ts). It never opens a private-repo app: those also need
+// GitHub collaborator access, which a flag can't grant.
+export function isAppVisible(meta: AppMeta, login: string | null, remoteAllows = false): boolean {
   const allowlist = 'allowlist' in meta ? meta.allowlist : undefined
   if (!allowlist) return true
-  return login != null && allowlist.includes(login)
+  if (login != null && allowlist.includes(login)) return true
+  return !('private' in meta && meta.private === true) && remoteAllows
 }
 
 // The renderer must never learn that a gated app exists for a login that can't
 // see it, so the main process filters before every send.
-export function visibleAppStates<T extends { id: AppId }>(states: readonly T[], login: string | null): T[] {
-  return states.filter(s => isAppVisible(APP_META[s.id], login))
+export function visibleAppStates<T extends { id: AppId }>(
+  states: readonly T[],
+  login: string | null,
+  remoteAllows: (id: AppId) => boolean = () => false,
+): T[] {
+  return states.filter(s => isAppVisible(APP_META[s.id], login, remoteAllows(s.id)))
 }

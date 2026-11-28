@@ -33,6 +33,13 @@ describe('axiroster registry entry', () => {
 })
 
 describe('isAppVisible', () => {
+  it('shows a gated app when the remote allowlist allows the user', () => { expect(isAppVisible(APP_META.axidps, 'someone', true)).toBe(true) })
+  it('hides a gated app when the remote allowlist does not allow the user', () => { expect(isAppVisible(APP_META.axidps, 'someone')).toBe(false) })
+  it('never shows a private app through the remote allowlist', () => { expect(isAppVisible(APP_META.axiadmin, 'someone', true)).toBe(false) })
+  it('visibleAppStates passes the remote answer per app', () => {
+    expect(visibleAppStates([{ id: 'axidps' as const }], 'someone', id => id === 'axidps')).toEqual([{ id: 'axidps' }])
+    expect(visibleAppStates([{ id: 'axidps' as const }], 'someone')).toEqual([])
+  })
   const gatedApp = { ...APP_META.axivale, allowlist: ['darkharasho', 'gw2dui'] } as typeof APP_META.axivale
   it('hides a gated app from a login not on its allowlist', () => { expect(isAppVisible(gatedApp, 'randomuser')).toBe(false) })
   it('hides a gated app when signed out (null)', () => { expect(isAppVisible(gatedApp, null)).toBe(false) })
