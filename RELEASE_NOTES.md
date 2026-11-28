@@ -1,5 +1,11 @@
 # Release Notes
 
+Version v0.7.6 — November 27, 2026
+
+## Changes
+
+- Updates which accounts can see the apps in early testing.
+
 Version v0.7.5 — November 26, 2026
 
 ## Changes
