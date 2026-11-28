@@ -65,7 +65,7 @@ describe('axidps registry entry', () => {
   it('is visible to darkharasho only', () => {
     const m = APP_META.axidps
     if (!isInstallable(m)) throw new Error('expected installable')
-    expect(m.repo).toBe('darkharasho/axidps-releases')
+    expect(m.repo).toBe('darkharasho/axidps')
     expect(m.configDir).toBe('axidps')
     expect(isAppVisible(m, null)).toBe(false)
     expect(isAppVisible(m, 'randomuser')).toBe(false)
