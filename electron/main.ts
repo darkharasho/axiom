@@ -21,8 +21,9 @@ app.commandLine.appendSwitch(
   'CalculateNativeWinOcclusion,Translate,MediaRouter',
 )
 import { createPopupWindow, showWindowNearTray } from './window'
-import { registerIpcHandlers, runCheckUpdates, getLastCheckTime, hasAnyUpdates, getGithubId } from './ipc-handlers'
+import { registerIpcHandlers, runCheckUpdates, getLastCheckTime, hasAnyUpdates, getGithubId, setRemoteAllowlist } from './ipc-handlers'
 import { startAccess } from './access'
+import { createRemoteAllowlist } from './remoteAllowlist'
 import { readConfig } from './config'
 import { setAutoStart } from './autostart'
 import { refreshOrphanedDesktopEntries } from './desktopEntry'
@@ -107,6 +108,11 @@ app.whenReady().then(async () => {
 
   win = createPopupWindow()
   registerIpcHandlers(win, updateTrayIcon, () => void access?.gate.recheck())
+  if (access && !access.blocked) {
+    const remote = createRemoteAllowlist(access.config)
+    setRemoteAllowlist(remote, win)
+    void remote.setGithubId(getGithubId())
+  }
 
   const toggleWindow = (position: Point, bounds?: Rectangle) => {
     if (!win) return

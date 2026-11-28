@@ -3,7 +3,8 @@ import { autoUpdater } from 'electron-updater'
 import log from 'electron-log'
 import type { BrowserWindow } from 'electron'
 import type { AppId, InstallableAppId, AppState, ArcdpsState, ReleaseInfo } from './shared/types'
-import { APP_META, isInstallable, isAppVisible, visibleAppStates } from './apps'
+import { APP_META, isInstallable, isAppVisible, visibleAppStates, type AppMeta } from './apps'
+import type { RemoteAllowlist } from './remoteAllowlist'
 import { readConfig, patchConfig, setInstalledVersion } from './config'
 import { checkLatestRelease, fetchLatestRelease, rateLimitMessage } from './github'
 import { resolvePrivateRelease, AuthFailureLatch, signInAgainMessage } from './privateRelease'
@@ -74,6 +75,16 @@ const privateAuthLatch = new AuthFailureLatch()
 // Asset file names for downloads whose url (the asset API url) carries none.
 const assetNames: Partial<Record<InstallableAppId, string>> = {}
 let unlocked = false
+// Testers added in AxiAdmin (hashed ids in an axi-config flag); null until main wires it.
+let remote: RemoteAllowlist | null = null
+
+function visible(meta: AppMeta): boolean {
+  return isAppVisible(meta, githubLogin, remote?.allows(meta.id) ?? false)
+}
+
+function visibleStates(): AppState[] {
+  return visibleAppStates(Object.values(appStates), githubLogin, id => remote?.allows(id) ?? false)
+}
 
 function githubStatus(): import('./shared/types').GithubAuthState {
   return {
@@ -105,6 +116,7 @@ function applyIdentity(token: string | null, login: string | null, id: number | 
   githubId = id
   githubScopes = scopes
   unlocked = isPrivateUnlocked(login)
+  void remote?.setGithubId(id)
 }
 
 export function getLastCheckTime(): number { return lastCheckTime }
@@ -112,7 +124,7 @@ export function getLastCheckTime(): number { return lastCheckTime }
 export function hasAnyUpdates(): boolean {
   const appsHave = Object.entries(appStates).some(([id, s]) => {
     const meta = APP_META[id as AppId]
-    if (!isAppVisible(meta, githubLogin)) return false
+    if (!visible(meta)) return false
     return appHasUpdate(s.installedVersion, s.latestVersion)
   })
   const arcdpsHave = arcdpsState.plugins.some(arcdpsPluginHasUpdate)
@@ -185,7 +197,7 @@ export async function runCheckUpdates(win: BrowserWindow): Promise<void> {
   for (const [id, meta] of Object.entries(APP_META)) {
     const appId = id as AppId
     if (!isInstallable(meta)) continue
-    if (!isAppVisible(meta, githubLogin)) continue
+    if (!visible(meta)) continue
     // Don't touch an app that's mid-install: overwriting its status with
     // 'checking'/'idle' hides the progress bar and re-shows the Update button.
     if (isAppBusy(appStates[appId].status)) continue
@@ -291,8 +303,29 @@ function buildInitialStates(): Record<AppId, AppState> {
   return states as Record<AppId, AppState>
 }
 
+/**
+ * Follow the remote allowlist: re-send the visible apps whenever it changes, and
+ * check a newly visible app for updates so it doesn't sit there without a version.
+ */
+export function setRemoteAllowlist(
+  r: RemoteAllowlist | null,
+  win: BrowserWindow,
+  checkUpdates: () => void = () => void runCheckUpdates(win).catch(() => { /* next scheduled check retries */ }),
+): void {
+  remote = r
+  if (!r) return
+  let shown = new Set(visibleStates().map(s => s.id))
+  r.onChange(() => {
+    const now = visibleStates()
+    const appeared = now.some(s => !shown.has(s.id) && s.latestVersion === null)
+    shown = new Set(now.map(s => s.id))
+    pushStates(win)
+    if (appeared) checkUpdates()
+  })
+}
+
 function pushStates(win: BrowserWindow): void {
-  win.webContents.send('axiom:states-updated', visibleAppStates(Object.values(appStates), githubLogin))
+  win.webContents.send('axiom:states-updated', visibleStates())
 }
 
 // `fromCheck` marks a write as belonging to a background update check rather
@@ -405,7 +438,7 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
     for (const k of Object.keys(assetNames)) delete assetNames[k as InstallableAppId]
     // Drop any private app from the visible state so it disappears immediately.
     for (const [id, meta] of Object.entries(APP_META)) {
-      if (!isAppVisible(meta, githubLogin)) {
+      if (!visible(meta)) {
         setState(win, id as AppId, { installedVersion: null, latestVersion: null, downloadUrl: null, status: 'idle', notice: undefined })
       }
     }
@@ -414,7 +447,7 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
     return githubStatus()
   })
 
-  ipcMain.handle('axiom:get-states', () => visibleAppStates(Object.values(appStates), githubLogin))
+  ipcMain.handle('axiom:get-states', () => visibleStates())
 
   ipcMain.handle('axiom:get-config', () => readConfig())
   ipcMain.handle('axiom:set-config', (_e, patch: Partial<ReturnType<typeof readConfig>>) => {
@@ -566,7 +599,7 @@ export function registerIpcHandlers(win: BrowserWindow, onCheckComplete?: () => 
   ipcMain.handle('axiom:install', async (_e, appId: InstallableAppId) => {
     const meta = APP_META[appId]
     if (!isInstallable(meta)) return
-    if (!isAppVisible(meta, githubLogin)) return
+    if (!visible(meta)) return
     const { downloadUrl } = appStates[appId]
     if (!downloadUrl) return
     if (isAppBusy(appStates[appId].status)) return
