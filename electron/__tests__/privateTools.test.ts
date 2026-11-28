@@ -23,6 +23,7 @@ describe('isPrivateUnlocked', () => {
   it('is false for any other login', () => { expect(isPrivateUnlocked('randomuser')).toBe(false) })
   it('is false when signed out (null)', () => { expect(isPrivateUnlocked(null)).toBe(false) })
   it('is true for gw2dui, on the AxiDPS beta allowlist', () => { expect(isPrivateUnlocked('gw2dui')).toBe(true) })
+  it('is true for Revan-Malice, on the AxiDPS beta allowlist', () => { expect(isPrivateUnlocked('Revan-Malice')).toBe(true) })
   it('never asks gw2dui for the repo scope: that allowlist is on a public repo', () => {
     expect(isPrivateEligible('gw2dui')).toBe(false)
   })

@@ -119,7 +119,7 @@ export const APP_META: Record<AppId, AppMeta> = {
       linux: /AxiAdmin.*\.AppImage$/i,
     },
   },
-  axidps: { id: 'axidps', name: 'AxiDPS', repo: 'darkharasho/axidps-releases', configDir: 'axidps', allowlist: ['darkharasho', 'skavok', 'gw2dui'], prerelease: true, native: true, assetPattern: { win: /axidps.*Setup.*\.exe$/i, linux: /axidps.*\.AppImage$/i } },
+  axidps: { id: 'axidps', name: 'AxiDPS', repo: 'darkharasho/axidps-releases', configDir: 'axidps', allowlist: ['darkharasho', 'skavok', 'gw2dui', 'Revan-Malice'], prerelease: true, native: true, assetPattern: { win: /axidps.*Setup.*\.exe$/i, linux: /axidps.*\.AppImage$/i } },
   axitools: {
     id: 'axitools',
     name: 'AxiTools',
